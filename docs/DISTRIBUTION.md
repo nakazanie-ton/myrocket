@@ -7,7 +7,7 @@ Snapshot: **2026-08-07**. Statuses distinguish verified publication from pending
 - Public source: [github.com/nakazanie-ton/myrocket](https://github.com/nakazanie-ton/myrocket)
 - Release: [v0.1.0](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.1.0)
 - Release assets: `xrocket-mcp-0.1.0.tgz` and `xrocket-exchange-codex-plugin.zip`; both were downloaded, checksum-matched, and smoke-tested after publication.
-- Curated-list submission: [`punkpeye/awesome-mcp-servers#11670`](https://github.com/punkpeye/awesome-mcp-servers/pull/11670); automated submission checks passed, maintainer merge pending.
+- Curated-list submission: [`punkpeye/awesome-mcp-servers#11670`](https://github.com/punkpeye/awesome-mcp-servers/pull/11670); the PR is open and its automated checks pass, but the maintainer workflow requires a Glama listing and score badge before merge.
 
 ## Positioning
 
@@ -36,9 +36,9 @@ Discovery metadata should consistently use:
 | P1 | Claude community plugin marketplace | GitHub plugin repository | Not submitted | Follow current manual submission requirements and disclose financial capabilities/referral |
 | P1 | Cursor marketplace | MCP/plugin listing | Not submitted | Submit public read-only configuration after package publication |
 | P1 | Cline marketplace | Marketplace issue/listing | Not submitted | Prepare logo/README and expect additional crypto review |
-| P2 | Glama | Downstream MCP listing | Not submitted | The curated list syncs to Glama; otherwise use Glama ownership/build flow after adding any required root deployment metadata |
+| P2 | Glama | Downstream MCP listing | **Blocked on owner registration and CAPTCHA** | `Add Server` opens Glama account registration before any repository form; the owner must sign in, complete the human-verification step, and then run the ownership/build flow |
 | P2 | PulseMCP | Official Registry ingestion | **Blocked until Registry publication** | The live submission page currently ingests Official Registry entries daily and no longer accepts a direct GitHub URL |
-| P2 | `awesome-mcp-servers` | Curated-list pull request | **PR #11670 open; automated checks passed** | Await maintainer review/merge; keep the branch available for requested changes |
+| P2 | `awesome-mcp-servers` | Curated-list pull request | **PR #11670 open; automated checks passed** | Complete the Glama listing, add its score badge to the PR entry, rerun checks, then await maintainer review |
 | P3 | mcp.so | Paid directory listing | Not submitted | Evaluate the current paid-listing terms after organic channels |
 | P3 | Windsurf | Manual MCP configuration | Usable manually; no verified self-service public directory found | Document client config; do not claim marketplace publication |
 | Blocked | OpenAI universal plugin directory — full profile | Public plugin submission | **Policy-ineligible** | Current guidelines prohibit executing investment trades, money transfers, and crypto transfers |
@@ -49,7 +49,7 @@ The full local Codex plugin and the OpenAI universal public directory are differ
 ## Recommended order
 
 1. Publish and verify the GitHub source, license, security policy, documentation, topics, and `v0.1.0` release.
-2. Register the repository marketplace in Codex and open a focused `awesome-mcp-servers` pull request. Both publication routes are now live; the list PR is awaiting maintainer review.
+2. Register the repository marketplace in Codex and open a focused `awesome-mcp-servers` pull request. Both routes are live; the list PR still requires the owner-authenticated Glama listing and score badge.
 3. Publish `xrocket-mcp@0.1.0` to npm with provenance, or produce a specification-compliant MCPB; verify either artifact from a clean machine.
 4. Submit `server.json` to the [Official MCP Registry](https://modelcontextprotocol.io/registry/quickstart) and verify the returned record.
 5. Let PulseMCP and other downstream registries ingest the verified record, then make direct submissions only where needed.
