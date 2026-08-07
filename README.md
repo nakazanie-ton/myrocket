@@ -4,7 +4,7 @@ Unofficial, safety-first agent tooling for the xRocket Exchange API: one MCP ser
 
 The default installation is intentionally **public and read-only**. Private account access and financial writes are available only in explicit local profiles, with separate feature gates and a prepare/execute approval flow. This project is not affiliated with, endorsed by, or operated by xRocket.
 
-[Open xRocket with referral code `kaban`](https://t.me/xRocket?start=kaban) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Coverage](docs/API_COVERAGE.md) · [Safety model](docs/SAFETY.md) · [Legal review](docs/LEGAL.md) · [Distribution status](docs/DISTRIBUTION.md)
+[Open xRocket with referral code `kaban`](https://t.me/xRocket?start=kaban) · [Download v0.1.0](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.1.0) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Coverage](docs/API_COVERAGE.md) · [Safety model](docs/SAFETY.md) · [Legal review](docs/LEGAL.md) · [Distribution status](docs/DISTRIBUTION.md)
 
 ## What is included
 

@@ -1,6 +1,13 @@
 # Distribution plan and publication status
 
-Snapshot: **2026-08-07**. Statuses describe repository readiness, not claims that an external catalog has accepted or published the project.
+Snapshot: **2026-08-07**. Statuses distinguish verified publication from pending review and blocked channels.
+
+## Published artifacts
+
+- Public source: [github.com/nakazanie-ton/myrocket](https://github.com/nakazanie-ton/myrocket)
+- Release: [v0.1.0](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.1.0)
+- Release assets: `xrocket-mcp-0.1.0.tgz` and `xrocket-exchange-codex-plugin.zip`; both were downloaded, checksum-matched, and smoke-tested after publication.
+- Curated-list submission: [`punkpeye/awesome-mcp-servers#11670`](https://github.com/punkpeye/awesome-mcp-servers/pull/11670); automated submission checks passed, maintainer merge pending.
 
 ## Positioning
 
@@ -18,20 +25,20 @@ Discovery metadata should consistently use:
 
 | Priority | Destination | Artifact / route | Current status | Next action or blocker |
 | --- | --- | --- | --- | --- |
-| P0 | GitHub repository | `nakazanie-ton/myrocket` | Repository content ready; visibility/push handled by release owner | Make public, push reviewed commit, add description/topics, enable security reporting |
-| P0 | GitHub Releases | Codex plugin ZIP plus npm tarball | Release workflow ready | Create signed/reviewed `v0.1.0` release; workflow uploads built artifacts |
-| P0 | npm | `xrocket-mcp@0.1.0` | Package metadata ready, **not published** | Authenticate npm publisher, enable 2FA/provenance, inspect `npm pack`, then publish |
-| P0 | Official MCP Registry | `plugins/xrocket-exchange/server.json` | Metadata ready, **not submitted** | Publish npm first, or build a real `.mcpb` release asset and record its URL/SHA-256; then verify the GitHub namespace and run `mcp-publisher` |
+| P0 | GitHub repository | `nakazanie-ton/myrocket` | **Published and verified public** | Maintain CI, security reporting, description, and discovery topics |
+| P0 | GitHub Releases | Codex plugin ZIP plus npm tarball | **v0.1.0 published and clean-download verified** | Keep tag/package/plugin versions aligned for the next release |
+| P0 | npm | `xrocket-mcp@0.1.0` | Package metadata ready, **blocked: publisher not authenticated (`npm whoami` E401)** | Authenticate the intended npm publisher, enable 2FA/provenance, inspect `npm pack`, then publish |
+| P0 | Official MCP Registry | `plugins/xrocket-exchange/server.json` | Metadata valid, **blocked on public npm package or real MCPB** | Publish npm first, or build a `.mcpb` release asset and record its URL/SHA-256; then verify the GitHub namespace and run `mcp-publisher` |
 | P0 | GHCR / OCI | Container image | Not implemented | Add minimal non-root image and signed release only if OCI distribution is needed |
-| P1 | Codex repo marketplace | `.agents/plugins/marketplace.json` | Implemented for this repository | Add `nakazanie-ton/myrocket --ref main`, then install `xrocket-exchange@xrocket-agents`; default remains `public` |
+| P1 | Codex repo marketplace | `.agents/plugins/marketplace.json` | **Published in the public repository** | Add `nakazanie-ton/myrocket --ref main`, then install `xrocket-exchange@xrocket-agents`; default remains `public` |
 | P1 | Smithery MCP directory | HTTPS MCP or `.mcpb` entry | Not submitted | Current npm tarball/release ZIP is insufficient; add a public Streamable HTTP endpoint or real MCPB and authenticate a Smithery namespace |
 | P1 | Smithery Skills | skill metadata | Not submitted | Publish skill after repository is public and forward tests pass |
 | P1 | Claude community plugin marketplace | GitHub plugin repository | Not submitted | Follow current manual submission requirements and disclose financial capabilities/referral |
 | P1 | Cursor marketplace | MCP/plugin listing | Not submitted | Submit public read-only configuration after package publication |
 | P1 | Cline marketplace | Marketplace issue/listing | Not submitted | Prepare logo/README and expect additional crypto review |
-| P2 | Glama | Downstream MCP listing | Not submitted | Prefer ingestion from the Official MCP Registry after verification |
-| P2 | PulseMCP | GitHub repository/subfolder submission | Not submitted | Submit `https://github.com/nakazanie-ton/myrocket/tree/main/plugins/xrocket-exchange`; it can later ingest the Official Registry record |
-| P2 | `awesome-mcp-servers` | Curated-list pull request | Not submitted | Open a focused PR only after an installable release exists |
+| P2 | Glama | Downstream MCP listing | Not submitted | The curated list syncs to Glama; otherwise use Glama ownership/build flow after adding any required root deployment metadata |
+| P2 | PulseMCP | Official Registry ingestion | **Blocked until Registry publication** | The live submission page currently ingests Official Registry entries daily and no longer accepts a direct GitHub URL |
+| P2 | `awesome-mcp-servers` | Curated-list pull request | **PR #11670 open; automated checks passed** | Await maintainer review/merge; keep the branch available for requested changes |
 | P3 | mcp.so | Paid directory listing | Not submitted | Evaluate the current paid-listing terms after organic channels |
 | P3 | Windsurf | Manual MCP configuration | Usable manually; no verified self-service public directory found | Document client config; do not claim marketplace publication |
 | Blocked | OpenAI universal plugin directory — full profile | Public plugin submission | **Policy-ineligible** | Current guidelines prohibit executing investment trades, money transfers, and crypto transfers |
@@ -42,10 +49,10 @@ The full local Codex plugin and the OpenAI universal public directory are differ
 ## Recommended order
 
 1. Publish and verify the GitHub source, license, security policy, documentation, topics, and `v0.1.0` release.
-2. Register the repository marketplace in Codex, submit the public GitHub subfolder to PulseMCP, and open a focused `awesome-mcp-servers` pull request.
+2. Register the repository marketplace in Codex and open a focused `awesome-mcp-servers` pull request. Both publication routes are now live; the list PR is awaiting maintainer review.
 3. Publish `xrocket-mcp@0.1.0` to npm with provenance, or produce a specification-compliant MCPB; verify either artifact from a clean machine.
 4. Submit `server.json` to the [Official MCP Registry](https://modelcontextprotocol.io/registry/quickstart) and verify the returned record.
-5. Let downstream registries ingest the verified record, then make direct submissions only where needed.
+5. Let PulseMCP and other downstream registries ingest the verified record, then make direct submissions only where needed.
 6. Submit the skill/plugin bundle to compatible client marketplaces with the public/default profile highlighted.
 7. Consider a separately hosted public-only MCP service. Do not deploy private tokens or write tools on a shared unauthenticated service.
 
@@ -101,7 +108,7 @@ Do not submit to the retired community list in `modelcontextprotocol/servers`; i
 - [Smithery](https://smithery.ai/)
 - [Glama MCP servers](https://glama.ai/mcp/servers)
 - [PulseMCP](https://www.pulsemcp.com/servers)
-- [PulseMCP submission](https://www.pulsemcp.com/submit)
+- [PulseMCP Registry ingestion page](https://www.pulsemcp.com/submit)
 - [mcp.so](https://mcp.so/)
 - [awesome-mcp-servers](https://github.com/punkpeye/awesome-mcp-servers)
 - [OpenAI plugin build guide](https://developers.openai.com/plugins/build/plugins)
