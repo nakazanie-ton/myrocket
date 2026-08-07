@@ -1,0 +1,46 @@
+{
+  "name": "xrocket-exchange",
+  "version": "0.1.0",
+  "description": "Unofficial safety-first xRocket Exchange MCP server and agent skill",
+  "author": {
+    "name": "nakazanie-ton",
+    "url": "https://github.com/nakazanie-ton"
+  },
+  "homepage": "https://github.com/nakazanie-ton/myrocket#readme",
+  "repository": "https://github.com/nakazanie-ton/myrocket",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "agent-skill",
+    "xrocket",
+    "crypto-exchange",
+    "market-data"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "xRocket Exchange",
+    "shortDescription": "Inspect xRocket markets safely from Codex.",
+    "longDescription": "Unofficial xRocket agent integration with public market data by default, plus explicit local profiles for account reads and guarded prepare/execute financial workflows.",
+    "developerName": "nakazanie-ton",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Public market data",
+      "Read-only by default",
+      "Local MCP",
+      "Agent skill"
+    ],
+    "websiteURL": "https://github.com/nakazanie-ton/myrocket",
+    "privacyPolicyURL": "https://github.com/nakazanie-ton/myrocket/blob/main/PRIVACY.md",
+    "termsOfServiceURL": "https://github.com/nakazanie-ton/myrocket/blob/main/TERMS.md",
+    "defaultPrompt": [
+      "Show the current GRAM-USDT market rules and ticker on xRocket.",
+      "Compare the xRocket orderbook and recent trades without placing an order.",
+      "Explain how to prepare a safe xRocket testnet order."
+    ],
+    "brandColor": "#5B5DF0",
+    "composerIcon": "./assets/icon.svg",
+    "logo": "./assets/logo.svg"
+  },
+  "mcpServers": "./.mcp.json"
+}

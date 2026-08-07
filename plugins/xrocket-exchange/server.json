@@ -1,0 +1,98 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.nakazanie-ton/xrocket",
+  "title": "xRocket Exchange MCP",
+  "description": "Unofficial xRocket market data and opt-in local account and financial workflow tools",
+  "version": "0.1.0",
+  "websiteUrl": "https://github.com/nakazanie-ton/myrocket",
+  "repository": {
+    "url": "https://github.com/nakazanie-ton/myrocket",
+    "source": "github",
+    "subfolder": "plugins/xrocket-exchange"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "xrocket-mcp",
+      "version": "0.1.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "XROCKET_PROFILE",
+          "description": "Tool catalog: public, private-read, or full",
+          "choices": [
+            "public",
+            "private-read",
+            "full"
+          ],
+          "default": "public"
+        },
+        {
+          "name": "XROCKET_ENVIRONMENT",
+          "description": "Official xRocket environment",
+          "choices": [
+            "testnet",
+            "mainnet"
+          ],
+          "default": "testnet"
+        },
+        {
+          "name": "XROCKET_API_TOKEN",
+          "description": "xRocket bearer token required for private profiles",
+          "isSecret": true,
+          "isRequired": false
+        },
+        {
+          "name": "XROCKET_ENABLE_TRADING",
+          "description": "Allow guarded order and cancel execution in full profile",
+          "choices": [
+            "false",
+            "true"
+          ],
+          "default": "false",
+          "format": "boolean"
+        },
+        {
+          "name": "XROCKET_ENABLE_TRANSFERS",
+          "description": "Allow guarded internal funding/trading transfers in full profile",
+          "choices": [
+            "false",
+            "true"
+          ],
+          "default": "false",
+          "format": "boolean"
+        },
+        {
+          "name": "XROCKET_ENABLE_WITHDRAWALS",
+          "description": "Allow guarded blockchain withdrawals in full profile",
+          "choices": [
+            "false",
+            "true"
+          ],
+          "default": "false",
+          "format": "boolean"
+        },
+        {
+          "name": "XROCKET_ALLOW_MAINNET_WRITES",
+          "description": "Additional explicit gate for every mainnet financial write",
+          "choices": [
+            "false",
+            "true"
+          ],
+          "default": "false",
+          "format": "boolean"
+        },
+        {
+          "name": "XROCKET_APPROVAL_TTL_MS",
+          "description": "Optional lifetime in milliseconds for prepared approvals",
+          "format": "number",
+          "isRequired": false,
+          "placeholder": "300000"
+        }
+      ]
+    }
+  ]
+}

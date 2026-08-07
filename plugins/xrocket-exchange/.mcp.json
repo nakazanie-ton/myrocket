@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "xrocket": {
+      "command": "node",
+      "args": [
+        "${PLUGIN_ROOT}/dist/cli.js"
+      ],
+      "env": {
+        "XROCKET_PROFILE": "public",
+        "XROCKET_ENVIRONMENT": "testnet",
+        "XROCKET_ENABLE_TRADING": "false",
+        "XROCKET_ENABLE_TRANSFERS": "false",
+        "XROCKET_ENABLE_WITHDRAWALS": "false",
+        "XROCKET_ALLOW_MAINNET_WRITES": "false"
+      }
+    }
+  }
+}

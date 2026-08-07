@@ -1,0 +1,15 @@
+interface:
+  display_name: "xRocket Exchange"
+  short_description: "Inspect and manage xRocket with safety gates"
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/logo.svg"
+  brand_color: "#5B5DF0"
+  default_prompt: "Use $xrocket-exchange to inspect GRAM-USDT and explain a safe testnet workflow."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "xrocket"
+      description: "Local xRocket Exchange MCP server"
+      transport: "stdio"
+policy:
+  allow_implicit_invocation: true

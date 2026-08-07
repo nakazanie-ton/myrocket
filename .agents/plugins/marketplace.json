@@ -1,0 +1,20 @@
+{
+  "name": "xrocket-agents",
+  "interface": {
+    "displayName": "xRocket Agent Tools"
+  },
+  "plugins": [
+    {
+      "name": "xrocket-exchange",
+      "source": {
+        "source": "local",
+        "path": "./plugins/xrocket-exchange"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

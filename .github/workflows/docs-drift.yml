@@ -1,0 +1,85 @@
+name: xRocket API documentation drift
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 4 1 * *"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download official public documentation metadata
+        run: |
+          curl --fail --silent --show-error --location \
+            https://docs.xrocket.exchange/sitemap.xml \
+            --output "$RUNNER_TEMP/xrocket-sitemap.xml"
+          curl --fail --silent --show-error --location \
+            https://exchange.api.xrocket.exchange/api/docs/swagger-ui-init.js \
+            --output "$RUNNER_TEMP/xrocket-swagger-ui-init.js"
+
+      - name: Compare recorded inventory and OpenAPI digest
+        env:
+          EXPECTED_EXCHANGE_PAGES: "50"
+          EXPECTED_OPENAPI_PATHS: "23"
+          EXPECTED_OPENAPI_OPERATIONS: "26"
+          EXPECTED_OPENAPI_SHA256: "7f50071ae4c164d373b8b551f77fe11d111ae264dcb73435c0553bab2421dc0d"
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          temp = Path(os.environ["RUNNER_TEMP"])
+          sitemap = (temp / "xrocket-sitemap.xml").read_text(encoding="utf-8")
+          exchange_pages = len(re.findall(r"<loc>https://docs\.xrocket\.exchange/api/exchange(?:/[^<]*)?</loc>", sitemap))
+
+          javascript = (temp / "xrocket-swagger-ui-init.js").read_text(encoding="utf-8")
+          marker = '"swaggerDoc":'
+          if marker not in javascript:
+              raise SystemExit("swaggerDoc marker missing from Swagger UI initializer")
+          remainder = javascript.split(marker, 1)[1].lstrip()
+          spec, _ = json.JSONDecoder().raw_decode(remainder)
+          operations = {"get", "post", "put", "patch", "delete", "options", "head"}
+          operation_count = sum(
+              1 for path_item in spec["paths"].values() for method in path_item if method in operations
+          )
+          digest = hashlib.sha256(
+              json.dumps(spec, sort_keys=True, separators=(",", ":")).encode("utf-8")
+          ).hexdigest()
+
+          observed = {
+              "Exchange pages": str(exchange_pages),
+              "OpenAPI paths": str(len(spec["paths"])),
+              "OpenAPI operations": str(operation_count),
+              "OpenAPI SHA-256": digest,
+          }
+          expected = {
+              "Exchange pages": os.environ["EXPECTED_EXCHANGE_PAGES"],
+              "OpenAPI paths": os.environ["EXPECTED_OPENAPI_PATHS"],
+              "OpenAPI operations": os.environ["EXPECTED_OPENAPI_OPERATIONS"],
+              "OpenAPI SHA-256": os.environ["EXPECTED_OPENAPI_SHA256"],
+          }
+
+          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          summary.write_text(
+              "# xRocket API drift check\n\n"
+              + "\n".join(
+                  f"- {name}: `{observed[name]}` (expected `{expected[name]}`)"
+                  for name in observed
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+
+          mismatches = [name for name in observed if observed[name] != expected[name]]
+          if mismatches:
+              raise SystemExit("Documentation drift detected: " + ", ".join(mismatches))
+          PY

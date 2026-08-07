@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" role="img" aria-labelledby="title desc">
+  <title id="title">xRocket Exchange for agents</title>
+  <desc id="desc">Original logo for the unofficial safety-first agent integration.</desc>
+  <rect width="720" height="220" rx="36" fill="#111125"/>
+  <g transform="translate(42 38)">
+    <rect width="144" height="144" rx="32" fill="#5B5DF0"/>
+    <path d="M31 92c20 20 58 24 83 2" fill="none" stroke="#C8C8FF" stroke-width="8" stroke-linecap="round"/>
+    <path d="M82 25c16 5 27 16 31 31L80 91 49 61c6-17 17-29 33-36Z" fill="#FFF"/>
+    <circle cx="84" cy="51" r="9" fill="#5B5DF0"/>
+    <path d="m54 72-14 5 23 23 5-14" fill="#FFCB69"/>
+  </g>
+  <text x="218" y="103" fill="#FFF" font-family="system-ui, -apple-system, sans-serif" font-size="54" font-weight="700">xRocket</text>
+  <text x="220" y="151" fill="#C8C8DE" font-family="system-ui, -apple-system, sans-serif" font-size="29">Exchange for agents · unofficial</text>
+</svg>

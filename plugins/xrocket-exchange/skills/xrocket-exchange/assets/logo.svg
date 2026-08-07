@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 180" role="img" aria-labelledby="title">
+  <title id="title">xRocket Exchange for agents, unofficial</title>
+  <rect width="640" height="180" rx="30" fill="#111125"/>
+  <rect x="28" y="25" width="130" height="130" rx="28" fill="#5B5DF0"/>
+  <path d="M53 108c19 19 53 22 76 2" fill="none" stroke="#C8C8FF" stroke-width="7" stroke-linecap="round"/>
+  <path d="M101 49c14 4 24 14 27 28l-30 31-28-28c6-15 16-26 31-31Z" fill="#FFF"/>
+  <circle cx="103" cy="72" r="8" fill="#5B5DF0"/>
+  <text x="190" y="86" fill="#FFF" font-family="system-ui, sans-serif" font-size="46" font-weight="700">xRocket</text>
+  <text x="191" y="126" fill="#C8C8DE" font-family="system-ui, sans-serif" font-size="25">agent tools · unofficial</text>
+</svg>
