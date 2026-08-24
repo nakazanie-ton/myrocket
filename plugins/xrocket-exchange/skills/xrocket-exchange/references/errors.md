@@ -21,7 +21,7 @@ No numeric REST rate limit or official retry schedule was published in the audit
 
 ## WebSocket error-code reference
 
-Version 0.2.0 does not expose WebSocket tools, but these audited codes matter when reviewing upstream examples or planning future support:
+Version 0.3.0 does not expose WebSocket tools, but these audited codes matter when reviewing upstream examples or planning future support:
 
 | Code | Documented meaning |
 | ---: | --- |

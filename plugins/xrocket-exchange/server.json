@@ -3,18 +3,24 @@
   "name": "io.github.nakazanie-ton/xrocket",
   "title": "xRocket Exchange MCP",
   "description": "Unofficial xRocket market data and opt-in local account and financial workflow tools",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "websiteUrl": "https://github.com/nakazanie-ton/myrocket",
   "repository": {
     "url": "https://github.com/nakazanie-ton/myrocket",
     "source": "github",
     "subfolder": "plugins/xrocket-exchange"
   },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://xrocket-mcp-production.up.railway.app/mcp"
+    }
+  ],
   "packages": [
     {
       "registryType": "npm",
       "identifier": "xrocket-mcp",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

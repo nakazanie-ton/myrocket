@@ -36,17 +36,31 @@ jobs:
       - name: Build bundled server
         run: |
           npm run build
-          git diff --exit-code -- dist/cli.js
+          git diff --exit-code -- dist/cli.js dist/hosted.js
+          if grep -Eq 'xrocket_(account|orders|transfers|withdrawal|order_|transfer_)' dist/hosted.js; then
+            echo "Hosted bundle contains a private or financial tool name" >&2
+            exit 1
+          fi
 
       - name: Smoke-test bundled stdio server
         run: npm run smoke:stdio
 
-      - name: Build and smoke-test container
+      - name: Build and smoke-test containers
         working-directory: .
         run: |
-          docker build --tag xrocket-mcp:ci .
+          docker build --target stdio --tag xrocket-mcp-stdio:ci .
+          docker build --tag xrocket-mcp-http:ci .
           cd plugins/xrocket-exchange
-          XROCKET_SMOKE_DOCKER_IMAGE=xrocket-mcp:ci npm run smoke:stdio
+          XROCKET_SMOKE_DOCKER_IMAGE=xrocket-mcp-stdio:ci npm run smoke:stdio
+          docker run --rm --entrypoint sh xrocket-mcp-http:ci -c 'test -f /app/dist/hosted.js && test ! -e /app/dist/cli.js'
+          docker run --rm -d --name xrocket-mcp-http-ci -p 127.0.0.1:3010:3000 xrocket-mcp-http:ci
+          trap 'docker logs xrocket-mcp-http-ci || true; docker stop xrocket-mcp-http-ci >/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            node -e "fetch('http://127.0.0.1:3010/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))" && break
+            if [ "$attempt" -eq 20 ]; then exit 1; fi
+            sleep 1
+          done
+          XROCKET_MCP_HTTP_URL=http://127.0.0.1:3010/mcp npm run smoke:http
 
       - name: Inspect npm package
         run: npm pack --dry-run

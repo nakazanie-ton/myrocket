@@ -132,4 +132,4 @@ The guide set also links four governing PDFs totaling 49 pages. They are not cou
 
 ## WebSocket implementation decision
 
-Version 0.2.0 intentionally exposes REST snapshots, not long-lived WebSocket tools. REST provides bounded equivalents for symbols/tickers, candles, orderbooks, trades, balances, and active orders. A future WebSocket implementation must first define deterministic reconnect, replay, snapshot/delta, and sequence-gap behavior and add regression tests for those contracts.
+Version 0.3.0 intentionally exposes REST snapshots, not long-lived WebSocket tools. REST provides bounded equivalents for symbols/tickers, candles, orderbooks, trades, balances, and active orders. A future WebSocket implementation must first define deterministic reconnect, replay, snapshot/delta, and sequence-gap behavior and add regression tests for those contracts.

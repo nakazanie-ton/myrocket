@@ -10,6 +10,8 @@ This project is independent, unofficial software. It is not affiliated with, spo
 
 The source code is provided under the [MIT License](LICENSE). It is provided "as is," without warranties or guarantees of availability, fitness, correctness, profit, execution quality, custody, compliance, or loss prevention.
 
+The public hosted endpoint is an unauthenticated, rate-limited convenience service for public market data only. It provides no custody, account access, trading, transfer, or withdrawal capability, and its availability or response time is not guaranteed. Private and financial capabilities remain local-only and require the operator's own xRocket credentials and explicit configuration.
+
 ## User responsibility
 
 You are solely responsible for:

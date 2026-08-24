@@ -1,6 +1,19 @@
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 
+const publicToolNames = [
+  "xrocket_asset_info",
+  "xrocket_market_candles",
+  "xrocket_market_orderbook",
+  "xrocket_market_snapshot",
+  "xrocket_market_symbols",
+  "xrocket_market_tickers",
+  "xrocket_market_trades",
+  "xrocket_onboarding_links",
+  "xrocket_rates",
+  "xrocket_trade_fees",
+];
+
 const inheritedEnvironment = Object.fromEntries(
   Object.entries(process.env).filter((entry) => typeof entry[1] === "string"),
 );
@@ -28,12 +41,13 @@ const transport = new StdioClientTransport(
         stderr: "pipe",
       },
 );
-const client = new Client({ name: "xrocket-stdio-smoke", version: "0.2.0" });
+const client = new Client({ name: "xrocket-stdio-smoke", version: "0.3.0" });
 
 try {
   await client.connect(transport);
   const tools = await client.listTools();
-  if (tools.tools.length !== 10 || tools.tools.some((tool) => tool.name.includes("execute"))) {
+  const actualToolNames = tools.tools.map((tool) => tool.name).sort();
+  if (JSON.stringify(actualToolNames) !== JSON.stringify(publicToolNames)) {
     throw new Error(`unexpected public tool catalog: ${tools.tools.map((tool) => tool.name).join(", ")}`);
   }
   const onboarding = await client.callTool({ name: "xrocket_onboarding_links", arguments: {} });

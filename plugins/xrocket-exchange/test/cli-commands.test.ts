@@ -22,7 +22,7 @@ describe("CLI commands", () => {
     const config = JSON.parse(renderMcpConfig()) as {
       mcpServers: { xrocket: { args: string[]; env: Record<string, string> } };
     };
-    expect(config.mcpServers.xrocket.args).toEqual(["-y", "xrocket-mcp@0.2.0"]);
+    expect(config.mcpServers.xrocket.args).toEqual(["-y", "xrocket-mcp@0.3.0"]);
     expect(config.mcpServers.xrocket.env).not.toHaveProperty("XROCKET_PROFILE");
     expect(config.mcpServers.xrocket.env).toMatchObject({
       XROCKET_ENVIRONMENT: "mainnet",

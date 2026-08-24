@@ -4,7 +4,7 @@ Unofficial, safety-first agent tooling for the xRocket Exchange API: one MCP ser
 
 The default installation is intentionally **public and read-only**. Private account access and financial writes are available only in explicit local profiles, with separate feature gates and a prepare/execute approval flow. This project is not affiliated with, endorsed by, or operated by xRocket.
 
-[Open xRocket](https://t.me/xRocket?start=kaban) · [Download v0.2.0](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.2.0) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Coverage](docs/API_COVERAGE.md) · [Safety model](docs/SAFETY.md) · [Legal review](docs/LEGAL.md) · [Distribution status](docs/DISTRIBUTION.md)
+[Connect hosted MCP](https://xrocket-mcp-production.up.railway.app/mcp) · [Open xRocket](https://t.me/xRocket?start=kaban) · [Download v0.3.0](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.3.0) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Coverage](docs/API_COVERAGE.md) · [Safety model](docs/SAFETY.md) · [Legal review](docs/LEGAL.md) · [Distribution status](docs/DISTRIBUTION.md)
 
 ## What is included
 
@@ -14,6 +14,7 @@ The default installation is intentionally **public and read-only**. Private acco
 | Agent skill | Teaches agents safe discovery, analysis, approval, and reconciliation workflows | Read first; never infer write approval |
 | Codex plugin | Installs the server and skill together from a repo-local marketplace | Public tools only |
 | Registry metadata | `server.json` for `io.github.nakazanie-ton/xrocket` | Published in the Official MCP Registry |
+| Hosted endpoint | Public mainnet tools over Streamable HTTP | No install, token, or account access |
 
 The API surface was re-audited on 2026-08-24 and still covers all **50 Exchange documentation pages**, all **26 OpenAPI operations**, and all **7 WebSocket channels**. The four linked legal PDFs were reviewed separately on 2026-08-07. The current OpenAPI document has canonical SHA-256 `5de074def6ee9f59c7c1d1a2f8a06e1f5e2fafb446ebef58af7168e32813e2a3`. See [the source inventory](docs/API_AUDIT.md).
 
@@ -27,13 +28,37 @@ The API surface was re-audited on 2026-08-24 and still covers all **50 Exchange 
 
 For normal questions, `xrocket_market_snapshot` resolves a symbol or base asset and returns rules, ticker, best bid/ask, recent trades, and fees in one call. Private mode adds `xrocket_account_overview` for funding balances, trading balances, and active orders without inventing portfolio valuation. Narrow tools remain available for detailed queries. Full mode adds guarded order, cancel, internal-transfer, and withdrawal workflows.
 
-## Quick start
+## Quick start — no installation
+
+Add this URL to any MCP client that supports Streamable HTTP:
+
+```text
+https://xrocket-mcp-production.up.railway.app/mcp
+```
+
+Generic client configuration:
+
+```json
+{
+  "mcpServers": {
+    "xrocket": {
+      "url": "https://xrocket-mcp-production.up.railway.app/mcp"
+    }
+  }
+}
+```
+
+The hosted service is structurally limited to the 10 public mainnet tools. It never reads tokens, account data, or financial-write settings. Its health endpoint is [`/health`](https://xrocket-mcp-production.up.railway.app/health).
+
+For balances, order history, or guarded financial actions, use the local package below and authenticate only through your local process environment. Never paste an xRocket token into chat or send it to the hosted endpoint.
+
+## Local package
 
 Requirements: Node.js 20 or newer. No clone or configuration is needed for public market data:
 
 ```bash
-npx -y xrocket-mcp@0.2.0 doctor
-npx -y xrocket-mcp@0.2.0 config
+npx -y xrocket-mcp@0.3.0 doctor
+npx -y xrocket-mcp@0.3.0 config
 ```
 
 The second command prints this copy-paste MCP client configuration:
@@ -43,7 +68,7 @@ The second command prints this copy-paste MCP client configuration:
   "mcpServers": {
     "xrocket": {
       "command": "npx",
-      "args": ["-y", "xrocket-mcp@0.2.0"],
+      "args": ["-y", "xrocket-mcp@0.3.0"],
       "env": {
         "XROCKET_ENVIRONMENT": "mainnet",
         "XROCKET_ENABLE_TRADING": "false",
@@ -75,7 +100,7 @@ npm test
 npm run build
 ```
 
-The published package is [`xrocket-mcp@0.2.0`](https://www.npmjs.com/package/xrocket-mcp/v/0.2.0).
+The published package is [`xrocket-mcp@0.3.0`](https://www.npmjs.com/package/xrocket-mcp/v/0.3.0).
 
 ## Enabling private reads
 
@@ -119,7 +144,7 @@ Mainnet writes additionally require `XROCKET_ENVIRONMENT=mainnet` and `XROCKET_A
 - Exchange `POST /api/v1/accounts/transfers` moves funds only between the same user's `funding` and `trading` accounts. It is not a user-to-user payment tool.
 - xRocket Pay is a different product, uses different authentication, and is outside this server.
 - The official API currently uses asset identifier `TONCOIN` in places where the UI may say TON.
-- The 0.2.0 server uses REST snapshots. WebSocket channels are audited but not exposed until the upstream documentation defines reliable replay, gap recovery, and orderbook delta deletion semantics.
+- The 0.3.0 server uses REST snapshots. WebSocket channels are audited but not exposed until the upstream documentation defines reliable replay, gap recovery, and orderbook delta deletion semantics.
 - Decimal financial values remain strings. Do not coerce them through binary floating point.
 
 ## Development
@@ -139,6 +164,6 @@ CI also checks the recorded documentation inventory and OpenAPI digest for drift
 
 This software can submit trades, transfers, and blockchain withdrawals when a local operator explicitly enables those capabilities. Review [SECURITY.md](SECURITY.md), [PRIVACY.md](PRIVACY.md), [TERMS.md](TERMS.md), the project's [legal and policy review](docs/LEGAL.md), and xRocket's canonical [terms and policies guide](https://docs.xrocket.exchange/api/exchange/guides/terms-and-policies) before use.
 
-OpenAI's public plugin directory rules currently prohibit tools that execute investment trades, money transfers, or cryptocurrency transfers. The full profile is therefore **not eligible** for that public directory. This local Codex bundle remains public-read-only by default; directory submission would require a separately hosted public-only MCP deployment and a fresh policy/vendor review.
+OpenAI's public plugin directory rules currently prohibit tools that execute investment trades, money transfers, or cryptocurrency transfers. The full profile is therefore **not eligible** for that public directory. Only the separately built hosted endpoint is a public-directory candidate; it contains no private or financial-write tool registrations.
 
 Report defects through [GitHub Issues](https://github.com/nakazanie-ton/myrocket/issues). Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).

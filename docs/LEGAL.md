@@ -37,11 +37,11 @@ The privacy policy describes collection, automated processing, sharing, legal di
 
 Implementation consequence: keep private profiles local by default, collect only the fields required for one operation, keep tokens out of prompts and tools, redact addresses/account details in summaries, and do not add telemetry. A third-party remote operator needs its own privacy assessment, lawful basis, security controls, retention policy, and user notice.
 
-### Reverse engineering and competitive-use ambiguity
+### Published API use and competitive-use ambiguity
 
-Both terms prohibit reverse engineering and access/use for competitive analysis, development or provision of a competing product, or purposes detrimental to xRocket. The boundary between permitted use of the published Exchange API and a third-party public agent integration is not resolved by the API documentation alone.
+The Exchange documentation intentionally publishes API access for programmatic integrations, while the governing terms also restrict reverse engineering, competitive analysis, and development or provision of competing products. The documents do not state that every unofficial, public-read-only API client needs individual pre-approval, but they also do not grant partnership, trademark, commercial-resale, or competitive-product rights.
 
-Implementation consequence: keep the repository explicitly unofficial and avoid copied branding, undocumented endpoints, protocol circumvention, scraping as a substitute for the published API, or claims of vendor approval. Before operating a public remote MCP service, charging for it, submitting it as an official/vendor integration, or expanding beyond documented endpoints, obtain written xRocket authorization and qualified legal review.
+Implementation consequence: a narrowly scoped, unofficial, non-custodial public endpoint may use only the documented public Exchange API and must avoid copied branding, undocumented endpoints, protocol circumvention, scraping, and claims of vendor approval. Obtain written xRocket authorization and qualified legal review before calling the integration official or partnered, using protected branding beyond nominative identification, charging for or reselling the service, presenting it as a competing product, or expanding hosted access to private/account/write capabilities.
 
 ### Representation
 
@@ -49,4 +49,4 @@ The governing PDFs do not make this repository an authorized application. Never 
 
 ## Release gate
 
-Before any public remote deployment or catalog submission, re-read the current PDFs and obtain written vendor/legal review for API automation, trademark use, supported jurisdictions, custody/write profiles, and catalog wording. GitHub source publication of an unofficial client does not itself establish permission to operate a hosted integration.
+Before a public remote release or catalog submission, re-read the current API documentation and governing documents, verify the endpoint remains public-read-only, and review eligibility, naming, claims, privacy, and catalog wording. Written vendor authorization is a gate only for official/partner claims, protected-brand use beyond nominative identification, commercial or competitive positioning, or hosted private/account/write capabilities. GitHub source publication alone does not create those rights.

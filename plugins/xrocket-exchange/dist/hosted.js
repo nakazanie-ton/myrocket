@@ -1,9 +1,11 @@
-#!/usr/bin/env node
 var __defProp = Object.defineProperty;
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
 };
+
+// src/http.ts
+import { createServer } from "node:http";
 
 // node_modules/@modelcontextprotocol/server/dist/chunk-Br0eD_fh.mjs
 var __create = Object.create;
@@ -19772,7 +19774,7 @@ var Protocol = class {
       ...options,
       relatedRequestId: request.id
     });
-    const sendRequest = (r, resultSchema3, options) => this._requestWithSchemaViaCodec(this._resolveOutboundCodec(r.method), r, resultSchema3, {
+    const sendRequest = (r, resultSchema2, options) => this._requestWithSchemaViaCodec(this._resolveOutboundCodec(r.method), r, resultSchema2, {
       ...options,
       relatedRequestId: request.id
     });
@@ -19950,17 +19952,17 @@ var Protocol = class {
   * explicit compatibility schemas. Spec methods are still era-gated here:
   * an explicit schema never smuggles a deleted method onto the wire.
   */
-  _requestWithSchema(request, resultSchema3, options) {
+  _requestWithSchema(request, resultSchema2, options) {
     const codec2 = this._resolveOutboundCodec(request.method);
     this._assertOutboundRequestInEra(codec2, request.method);
-    return this._requestWithSchemaViaCodec(codec2, request, resultSchema3, options);
+    return this._requestWithSchemaViaCodec(codec2, request, resultSchema2, options);
   }
   /**
   * The request funnel proper, keyed by the resolved era codec: the codec
   * owns result decoding (raw-first `resultType` discrimination — V-1 —
   * and the era's lift posture) before the schema validation step.
   */
-  _requestWithSchemaViaCodec(codec2, request, resultSchema3, options) {
+  _requestWithSchemaViaCodec(codec2, request, resultSchema2, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, headers } = options ?? {};
     const flowStartedAt = Date.now();
     let onAbort;
@@ -20037,18 +20039,18 @@ var Protocol = class {
           const flow = {
             codec: codec2,
             request,
-            resultSchema: resultSchema3,
+            resultSchema: resultSchema2,
             options,
             flowStartedAt,
             retry: (params, legOptions) => this._requestWithSchemaViaCodec(codec2, params === void 0 ? { method: request.method } : {
               method: request.method,
               params
-            }, resultSchema3, legOptions)
+            }, resultSchema2, legOptions)
           };
           return resolve(this._resolveNonCompleteResult(decoded, flow));
         }
         const result = decoded.result;
-        validateStandardSchema(resultSchema3, result).then((parseResult) => {
+        validateStandardSchema(resultSchema2, result).then((parseResult) => {
           if (parseResult.success) resolve(parseResult.data);
           else reject(new SdkError(SdkErrorCode.InvalidResult, `Invalid result for ${request.method}: ${parseResult.error}`));
         }, reject);
@@ -20301,44 +20303,6 @@ function isJsonContentType(header) {
   return mediaTypeEssence(header) === "application/json";
 }
 var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
-var ReadBuffer = class {
-  _buffer;
-  _maxBufferSize;
-  constructor(options) {
-    this._maxBufferSize = options?.maxBufferSize ?? STDIO_DEFAULT_MAX_BUFFER_SIZE;
-  }
-  append(chunk) {
-    if ((this._buffer?.length ?? 0) + chunk.length > this._maxBufferSize) {
-      this.clear();
-      throw new Error(`ReadBuffer exceeded maximum size of ${this._maxBufferSize} bytes`);
-    }
-    this._buffer = this._buffer ? Buffer.concat([this._buffer, chunk]) : chunk;
-  }
-  readMessage() {
-    while (this._buffer) {
-      const index = this._buffer.indexOf("\n");
-      if (index === -1) return null;
-      const line = this._buffer.toString("utf8", 0, index).replace(/\r$/, "");
-      this._buffer = this._buffer.subarray(index + 1);
-      try {
-        return deserializeMessage(line);
-      } catch (error51) {
-        if (error51 instanceof SyntaxError) continue;
-        throw error51;
-      }
-    }
-    return null;
-  }
-  clear() {
-    this._buffer = void 0;
-  }
-};
-function deserializeMessage(line) {
-  return JSONRPCMessageSchema.parse(JSON.parse(line));
-}
-function serializeMessage(message) {
-  return JSON.stringify(message) + "\n";
-}
 var TOOL_NAME_REGEX = /^[A-Za-z0-9._-]{1,128}$/;
 function validateToolName(name) {
   const warnings = [];
@@ -27412,9 +27376,6 @@ var AjvJsonSchemaValidator = class {
 };
 var Ajv = import_ajv.Ajv;
 
-// node_modules/@modelcontextprotocol/server/dist/shimsNode.mjs
-import process3 from "node:process";
-
 // node_modules/@modelcontextprotocol/server/dist/mcp-DXXb3Vv3.mjs
 var COMPLETABLE_SYMBOL = /* @__PURE__ */ Symbol.for("mcp.completable");
 function isCompletable(schema) {
@@ -27648,152 +27609,6 @@ data: ${JSON.stringify({
       return open.size;
     }
   };
-}
-var CHANGE_NOTIFICATION_METHODS = /* @__PURE__ */ new Set([
-  "notifications/tools/list_changed",
-  "notifications/prompts/list_changed",
-  "notifications/resources/list_changed",
-  "notifications/resources/updated"
-]);
-var StdioListenRouter = class {
-  /** Active subscriptions, keyed by the listen request's JSON-RPC id verbatim. */
-  _subs = /* @__PURE__ */ new Map();
-  /**
-  * The serving instance's declared capabilities. Filled in by the entry
-  * once the modern instance is constructed (the router is created before
-  * the instance exists), so the acknowledged filter is narrowed against
-  * what the server can actually deliver.
-  */
-  _serverCapabilities;
-  /**
-  * The serving instance's identity, stamped onto the graceful-close
-  * results' `_meta` (the spec's `SubscriptionsListenResultMeta` extends
-  * `ResultMetaObject`). Handed over together with the capabilities.
-  */
-  _serverInfo;
-  constructor(_maxSubscriptions = DEFAULT_MAX_SUBSCRIPTIONS, serverCapabilities, serverInfo) {
-    this._maxSubscriptions = _maxSubscriptions;
-    this._serverCapabilities = serverCapabilities;
-    this._serverInfo = serverInfo;
-  }
-  /**
-  * Record the serving instance's declared capabilities and identity once
-  * it has been constructed. Called by `serveStdio`'s connect path;
-  * subsequent `serve()` calls narrow the honored filter against the
-  * capabilities, and `teardownAll()` stamps the identity.
-  */
-  setServerCapabilities(capabilities, serverInfo) {
-    this._serverCapabilities = capabilities;
-    if (serverInfo !== void 0) this._serverInfo = serverInfo;
-  }
-  /** Whether `id` is an active listen subscription on this connection. */
-  has(id) {
-    return this._subs.has(id);
-  }
-  /**
-  * Serve one inbound `subscriptions/listen` request: registers the
-  * subscription and returns the stamped acknowledged notification (or, on
-  * capacity / params rejection, the in-band JSON-RPC error response).
-  *
-  * @throws when called before {@linkcode setServerCapabilities} (or the
-  * constructor) has supplied the serving instance's capabilities. Honoring a
-  * filter without knowing the server's advertised capabilities would fail
-  * open (deliver unadvertised types); the entry guarantees capabilities are
-  * set before any listen request is routed here.
-  */
-  serve(message) {
-    if (this._serverCapabilities === void 0) throw new Error("StdioListenRouter.serve() called before setServerCapabilities(); refusing to honor a filter without capabilities");
-    if (this._subs.size >= this._maxSubscriptions) return {
-      jsonrpc: "2.0",
-      id: message.id,
-      error: {
-        code: -32603,
-        message: "Subscription limit reached"
-      }
-    };
-    const filter = parseListenFilter(message);
-    if (filter === void 0) return {
-      jsonrpc: "2.0",
-      id: message.id,
-      error: {
-        code: -32602,
-        message: "Invalid params: 'notifications' is required and must be a valid SubscriptionFilter"
-      }
-    };
-    const honored = honoredSubset(filter, this._serverCapabilities);
-    this._subs.set(message.id, honored);
-    return stampSubscriptionId({
-      method: "notifications/subscriptions/acknowledged",
-      params: { notifications: honored }
-    }, message.id);
-  }
-  /**
-  * Tear down one subscription (inbound `notifications/cancelled`). Returns
-  * `true` when a subscription was removed. After this call NOTHING further
-  * is delivered for that subscription id (the post-cancel hardening).
-  */
-  cancel(id) {
-    return this._subs.delete(id);
-  }
-  /**
-  * Route an outbound notification through the active subscriptions.
-  *
-  * - For a subscription-gated change notification, returns one stamped copy
-  *   per subscription that opted in to it (an empty array means it is
-  *   dropped — the modern era never delivers an un-requested change type).
-  * - For any other outbound message, returns `'passthrough'` (the entry
-  *   forwards it as-is).
-  */
-  routeOutbound(message) {
-    if (!CHANGE_NOTIFICATION_METHODS.has(message.method)) return "passthrough";
-    const uriParam = message.params?.["uri"];
-    const uri = typeof uriParam === "string" ? uriParam : void 0;
-    const event = notificationToServerEvent(message.method, uri);
-    const out = [];
-    for (const [subscriptionId, filter] of this._subs) if (listenFilterAccepts(filter, event)) out.push(stampSubscriptionId({
-      method: message.method,
-      params: message.params ?? {}
-    }, subscriptionId));
-    return out;
-  }
-  /**
-  * Server-side graceful teardown of every active subscription: returns the
-  * empty `subscriptions/listen` JSON-RPC result for each subscription id —
-  * the spec's graceful-close signal, `_meta` carrying the subscription id
-  * and the serving instance's identity — for the entry to emit before
-  * closing the wire. Clears the set so nothing further is delivered.
-  */
-  teardownAll() {
-    const out = [];
-    for (const id of this._subs.keys()) out.push({
-      jsonrpc: "2.0",
-      id,
-      result: {
-        resultType: "complete",
-        _meta: {
-          [SUBSCRIPTION_ID_META_KEY]: id,
-          ...this._serverInfo !== void 0 && { [SERVER_INFO_META_KEY]: this._serverInfo }
-        }
-      }
-    });
-    this._subs.clear();
-    return out;
-  }
-};
-function notificationToServerEvent(method, uri) {
-  switch (method) {
-    case "notifications/tools/list_changed":
-      return { kind: "tools_list_changed" };
-    case "notifications/prompts/list_changed":
-      return { kind: "prompts_list_changed" };
-    case "notifications/resources/list_changed":
-      return { kind: "resources_list_changed" };
-    default:
-      return {
-        kind: "resource_updated",
-        uri: uri ?? ""
-      };
-  }
 }
 var DEFAULT_LEGACY_SHIM_MAX_ROUNDS = 8;
 var DEFAULT_LEGACY_SHIM_ROUND_TIMEOUT_MS = 6e5;
@@ -29126,1002 +28941,6 @@ function unwrapOptionalSchema(schema) {
   return schema.def?.innerType ?? schema;
 }
 
-// node_modules/@modelcontextprotocol/server/dist/stdio.mjs
-var StdioServerTransport = class {
-  _readBuffer;
-  _started = false;
-  _closed = false;
-  constructor(_stdin = process3.stdin, _stdout = process3.stdout, options) {
-    this._stdin = _stdin;
-    this._stdout = _stdout;
-    this._readBuffer = new ReadBuffer({ maxBufferSize: options?.maxBufferSize });
-  }
-  onclose;
-  onerror;
-  onmessage;
-  _ondata = (chunk) => {
-    try {
-      this._readBuffer.append(chunk);
-      this.processReadBuffer();
-    } catch (error51) {
-      this.onerror?.(error51);
-      this.close().catch(() => {
-      });
-    }
-  };
-  _onerror = (error51) => {
-    this.onerror?.(error51);
-  };
-  _onstdouterror = (error51) => {
-    this.onerror?.(error51);
-    this.close().catch(() => {
-    });
-  };
-  /**
-  * Starts listening for messages on `stdin`.
-  */
-  async start() {
-    if (this._started) throw new Error("StdioServerTransport already started! If using Server class, note that connect() calls start() automatically.");
-    this._started = true;
-    this._stdin.on("data", this._ondata);
-    this._stdin.on("error", this._onerror);
-    this._stdout.on("error", this._onstdouterror);
-  }
-  processReadBuffer() {
-    while (true) try {
-      const message = this._readBuffer.readMessage();
-      if (message === null) break;
-      this.onmessage?.(message);
-    } catch (error51) {
-      this.onerror?.(error51);
-    }
-  }
-  async close() {
-    if (this._closed) return;
-    this._closed = true;
-    this._stdin.off("data", this._ondata);
-    this._stdin.off("error", this._onerror);
-    this._stdout.off("error", this._onstdouterror);
-    if (this._stdin.listenerCount("data") === 0) this._stdin.pause();
-    this._readBuffer.clear();
-    this.onclose?.();
-  }
-  send(message) {
-    if (this._closed) return Promise.reject(/* @__PURE__ */ new Error("StdioServerTransport is closed"));
-    return new Promise((resolve, reject) => {
-      const json2 = serializeMessage(message);
-      let settled = false;
-      const onError = (error51) => {
-        if (settled) return;
-        settled = true;
-        this._stdout.off("error", onError);
-        this._stdout.off("drain", onDrain);
-        reject(error51);
-      };
-      const onDrain = () => {
-        if (settled) return;
-        settled = true;
-        this._stdout.off("error", onError);
-        this._stdout.off("drain", onDrain);
-        resolve();
-      };
-      this._stdout.once("error", onError);
-      if (this._stdout.write(json2)) {
-        if (settled) return;
-        settled = true;
-        this._stdout.off("error", onError);
-        resolve();
-      } else if (!settled) this._stdout.once("drain", onDrain);
-    });
-  }
-};
-var DISCARD_ANSWER_TIMEOUT_MS = 3e3;
-var StdioConnectionChannel = class {
-  onclose;
-  onerror;
-  onmessage;
-  _closed = false;
-  /** Request ids the entry delivered to the instance that the instance has not yet answered. */
-  _pendingRequests = /* @__PURE__ */ new Set();
-  _drainWaiters = [];
-  constructor(_wire, _onInstanceClose, _outboundIntercept) {
-    this._wire = _wire;
-    this._onInstanceClose = _onInstanceClose;
-    this._outboundIntercept = _outboundIntercept;
-  }
-  async start() {
-  }
-  async send(message, options) {
-    if (isJSONRPCResultResponse(message) || isJSONRPCErrorResponse(message)) {
-      const { id } = message;
-      if (id !== void 0) this._settle(id);
-    }
-    if (this._closed) return;
-    if (this._outboundIntercept?.(message) === "handled") return;
-    return this._wire.send(message, options);
-  }
-  setProtocolVersion = (version2) => {
-    this._wire.setProtocolVersion?.(version2);
-  };
-  /** Forwards one inbound message to the connected instance. */
-  deliver(message, extra) {
-    if (this._closed) return;
-    if (isJSONRPCRequest(message)) this._pendingRequests.add(message.id);
-    else if (isJSONRPCNotification(message) && message.method === "notifications/cancelled") {
-      const cancelledId = message.params?.requestId;
-      if (cancelledId !== void 0) this._settle(cancelledId);
-    }
-    this.onmessage?.(message, extra);
-  }
-  /**
-  * Resolves once every request delivered to the instance has been answered
-  * through {@linkcode send}, settled by a delivered cancellation, or the
-  * channel has been closed and nothing further can be answered. The wait is
-  * bounded by `timeoutMs` as a backstop so no edge can hold the caller
-  * indefinitely; resolves `false` only when the bound elapsed with requests
-  * still unanswered. Used by the probe-discard path so a probe request the
-  * entry accepted is never silently dropped.
-  */
-  async whenRequestsAnswered(timeoutMs) {
-    if (this._closed || this._pendingRequests.size === 0) return true;
-    return await new Promise((resolve) => {
-      const waiter = () => {
-        clearTimeout(timer);
-        resolve(true);
-      };
-      const timer = setTimeout(() => {
-        this._drainWaiters = this._drainWaiters.filter((pending) => pending !== waiter);
-        resolve(false);
-      }, timeoutMs);
-      this._drainWaiters.push(waiter);
-    });
-  }
-  async close() {
-    if (this._closed) return;
-    this._closed = true;
-    this._pendingRequests.clear();
-    this._releaseDrainWaiters();
-    try {
-      this._onInstanceClose();
-    } finally {
-      this.onclose?.();
-    }
-  }
-  _settle(id) {
-    this._pendingRequests.delete(id);
-    if (this._pendingRequests.size === 0) this._releaseDrainWaiters();
-  }
-  _releaseDrainWaiters() {
-    const waiters = this._drainWaiters;
-    this._drainWaiters = [];
-    for (const waiter of waiters) waiter();
-  }
-};
-function classifyOpeningMessage(message) {
-  const params = message.params;
-  if (message.method === "initialize" && !carriesValidModernEnvelopeClaim(params)) {
-    const requestedVersion = params !== null && typeof params === "object" && typeof params.protocolVersion === "string" ? params.protocolVersion : void 0;
-    return {
-      kind: "legacy",
-      reason: "initialize",
-      ...requestedVersion !== void 0 && { requestedVersion }
-    };
-  }
-  if (!hasEnvelopeClaim(params)) return {
-    kind: "legacy",
-    reason: "no-claim"
-  };
-  const meta3 = requestMetaOf(params);
-  const firstIssue = (meta3 === void 0 ? [] : validateEnvelopeMeta(meta3))[0];
-  if (firstIssue !== void 0) return {
-    kind: "invalid-envelope",
-    issue: firstIssue
-  };
-  const claimedVersion = envelopeClaimVersion(params);
-  if (claimedVersion === void 0 || !SUPPORTED_MODERN_PROTOCOL_VERSIONS.includes(claimedVersion)) return {
-    kind: "unsupported-revision",
-    requested: claimedVersion ?? "unknown"
-  };
-  return {
-    kind: "modern",
-    revision: claimedVersion,
-    classification: {
-      era: "modern",
-      revision: claimedVersion
-    }
-  };
-}
-function serveStdio(factory, options = {}) {
-  const legacyMode = options.legacy ?? "serve";
-  const wire = options.transport ?? new StdioServerTransport();
-  let state = { phase: "opening" };
-  let discarding;
-  let closing = false;
-  const isTornDown = () => closing || state.phase === "closed";
-  const reportError = (error51) => {
-    try {
-      options.onerror?.(error51);
-    } catch {
-    }
-  };
-  const writeErrorResponse = (id, code, message, data) => wire.send({
-    jsonrpc: "2.0",
-    id,
-    error: {
-      code,
-      message,
-      ...data !== void 0 && { data }
-    }
-  }).catch((error51) => reportError(toError(error51)));
-  const listenRouter = new StdioListenRouter(options.maxSubscriptions ?? DEFAULT_MAX_SUBSCRIPTIONS);
-  const modernOutboundIntercept = (message) => {
-    if (!isJSONRPCNotification(message)) return void 0;
-    const routed = listenRouter.routeOutbound(message);
-    if (routed === "passthrough") return void 0;
-    for (const stamped of routed) wire.send({
-      jsonrpc: "2.0",
-      ...stamped
-    }).catch((error51) => reportError(toError(error51)));
-    return "handled";
-  };
-  const tryServeListen = async (message) => {
-    if (isJSONRPCRequest(message) && message.method === "subscriptions/listen") {
-      const meta3 = requestMetaOf(message.params);
-      const issue2 = hasEnvelopeClaim(message.params) ? (meta3 === void 0 ? [] : validateEnvelopeMeta(meta3))[0] : {
-        key: "_meta",
-        problem: "the per-request envelope is required on protocol revision 2026-07-28"
-      };
-      const claimedVersion = envelopeClaimVersion(message.params);
-      let reply;
-      if (issue2 !== void 0) reply = {
-        jsonrpc: "2.0",
-        id: message.id,
-        error: {
-          code: -32602,
-          message: `Invalid _meta envelope: ${issue2.key}: ${issue2.problem}`
-        }
-      };
-      else if (claimedVersion === void 0 || !SUPPORTED_MODERN_PROTOCOL_VERSIONS.includes(claimedVersion)) {
-        const error51 = new UnsupportedProtocolVersionError({
-          supported: [...SUPPORTED_MODERN_PROTOCOL_VERSIONS],
-          requested: claimedVersion ?? "unknown"
-        });
-        reply = {
-          jsonrpc: "2.0",
-          id: message.id,
-          error: {
-            code: error51.code,
-            message: error51.message,
-            data: error51.data
-          }
-        };
-      } else reply = listenRouter.serve(message);
-      await wire.send("error" in reply ? reply : {
-        jsonrpc: "2.0",
-        method: reply.method,
-        params: reply.params
-      }).catch((error51) => reportError(toError(error51)));
-      return true;
-    }
-    if (isJSONRPCNotification(message) && message.method === "notifications/cancelled") {
-      const cancelledId = message.params?.requestId;
-      if (cancelledId !== void 0 && listenRouter.cancel(cancelledId)) return true;
-    }
-    return false;
-  };
-  const answerLegacyRejection = (request, reason, requestedVersion) => {
-    const rejection2 = modernOnlyStrictRejection({
-      kind: "legacy",
-      reason,
-      ...requestedVersion !== void 0 && { requestedVersion }
-    }, SUPPORTED_MODERN_PROTOCOL_VERSIONS);
-    if (rejection2 === void 0) return Promise.resolve();
-    reportError(/* @__PURE__ */ new Error(`Rejected 2025-era request on a modern-only stdio connection (${rejection2.cell}): ${rejection2.message}`));
-    return writeErrorResponse(request.id, rejection2.code, rejection2.message, rejection2.data);
-  };
-  const onInstanceClosed = (channel) => {
-    if (closing || channel === discarding) return;
-    closeAll();
-  };
-  const connectInstance = async (era, revision) => {
-    const product = await factory({ era });
-    const server = product instanceof McpServer ? product.server : product;
-    if (era === "modern") {
-      setNegotiatedProtocolVersion(server, revision);
-      installModernOnlyHandlers(server, SUPPORTED_MODERN_PROTOCOL_VERSIONS);
-      listenRouter.setServerCapabilities(server.getCapabilities(), serverIdentityOf(server));
-    }
-    const channel = new StdioConnectionChannel(wire, () => onInstanceClosed(channel), era === "modern" ? modernOutboundIntercept : void 0);
-    await product.connect(channel);
-    return {
-      product,
-      channel
-    };
-  };
-  const disposeLateInstance = (instance) => instance.product.close().catch((error51) => reportError(toError(error51)));
-  const discardProbeInstance = async (instance) => {
-    discarding = instance.channel;
-    try {
-      if (!await instance.channel.whenRequestsAnswered(DISCARD_ANSWER_TIMEOUT_MS)) reportError(/* @__PURE__ */ new Error(`Discarded the probe instance with requests still unanswered after ${DISCARD_ANSWER_TIMEOUT_MS}ms; continuing with the fallback`));
-      await instance.product.close();
-    } catch (error51) {
-      reportError(toError(error51));
-    } finally {
-      discarding = void 0;
-    }
-  };
-  const processMessage = async (message) => {
-    if (state.phase === "closed") return;
-    if (state.phase === "pinned") {
-      if (state.era === "modern" && isJSONRPCRequest(message) && message.method === "initialize" && !carriesValidModernEnvelopeClaim(message.params)) {
-        await answerLegacyRejection(message, "initialize", message.params !== null && typeof message.params === "object" && typeof message.params.protocolVersion === "string" ? message.params.protocolVersion : void 0);
-        return;
-      }
-      if (state.era === "modern" && await tryServeListen(message)) return;
-      state.instance.channel.deliver(message);
-      return;
-    }
-    if (!isJSONRPCRequest(message) && !isJSONRPCNotification(message)) {
-      reportError(/* @__PURE__ */ new Error("Discarded a JSON-RPC response received before the connection negotiated an era"));
-      return;
-    }
-    const opening = classifyOpeningMessage(message);
-    switch (opening.kind) {
-      case "invalid-envelope": {
-        const detail = `Invalid _meta envelope for protocol revision 2026-07-28: ${opening.issue.key}: ${opening.issue.problem}`;
-        if (isJSONRPCRequest(message)) await writeErrorResponse(message.id, ProtocolErrorCode.InvalidParams, detail, { envelope: opening.issue });
-        else reportError(/* @__PURE__ */ new Error(`Discarded a notification with a malformed envelope: ${detail}`));
-        return;
-      }
-      case "unsupported-revision":
-        if (isJSONRPCRequest(message)) {
-          const error51 = new UnsupportedProtocolVersionError({
-            supported: [...SUPPORTED_MODERN_PROTOCOL_VERSIONS],
-            requested: opening.requested
-          });
-          reportError(error51);
-          await writeErrorResponse(message.id, error51.code, error51.message, error51.data);
-        } else reportError(/* @__PURE__ */ new Error(`Discarded a notification claiming unsupported protocol revision ${opening.requested}`));
-        return;
-      case "modern":
-        if (isJSONRPCRequest(message) && message.method === "server/discover") {
-          if (state.phase === "probe") {
-            state.instance.channel.deliver(message, { classification: opening.classification });
-            return;
-          }
-          const instance = await connectInstance("modern", opening.revision);
-          if (isTornDown()) {
-            await disposeLateInstance(instance);
-            return;
-          }
-          state = {
-            phase: "probe",
-            instance
-          };
-          instance.channel.deliver(message, { classification: opening.classification });
-          return;
-        }
-        if (state.phase === "probe") {
-          if (isJSONRPCNotification(message)) {
-            state.instance.channel.deliver(message, { classification: opening.classification });
-            return;
-          }
-          state = {
-            phase: "pinned",
-            era: "modern",
-            instance: state.instance
-          };
-        } else {
-          const instance = await connectInstance("modern", opening.revision);
-          if (isTornDown()) {
-            await disposeLateInstance(instance);
-            return;
-          }
-          state = {
-            phase: "pinned",
-            era: "modern",
-            instance
-          };
-        }
-        if (await tryServeListen(message)) return;
-        state.instance.channel.deliver(message, { classification: opening.classification });
-        return;
-      case "legacy": {
-        if (legacyMode === "reject") {
-          if (isJSONRPCRequest(message)) await answerLegacyRejection(message, opening.reason, opening.requestedVersion);
-          return;
-        }
-        if (state.phase === "probe") {
-          await discardProbeInstance(state.instance);
-          if (isTornDown()) return;
-          state = { phase: "opening" };
-        }
-        const instance = await connectInstance("legacy");
-        if (isTornDown()) {
-          await disposeLateInstance(instance);
-          return;
-        }
-        state = {
-          phase: "pinned",
-          era: "legacy",
-          instance
-        };
-        state.instance.channel.deliver(message);
-        return;
-      }
-    }
-  };
-  const queue = [];
-  let pumping = false;
-  const pump = async () => {
-    if (pumping) return;
-    pumping = true;
-    try {
-      while (queue.length > 0) {
-        const message = queue.shift();
-        try {
-          await processMessage(message);
-        } catch (error51) {
-          if (isJSONRPCRequest(message)) await writeErrorResponse(message.id, ProtocolErrorCode.InternalError, "Internal server error");
-          reportError(toError(error51));
-        }
-      }
-    } finally {
-      pumping = false;
-    }
-  };
-  const closeAll = async () => {
-    if (closing || state.phase === "closed") return;
-    closing = true;
-    const current = state;
-    state = { phase: "closed" };
-    for (const result of listenRouter.teardownAll()) await wire.send(result).catch((error51) => reportError(toError(error51)));
-    if (current.phase === "probe" || current.phase === "pinned") await current.instance.product.close().catch((error51) => reportError(toError(error51)));
-    await wire.close().catch((error51) => reportError(toError(error51)));
-  };
-  wire.onmessage = (message) => {
-    queue.push(message);
-    pump();
-  };
-  wire.onerror = (error51) => {
-    reportError(error51);
-    if (state.phase === "probe" || state.phase === "pinned") state.instance.channel.onerror?.(error51);
-  };
-  wire.onclose = () => {
-    if (closing || state.phase === "closed") return;
-    closing = true;
-    const current = state;
-    state = { phase: "closed" };
-    if (current.phase === "probe" || current.phase === "pinned") current.instance.product.close().catch((error51) => reportError(toError(error51)));
-  };
-  const started = wire.start().catch((error51) => {
-    reportError(toError(error51));
-    throw error51;
-  });
-  started.catch(() => {
-  });
-  return { close: async () => {
-    await started.catch(() => {
-    });
-    await closeAll();
-  } };
-}
-function toError(value) {
-  return value instanceof Error ? value : new Error(String(value));
-}
-
-// src/config.ts
-var API_BASE_URLS = {
-  testnet: "https://exchange.api.testnet.xrocket.exchange",
-  mainnet: "https://exchange.api.xrocket.exchange"
-};
-var PROFILE_VALUES = /* @__PURE__ */ new Set(["public", "private-read", "full"]);
-var ENVIRONMENT_VALUES = /* @__PURE__ */ new Set(["testnet", "mainnet"]);
-function enumValue(value, fallback, allowed, name) {
-  const parsed = value ?? fallback;
-  if (!allowed.has(parsed)) {
-    throw new Error(`${name} must be one of: ${[...allowed].join(", ")}`);
-  }
-  return parsed;
-}
-function booleanValue(value, name) {
-  if (value === void 0 || value === "") return false;
-  if (value === "true") return true;
-  if (value === "false") return false;
-  throw new Error(`${name} must be exactly "true" or "false"`);
-}
-function ttlValue(value) {
-  if (value === void 0 || value === "") return 3e5;
-  if (!/^\d+$/.test(value)) {
-    throw new Error("XROCKET_APPROVAL_TTL_MS must be an integer in milliseconds");
-  }
-  const parsed = Number(value);
-  if (!Number.isSafeInteger(parsed) || parsed < 1e3 || parsed > 9e5) {
-    throw new Error("XROCKET_APPROVAL_TTL_MS must be between 1000 and 900000");
-  }
-  return parsed;
-}
-function loadConfig(env = process.env) {
-  const apiToken = env.XROCKET_API_TOKEN?.trim();
-  const profile = enumValue(
-    env.XROCKET_PROFILE,
-    apiToken ? "private-read" : "public",
-    PROFILE_VALUES,
-    "XROCKET_PROFILE"
-  );
-  const environment = enumValue(
-    env.XROCKET_ENVIRONMENT,
-    "mainnet",
-    ENVIRONMENT_VALUES,
-    "XROCKET_ENVIRONMENT"
-  );
-  if (profile !== "public" && !apiToken) {
-    throw new Error(`XROCKET_API_TOKEN is required for profile ${profile}`);
-  }
-  return {
-    profile,
-    environment,
-    apiBaseUrl: API_BASE_URLS[environment],
-    ...apiToken ? { apiToken } : {},
-    enableTrading: booleanValue(env.XROCKET_ENABLE_TRADING, "XROCKET_ENABLE_TRADING"),
-    enableTransfers: booleanValue(env.XROCKET_ENABLE_TRANSFERS, "XROCKET_ENABLE_TRANSFERS"),
-    enableWithdrawals: booleanValue(env.XROCKET_ENABLE_WITHDRAWALS, "XROCKET_ENABLE_WITHDRAWALS"),
-    allowMainnetWrites: booleanValue(
-      env.XROCKET_ALLOW_MAINNET_WRITES,
-      "XROCKET_ALLOW_MAINNET_WRITES"
-    ),
-    approvalTtlMs: ttlValue(env.XROCKET_APPROVAL_TTL_MS),
-    requestTimeoutMs: 15e3,
-    maxResponseBytes: 2e6
-  };
-}
-function assertWriteAllowed(config2, capability) {
-  const enabled = {
-    trading: config2.enableTrading,
-    transfers: config2.enableTransfers,
-    withdrawals: config2.enableWithdrawals
-  }[capability];
-  if (!enabled) {
-    const variable = {
-      trading: "XROCKET_ENABLE_TRADING",
-      transfers: "XROCKET_ENABLE_TRANSFERS",
-      withdrawals: "XROCKET_ENABLE_WITHDRAWALS"
-    }[capability];
-    throw new Error(`${capability} writes are disabled; set ${variable}=true explicitly`);
-  }
-  if (config2.environment === "mainnet" && !config2.allowMainnetWrites) {
-    throw new Error(
-      "mainnet writes are disabled; set XROCKET_ALLOW_MAINNET_WRITES=true in addition to the capability gate"
-    );
-  }
-}
-
-// src/errors.ts
-var XrocketHttpError = class extends Error {
-  constructor(status, details, retryAfter) {
-    super(`xRocket API returned HTTP ${status}`);
-    this.status = status;
-    this.details = details;
-    this.retryAfter = retryAfter;
-    this.name = "XrocketHttpError";
-  }
-  status;
-  details;
-  retryAfter;
-};
-var UnknownWriteOutcomeError = class extends Error {
-  constructor(operation, clientId, causeDescription) {
-    super(
-      `The ${operation} outcome is unknown. Do not retry automatically; reconcile using client ID ${clientId}.`
-    );
-    this.operation = operation;
-    this.clientId = clientId;
-    this.causeDescription = causeDescription;
-    this.name = "UnknownWriteOutcomeError";
-  }
-  operation;
-  clientId;
-  causeDescription;
-};
-var ApprovalReceiptError = class extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "ApprovalReceiptError";
-  }
-};
-
-// src/client.ts
-function addQuery(url2, query) {
-  if (!query) return;
-  for (const [key, value] of Object.entries(query)) {
-    if (value === void 0) continue;
-    if (Array.isArray(value)) {
-      for (const item of value) url2.searchParams.append(key, item);
-    } else {
-      url2.searchParams.set(key, String(value));
-    }
-  }
-}
-function unknownCause(error51) {
-  if (error51 instanceof Error) return error51.name;
-  return "transport error";
-}
-function isAmbiguousWriteStatus(status) {
-  return status === 408 || status === 409 || status === 425 || status === 429 || status >= 500;
-}
-function sensitiveRequestValues(value) {
-  const values = /* @__PURE__ */ new Set();
-  const visit = (node) => {
-    if (node === null || typeof node !== "object") return;
-    for (const [key, child] of Object.entries(node)) {
-      if (/address|destination|memo|comment/i.test(key) && typeof child === "string" && child) {
-        values.add(child);
-        values.add(JSON.stringify(child).slice(1, -1));
-      } else {
-        visit(child);
-      }
-    }
-  };
-  visit(value);
-  return [...values].filter(Boolean).sort((left, right) => right.length - left.length);
-}
-function redactText(text, values) {
-  let redacted = text;
-  for (const value of values) {
-    if (redacted.includes(value)) redacted = redacted.split(value).join("[REDACTED]");
-  }
-  return redacted;
-}
-function redactJsonValue(value, values, key = "") {
-  if (typeof value === "string") {
-    if (/token|authorization|secret|address|destination|memo|comment/i.test(key)) {
-      return "[REDACTED]";
-    }
-    const embeddedValues = values.filter((candidate) => candidate.length >= 4 || candidate === value);
-    return redactText(value, embeddedValues);
-  }
-  if (Array.isArray(value)) return value.map((item) => redactJsonValue(item, values));
-  if (value !== null && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([childKey, child]) => [
-        childKey,
-        redactJsonValue(child, values, childKey)
-      ])
-    );
-  }
-  return value;
-}
-async function readTextWithLimit(response, maxBytes) {
-  if (!response.body) return "";
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let bytes = 0;
-  let text = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    bytes += value.byteLength;
-    if (bytes > maxBytes) {
-      await reader.cancel();
-      throw new Error("xRocket API response exceeded the configured size limit");
-    }
-    text += decoder.decode(value, { stream: true });
-  }
-  return text + decoder.decode();
-}
-var XrocketClient = class {
-  constructor(config2, fetchImpl = fetch) {
-    this.config = config2;
-    this.fetchImpl = fetchImpl;
-  }
-  config;
-  fetchImpl;
-  async request(method, path, options = {}) {
-    const url2 = new URL(path, this.config.apiBaseUrl);
-    addQuery(url2, options.query);
-    const headers = new Headers({ Accept: "application/json" });
-    if (options.private) {
-      if (!this.config.apiToken) throw new Error("XROCKET_API_TOKEN is required for this tool");
-      headers.set("Authorization", `Bearer ${this.config.apiToken}`);
-    }
-    let body;
-    if (options.body !== void 0) {
-      headers.set("Content-Type", "application/json");
-      body = JSON.stringify(options.body);
-    }
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs);
-    let response;
-    try {
-      response = await this.fetchImpl(url2, {
-        method,
-        headers,
-        signal: controller.signal,
-        redirect: "error",
-        ...body === void 0 ? {} : { body }
-      });
-    } catch (error51) {
-      clearTimeout(timeout);
-      if (options.write) {
-        throw new UnknownWriteOutcomeError(
-          options.write.operation,
-          options.write.clientId,
-          unknownCause(error51)
-        );
-      }
-      throw error51;
-    }
-    const declaredLength = Number(response.headers.get("content-length") ?? "0");
-    if (declaredLength > this.config.maxResponseBytes) {
-      clearTimeout(timeout);
-      try {
-        await response.body?.cancel();
-      } catch {
-      }
-      if (options.write && (response.ok || isAmbiguousWriteStatus(response.status))) {
-        throw new UnknownWriteOutcomeError(
-          options.write.operation,
-          options.write.clientId,
-          "response exceeded size limit"
-        );
-      }
-      if (!response.ok) {
-        throw new XrocketHttpError(
-          response.status,
-          { message: "xRocket API error response exceeded the configured size limit" },
-          response.headers.get("retry-after") ?? void 0
-        );
-      }
-      throw new Error("xRocket API response exceeded the configured size limit");
-    }
-    let text;
-    try {
-      text = await readTextWithLimit(response, this.config.maxResponseBytes);
-    } catch (error51) {
-      if (options.write && (response.ok || isAmbiguousWriteStatus(response.status))) {
-        throw new UnknownWriteOutcomeError(
-          options.write.operation,
-          options.write.clientId,
-          unknownCause(error51)
-        );
-      }
-      if (!response.ok) {
-        throw new XrocketHttpError(
-          response.status,
-          { message: "xRocket API error response could not be read safely" },
-          response.headers.get("retry-after") ?? void 0
-        );
-      }
-      throw error51;
-    } finally {
-      clearTimeout(timeout);
-    }
-    const valuesToRedact = [
-      ...this.config.apiToken ? [this.config.apiToken] : [],
-      ...sensitiveRequestValues(options.body)
-    ];
-    let data = null;
-    if (text) {
-      try {
-        data = redactJsonValue(JSON.parse(text), valuesToRedact);
-      } catch {
-        if (options.write && response.ok) {
-          throw new UnknownWriteOutcomeError(
-            options.write.operation,
-            options.write.clientId,
-            "invalid success response"
-          );
-        }
-        data = redactText(text, valuesToRedact).slice(0, 2e3);
-      }
-    }
-    if (!response.ok) {
-      if (options.write && isAmbiguousWriteStatus(response.status)) {
-        throw new UnknownWriteOutcomeError(
-          options.write.operation,
-          options.write.clientId,
-          `HTTP ${response.status}`
-        );
-      }
-      throw new XrocketHttpError(
-        response.status,
-        data,
-        response.headers.get("retry-after") ?? void 0
-      );
-    }
-    return data;
-  }
-  getHealth() {
-    return this.request("GET", "/health");
-  }
-  getAssets(asset) {
-    return asset ? this.request("GET", `/api/v1/assets/${encodeURIComponent(asset)}`) : this.request("GET", "/api/v1/assets");
-  }
-  getSymbols(symbol2) {
-    return symbol2 ? this.request("GET", `/api/v1/symbols/${encodeURIComponent(symbol2)}`) : this.request("GET", "/api/v1/symbols");
-  }
-  getTickers(tickerType, symbols) {
-    return this.request("GET", `/api/v1/ticker/${tickerType}`, { query: { symbols } });
-  }
-  getCandles(query) {
-    return this.request("GET", "/api/v1/candles", { query });
-  }
-  getOrderbook(query) {
-    return this.request("GET", "/api/v1/orderbook", { query });
-  }
-  getTrades(symbol2) {
-    return this.request("GET", "/api/v1/trades", { query: { symbol: symbol2 } });
-  }
-  getRates(base, assets) {
-    return this.request("GET", "/api/v1/rates", { query: { base, assets } });
-  }
-  getTradeFees(symbols) {
-    return this.request("GET", "/api/v1/trade-fees", { query: { symbols } });
-  }
-  getBalances(account) {
-    return this.request("GET", `/api/v1/accounts/${account}/balances`, { private: true });
-  }
-  getOrders(view, query) {
-    const path = view === "active" ? "/api/v1/orders/active" : view === "history" ? "/api/v1/orders/history" : "/api/v1/order";
-    return this.request("GET", path, { private: true, query });
-  }
-  getTransfers(view, query) {
-    const path = view === "history" ? "/api/v1/accounts/transfers" : "/api/v1/accounts/transfer";
-    return this.request("GET", path, { private: true, query });
-  }
-  getWithdrawals(view, query) {
-    const path = view === "history" ? "/api/v1/accounts/funding/withdrawals" : "/api/v1/accounts/funding/withdrawal";
-    return this.request("GET", path, { private: true, query });
-  }
-  getWithdrawalQuotas(asset, network) {
-    return this.request("GET", "/api/v1/accounts/funding/withdrawal-quotas", {
-      private: true,
-      query: { asset, network }
-    });
-  }
-  estimateOrder(order) {
-    return this.request("POST", "/api/v1/orders/estimate", { private: true, body: order });
-  }
-  placeOrder(order) {
-    return this.request("POST", "/api/v1/orders", {
-      private: true,
-      body: order,
-      write: { operation: "order placement", clientId: order.clientOrderId }
-    });
-  }
-  cancelOrder(intent2) {
-    const clientId = intent2.orderId ?? intent2.clientOrderId ?? "unknown";
-    return this.request("DELETE", "/api/v1/order", {
-      private: true,
-      query: intent2,
-      write: { operation: "order cancellation", clientId }
-    });
-  }
-  createTransfer(transfer) {
-    return this.request("POST", "/api/v1/accounts/transfers", {
-      private: true,
-      body: transfer,
-      write: { operation: "internal transfer", clientId: transfer.clientTransferId }
-    });
-  }
-  createWithdrawal(withdrawal) {
-    return this.request("POST", "/api/v1/accounts/funding/withdrawals", {
-      private: true,
-      body: withdrawal,
-      write: { operation: "external withdrawal", clientId: withdrawal.clientWithdrawalId }
-    });
-  }
-};
-
-// src/version.ts
-var VERSION = "0.3.0";
-
-// src/cli-commands.ts
-function parseCliCommand(args) {
-  if (args.length === 0 || args.length === 1 && args[0] === "serve") return "serve";
-  if (args.length === 1 && args[0] === "serve-http") return "serve-http";
-  if (args.length === 1 && args[0] === "doctor") return "doctor";
-  if (args.length === 1 && args[0] === "config") return "config";
-  if (args.length === 1 && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
-    return "help";
-  }
-  if (args.length === 1 && (args[0] === "--version" || args[0] === "-v")) return "version";
-  throw new Error(`Unknown command: ${args.join(" ")}. Run xrocket-mcp --help.`);
-}
-function helpText() {
-  return [
-    `xrocket-mcp ${VERSION}`,
-    "",
-    "Usage:",
-    "  xrocket-mcp              Start the MCP stdio server",
-    "  xrocket-mcp serve        Start the MCP stdio server",
-    "  xrocket-mcp serve-http   Start the hard public-only Streamable HTTP server",
-    "  xrocket-mcp doctor       Check configuration and public API connectivity",
-    "  xrocket-mcp config       Print a safe copy-paste MCP client configuration",
-    "  xrocket-mcp --version    Print the version",
-    "",
-    "Defaults: public mainnet reads; every financial write gate is disabled.",
-    "serve-http always exposes only public mainnet tools and never reads account or write settings.",
-    "With XROCKET_PROFILE omitted, setting XROCKET_API_TOKEN locally enables private reads. Never paste a token into a prompt."
-  ].join("\n");
-}
-function renderMcpConfig() {
-  return JSON.stringify(
-    {
-      mcpServers: {
-        xrocket: {
-          command: "npx",
-          args: ["-y", `xrocket-mcp@${VERSION}`],
-          env: {
-            XROCKET_ENVIRONMENT: "mainnet",
-            XROCKET_ENABLE_TRADING: "false",
-            XROCKET_ENABLE_TRANSFERS: "false",
-            XROCKET_ENABLE_WITHDRAWALS: "false",
-            XROCKET_ALLOW_MAINNET_WRITES: "false"
-          }
-        }
-      }
-    },
-    null,
-    2
-  );
-}
-function countSymbols(value) {
-  if (Array.isArray(value)) return value.length;
-  if (value !== null && typeof value === "object" && "symbols" in value) {
-    const symbols = value.symbols;
-    return Array.isArray(symbols) ? symbols.length : void 0;
-  }
-  return void 0;
-}
-async function runDoctor(env = process.env, fetchImpl = fetch) {
-  const config2 = loadConfig(env);
-  const client = new XrocketClient(config2, fetchImpl);
-  const [health, symbols] = await Promise.all([client.getHealth(), client.getSymbols()]);
-  let credentialsVerified = null;
-  if (config2.profile !== "public") {
-    try {
-      await client.getBalances("trading");
-      credentialsVerified = true;
-    } catch (error51) {
-      if (error51 instanceof XrocketHttpError && (error51.status === 401 || error51.status === 403)) {
-        throw new Error(
-          "xRocket account access was rejected. Sign in to xRocket and configure a valid API token locally; never paste the token into chat."
-        );
-      }
-      throw error51;
-    }
-  }
-  const symbolCount = countSymbols(symbols);
-  return {
-    version: VERSION,
-    status: "ok",
-    profile: config2.profile,
-    environment: config2.environment,
-    apiBaseUrl: config2.apiBaseUrl,
-    tokenConfigured: Boolean(config2.apiToken),
-    credentialsVerified,
-    writesEnabled: config2.profile === "full" && (config2.enableTrading || config2.enableTransfers || config2.enableWithdrawals) && (config2.environment !== "mainnet" || config2.allowMainnetWrites),
-    health,
-    ...symbolCount === void 0 ? {} : { symbolCount }
-  };
-}
-function doctorText(report) {
-  return [
-    `xrocket-mcp ${report.version}: OK`,
-    `API: ${report.apiBaseUrl}`,
-    `Profile: ${report.profile}`,
-    `Environment: ${report.environment}`,
-    `Token configured: ${report.tokenConfigured ? "yes" : "no"}`,
-    `Account access: ${report.credentialsVerified === null ? "not requested" : "verified"}`,
-    `Financial writes enabled: ${report.writesEnabled ? "yes" : "no"}`,
-    `Markets discovered: ${report.symbolCount ?? "unknown"}`
-  ].join("\n");
-}
-
-// src/http.ts
-import { createServer } from "node:http";
-
 // node_modules/@modelcontextprotocol/server/dist/index.mjs
 var PerRequestHTTPServerTransport = class {
   onclose;
@@ -30999,7 +29818,7 @@ function jsonRpcErrorResponse(httpStatus, code, message, data, id = null) {
 function rejectionResponse(rejection2, id = null) {
   return jsonRpcErrorResponse(rejection2.httpStatus, rejection2.code, rejection2.message, rejection2.data, id);
 }
-function toError2(value) {
+function toError(value) {
   return value instanceof Error ? value : new Error(String(value));
 }
 function internalServerErrorResponse(id = null) {
@@ -31070,7 +29889,7 @@ function createLegacyStatelessFallback(factory, onerror, keepAliveMs) {
       });
     } catch (error51) {
       try {
-        onerror?.(toError2(error51));
+        onerror?.(toError(error51));
       } catch {
       }
       return internalServerErrorResponse(echoableRequestId(options?.parsedBody));
@@ -31227,7 +30046,7 @@ function createMcpHandler(factory, options = {}) {
       await server.close().catch(() => {
       });
       inflight.delete(server);
-      reportError(toError2(error51));
+      reportError(toError(error51));
       return internalServerErrorResponse(echoableRequestId(route.message));
     }
   }
@@ -31265,7 +30084,7 @@ function createMcpHandler(factory, options = {}) {
           return await serveLegacyRoute(outcome, forwardRequest, authInfo, parsedBody);
       }
     } catch (error51) {
-      reportError(toError2(error51));
+      reportError(toError(error51));
       return internalServerErrorResponse(echoableRequestId(body));
     }
   }
@@ -31274,7 +30093,7 @@ function createMcpHandler(factory, options = {}) {
     try {
       return await handle(request, requestOptions);
     } catch (error51) {
-      reportError(toError2(error51));
+      reportError(toError(error51));
       return internalServerErrorResponse(echoableRequestId(requestOptions?.parsedBody));
     }
   };
@@ -31724,6 +30543,323 @@ function internalServerErrorResponse2(id) {
   }, { status: 500 });
 }
 
+// src/config.ts
+var API_BASE_URLS = {
+  testnet: "https://exchange.api.testnet.xrocket.exchange",
+  mainnet: "https://exchange.api.xrocket.exchange"
+};
+
+// src/errors.ts
+var XrocketHttpError = class extends Error {
+  constructor(status, details, retryAfter) {
+    super(`xRocket API returned HTTP ${status}`);
+    this.status = status;
+    this.details = details;
+    this.retryAfter = retryAfter;
+    this.name = "XrocketHttpError";
+  }
+  status;
+  details;
+  retryAfter;
+};
+var UnknownWriteOutcomeError = class extends Error {
+  constructor(operation, clientId, causeDescription) {
+    super(
+      `The ${operation} outcome is unknown. Do not retry automatically; reconcile using client ID ${clientId}.`
+    );
+    this.operation = operation;
+    this.clientId = clientId;
+    this.causeDescription = causeDescription;
+    this.name = "UnknownWriteOutcomeError";
+  }
+  operation;
+  clientId;
+  causeDescription;
+};
+
+// src/client.ts
+function addQuery(url2, query) {
+  if (!query) return;
+  for (const [key, value] of Object.entries(query)) {
+    if (value === void 0) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) url2.searchParams.append(key, item);
+    } else {
+      url2.searchParams.set(key, String(value));
+    }
+  }
+}
+function unknownCause(error51) {
+  if (error51 instanceof Error) return error51.name;
+  return "transport error";
+}
+function isAmbiguousWriteStatus(status) {
+  return status === 408 || status === 409 || status === 425 || status === 429 || status >= 500;
+}
+function sensitiveRequestValues(value) {
+  const values = /* @__PURE__ */ new Set();
+  const visit = (node) => {
+    if (node === null || typeof node !== "object") return;
+    for (const [key, child] of Object.entries(node)) {
+      if (/address|destination|memo|comment/i.test(key) && typeof child === "string" && child) {
+        values.add(child);
+        values.add(JSON.stringify(child).slice(1, -1));
+      } else {
+        visit(child);
+      }
+    }
+  };
+  visit(value);
+  return [...values].filter(Boolean).sort((left, right) => right.length - left.length);
+}
+function redactText(text, values) {
+  let redacted = text;
+  for (const value of values) {
+    if (redacted.includes(value)) redacted = redacted.split(value).join("[REDACTED]");
+  }
+  return redacted;
+}
+function redactJsonValue(value, values, key = "") {
+  if (typeof value === "string") {
+    if (/token|authorization|secret|address|destination|memo|comment/i.test(key)) {
+      return "[REDACTED]";
+    }
+    const embeddedValues = values.filter((candidate) => candidate.length >= 4 || candidate === value);
+    return redactText(value, embeddedValues);
+  }
+  if (Array.isArray(value)) return value.map((item) => redactJsonValue(item, values));
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([childKey, child]) => [
+        childKey,
+        redactJsonValue(child, values, childKey)
+      ])
+    );
+  }
+  return value;
+}
+async function readTextWithLimit(response, maxBytes) {
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let text = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    bytes += value.byteLength;
+    if (bytes > maxBytes) {
+      await reader.cancel();
+      throw new Error("xRocket API response exceeded the configured size limit");
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  return text + decoder.decode();
+}
+var XrocketClient = class {
+  constructor(config2, fetchImpl = fetch) {
+    this.config = config2;
+    this.fetchImpl = fetchImpl;
+  }
+  config;
+  fetchImpl;
+  async request(method, path, options = {}) {
+    const url2 = new URL(path, this.config.apiBaseUrl);
+    addQuery(url2, options.query);
+    const headers = new Headers({ Accept: "application/json" });
+    if (options.private) {
+      if (!this.config.apiToken) throw new Error("XROCKET_API_TOKEN is required for this tool");
+      headers.set("Authorization", `Bearer ${this.config.apiToken}`);
+    }
+    let body;
+    if (options.body !== void 0) {
+      headers.set("Content-Type", "application/json");
+      body = JSON.stringify(options.body);
+    }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs);
+    let response;
+    try {
+      response = await this.fetchImpl(url2, {
+        method,
+        headers,
+        signal: controller.signal,
+        redirect: "error",
+        ...body === void 0 ? {} : { body }
+      });
+    } catch (error51) {
+      clearTimeout(timeout);
+      if (options.write) {
+        throw new UnknownWriteOutcomeError(
+          options.write.operation,
+          options.write.clientId,
+          unknownCause(error51)
+        );
+      }
+      throw error51;
+    }
+    const declaredLength = Number(response.headers.get("content-length") ?? "0");
+    if (declaredLength > this.config.maxResponseBytes) {
+      clearTimeout(timeout);
+      try {
+        await response.body?.cancel();
+      } catch {
+      }
+      if (options.write && (response.ok || isAmbiguousWriteStatus(response.status))) {
+        throw new UnknownWriteOutcomeError(
+          options.write.operation,
+          options.write.clientId,
+          "response exceeded size limit"
+        );
+      }
+      if (!response.ok) {
+        throw new XrocketHttpError(
+          response.status,
+          { message: "xRocket API error response exceeded the configured size limit" },
+          response.headers.get("retry-after") ?? void 0
+        );
+      }
+      throw new Error("xRocket API response exceeded the configured size limit");
+    }
+    let text;
+    try {
+      text = await readTextWithLimit(response, this.config.maxResponseBytes);
+    } catch (error51) {
+      if (options.write && (response.ok || isAmbiguousWriteStatus(response.status))) {
+        throw new UnknownWriteOutcomeError(
+          options.write.operation,
+          options.write.clientId,
+          unknownCause(error51)
+        );
+      }
+      if (!response.ok) {
+        throw new XrocketHttpError(
+          response.status,
+          { message: "xRocket API error response could not be read safely" },
+          response.headers.get("retry-after") ?? void 0
+        );
+      }
+      throw error51;
+    } finally {
+      clearTimeout(timeout);
+    }
+    const valuesToRedact = [
+      ...this.config.apiToken ? [this.config.apiToken] : [],
+      ...sensitiveRequestValues(options.body)
+    ];
+    let data = null;
+    if (text) {
+      try {
+        data = redactJsonValue(JSON.parse(text), valuesToRedact);
+      } catch {
+        if (options.write && response.ok) {
+          throw new UnknownWriteOutcomeError(
+            options.write.operation,
+            options.write.clientId,
+            "invalid success response"
+          );
+        }
+        data = redactText(text, valuesToRedact).slice(0, 2e3);
+      }
+    }
+    if (!response.ok) {
+      if (options.write && isAmbiguousWriteStatus(response.status)) {
+        throw new UnknownWriteOutcomeError(
+          options.write.operation,
+          options.write.clientId,
+          `HTTP ${response.status}`
+        );
+      }
+      throw new XrocketHttpError(
+        response.status,
+        data,
+        response.headers.get("retry-after") ?? void 0
+      );
+    }
+    return data;
+  }
+  getHealth() {
+    return this.request("GET", "/health");
+  }
+  getAssets(asset) {
+    return asset ? this.request("GET", `/api/v1/assets/${encodeURIComponent(asset)}`) : this.request("GET", "/api/v1/assets");
+  }
+  getSymbols(symbol2) {
+    return symbol2 ? this.request("GET", `/api/v1/symbols/${encodeURIComponent(symbol2)}`) : this.request("GET", "/api/v1/symbols");
+  }
+  getTickers(tickerType, symbols) {
+    return this.request("GET", `/api/v1/ticker/${tickerType}`, { query: { symbols } });
+  }
+  getCandles(query) {
+    return this.request("GET", "/api/v1/candles", { query });
+  }
+  getOrderbook(query) {
+    return this.request("GET", "/api/v1/orderbook", { query });
+  }
+  getTrades(symbol2) {
+    return this.request("GET", "/api/v1/trades", { query: { symbol: symbol2 } });
+  }
+  getRates(base, assets) {
+    return this.request("GET", "/api/v1/rates", { query: { base, assets } });
+  }
+  getTradeFees(symbols) {
+    return this.request("GET", "/api/v1/trade-fees", { query: { symbols } });
+  }
+  getBalances(account) {
+    return this.request("GET", `/api/v1/accounts/${account}/balances`, { private: true });
+  }
+  getOrders(view, query) {
+    const path = view === "active" ? "/api/v1/orders/active" : view === "history" ? "/api/v1/orders/history" : "/api/v1/order";
+    return this.request("GET", path, { private: true, query });
+  }
+  getTransfers(view, query) {
+    const path = view === "history" ? "/api/v1/accounts/transfers" : "/api/v1/accounts/transfer";
+    return this.request("GET", path, { private: true, query });
+  }
+  getWithdrawals(view, query) {
+    const path = view === "history" ? "/api/v1/accounts/funding/withdrawals" : "/api/v1/accounts/funding/withdrawal";
+    return this.request("GET", path, { private: true, query });
+  }
+  getWithdrawalQuotas(asset, network) {
+    return this.request("GET", "/api/v1/accounts/funding/withdrawal-quotas", {
+      private: true,
+      query: { asset, network }
+    });
+  }
+  estimateOrder(order) {
+    return this.request("POST", "/api/v1/orders/estimate", { private: true, body: order });
+  }
+  placeOrder(order) {
+    return this.request("POST", "/api/v1/orders", {
+      private: true,
+      body: order,
+      write: { operation: "order placement", clientId: order.clientOrderId }
+    });
+  }
+  cancelOrder(intent) {
+    const clientId = intent.orderId ?? intent.clientOrderId ?? "unknown";
+    return this.request("DELETE", "/api/v1/order", {
+      private: true,
+      query: intent,
+      write: { operation: "order cancellation", clientId }
+    });
+  }
+  createTransfer(transfer) {
+    return this.request("POST", "/api/v1/accounts/transfers", {
+      private: true,
+      body: transfer,
+      write: { operation: "internal transfer", clientId: transfer.clientTransferId }
+    });
+  }
+  createWithdrawal(withdrawal) {
+    return this.request("POST", "/api/v1/accounts/funding/withdrawals", {
+      private: true,
+      body: withdrawal,
+      write: { operation: "external withdrawal", clientId: withdrawal.clientWithdrawalId }
+    });
+  }
+};
+
 // src/usability.ts
 function isRecord(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -31865,6 +31001,9 @@ function marketSnapshotText(snapshot) {
   ];
   return rows.join("\n");
 }
+
+// src/version.ts
+var VERSION = "0.3.0";
 
 // src/public-server.ts
 var resultSchema = external_exports.object({ result: external_exports.unknown() });
@@ -32458,816 +31597,27 @@ async function startHostedHttpServer(options) {
   };
 }
 
-// src/server.ts
-import { randomUUID as randomUUID2 } from "node:crypto";
-
-// src/receipts.ts
-import { createHash, randomUUID } from "node:crypto";
-function canonicalize(value) {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonicalize).join(",")}]`;
-  const record2 = value;
-  return `{${Object.keys(record2).sort().map((key) => `${JSON.stringify(key)}:${canonicalize(record2[key])}`).join(",")}}`;
-}
-function digestIntent(kind, intent2) {
-  return createHash("sha256").update(canonicalize({ kind, intent: intent2 })).digest("hex");
-}
-var ApprovalReceiptStore = class {
-  constructor(ttlMs, now = Date.now) {
-    this.ttlMs = ttlMs;
-    this.now = now;
-  }
-  ttlMs;
-  now;
-  receipts = /* @__PURE__ */ new Map();
-  issue(kind, intent2) {
-    this.prune();
-    const opaqueId = randomUUID();
-    const digest = digestIntent(kind, intent2);
-    const approvalReceipt = `xr1.${opaqueId}.${digest.slice(0, 12)}`;
-    const expiresAt = this.now() + this.ttlMs;
-    this.receipts.set(approvalReceipt, {
-      kind,
-      digest,
-      intent: structuredClone(intent2),
-      expiresAt,
-      consumed: false
-    });
-    return { approvalReceipt, expiresAt: new Date(expiresAt).toISOString() };
-  }
-  consume(kind, approvalReceipt) {
-    const record2 = this.receipts.get(approvalReceipt);
-    if (!record2) throw new ApprovalReceiptError("approval receipt is unknown or expired");
-    if (record2.consumed) throw new ApprovalReceiptError("approval receipt has already been consumed");
-    if (record2.expiresAt <= this.now()) {
-      this.receipts.delete(approvalReceipt);
-      throw new ApprovalReceiptError("approval receipt has expired; prepare the operation again");
-    }
-    if (record2.kind !== kind) {
-      throw new ApprovalReceiptError("approval receipt does not match this operation type");
-    }
-    record2.consumed = true;
-    return structuredClone(record2.intent);
-  }
-  prune() {
-    const now = this.now();
-    for (const [receipt, record2] of this.receipts) {
-      if (record2.expiresAt <= now) this.receipts.delete(receipt);
-    }
-  }
-};
-
-// src/server.ts
-var resultSchema2 = external_exports.object({ result: external_exports.unknown() });
-var symbolSchema2 = external_exports.string().min(1).max(64).describe("Exact current xRocket symbol, for example GRAM-USDT");
-var assetSchema2 = external_exports.string().min(1).max(64).describe("Exact xRocket asset identifier; TON is currently TONCOIN");
-var decimalSchema2 = external_exports.string().regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/, "must be a plain non-negative decimal string").refine((value) => /[1-9]/.test(value), "must be greater than zero").describe("Exact positive decimal string; never use a JSON number");
-var clientId64Schema = external_exports.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/, "use only letters, numbers, underscore and hyphen");
-var clientId50Schema = external_exports.string().min(1).max(50).regex(/^[A-Za-z0-9_-]+$/, "use only letters, numbers, underscore and hyphen");
-var orderClientIdSchema = clientId64Schema;
-var networkSchema = external_exports.enum(["TON", "BSC", "ETH", "BTC", "TRX", "SOL"]);
-var sideSchema = external_exports.enum(["buy", "sell"]);
-var intervalSchema2 = external_exports.enum([
-  "1min",
-  "5min",
-  "15min",
-  "30min",
-  "1hour",
-  "2hour",
-  "4hour",
-  "8hour",
-  "12hour",
-  "1day",
-  "1week",
-  "1month"
-]);
-var dateTimeSchema2 = external_exports.string().datetime({ offset: true });
-var limitOrderSchema = external_exports.object({
-  clientOrderId: orderClientIdSchema.optional(),
-  symbol: symbolSchema2,
-  side: sideSchema,
-  type: external_exports.literal("limit"),
-  size: decimalSchema2,
-  price: decimalSchema2,
-  timeInForce: external_exports.enum(["GTC", "IOC", "FOK"])
-});
-var marketOrderSchema = external_exports.object({
-  clientOrderId: orderClientIdSchema.optional(),
-  symbol: symbolSchema2,
-  side: sideSchema,
-  type: external_exports.literal("market"),
-  size: decimalSchema2.optional(),
-  funds: decimalSchema2.optional(),
-  timeInForce: external_exports.enum(["IOC", "FOK"])
-}).refine((order) => order.size === void 0 !== (order.funds === void 0), {
-  message: "market order requires exactly one of size or funds"
-});
-var stopLimitOrderSchema = external_exports.object({
-  clientOrderId: orderClientIdSchema.optional(),
-  symbol: symbolSchema2,
-  side: sideSchema,
-  type: external_exports.literal("stopLimit"),
-  size: decimalSchema2,
-  price: decimalSchema2,
-  stopPrice: decimalSchema2,
-  timeInForce: external_exports.enum(["GTC", "IOC", "FOK"])
-});
-var stopMarketOrderSchema = external_exports.object({
-  clientOrderId: orderClientIdSchema.optional(),
-  symbol: symbolSchema2,
-  side: sideSchema,
-  type: external_exports.literal("stopMarket"),
-  size: decimalSchema2,
-  stopPrice: decimalSchema2,
-  timeInForce: external_exports.enum(["IOC", "FOK"])
-});
-var orderSchema = external_exports.union([limitOrderSchema, marketOrderSchema, stopLimitOrderSchema, stopMarketOrderSchema]).transform((order) => ({
-  ...order,
-  clientOrderId: order.clientOrderId ?? `order-${randomUUID2()}`
-}));
-var cancelIntentSchema = external_exports.object({
-  orderId: external_exports.string().min(1).max(100).optional(),
-  clientOrderId: orderClientIdSchema.optional()
-}).refine((value) => value.orderId !== void 0 || value.clientOrderId !== void 0, {
-  message: "orderId or clientOrderId is required"
-});
-var transferSchema = external_exports.object({
-  clientTransferId: clientId64Schema.optional(),
-  asset: assetSchema2,
-  amount: decimalSchema2,
-  from: external_exports.enum(["funding", "trading"]),
-  to: external_exports.enum(["funding", "trading"])
-}).refine((value) => value.from !== value.to, { message: "from and to accounts must differ" }).transform((transfer) => ({
-  ...transfer,
-  clientTransferId: transfer.clientTransferId ?? `transfer-${randomUUID2()}`
-}));
-var withdrawalSchema = external_exports.object({
-  clientWithdrawalId: clientId50Schema.optional(),
-  network: networkSchema,
-  asset: assetSchema2,
-  address: external_exports.string().min(1).max(256),
-  amount: decimalSchema2,
-  comment: external_exports.string().max(256).optional()
-}).transform((withdrawal) => ({
-  ...withdrawal,
-  clientWithdrawalId: withdrawal.clientWithdrawalId ?? `withdrawal-${randomUUID2()}`
-}));
-var READ2 = {
-  readOnlyHint: true,
-  destructiveHint: false,
-  idempotentHint: true,
-  openWorldHint: true
-};
-var PREPARE = {
-  readOnlyHint: false,
-  destructiveHint: false,
-  idempotentHint: false,
-  openWorldHint: true
-};
-var WRITE = {
-  readOnlyHint: false,
-  destructiveHint: true,
-  idempotentHint: false,
-  openWorldHint: true
-};
-function jsonText2(value) {
-  return JSON.stringify(value);
-}
-function ok(value) {
-  const structuredContent = { result: value };
-  return { content: [{ type: "text", text: jsonText2(value) }], structuredContent };
-}
-function okWithText(value, text) {
-  return {
-    content: [
-      { type: "text", text },
-      { type: "text", text: jsonText2(value) }
-    ],
-    structuredContent: { result: value }
-  };
-}
-function errorPayload2(error51) {
-  if (error51 instanceof UnknownWriteOutcomeError) {
-    return {
-      ok: false,
-      code: "WRITE_OUTCOME_UNKNOWN",
-      message: error51.message,
-      operation: error51.operation,
-      clientId: error51.clientId,
-      doNotRetry: true,
-      reconcileWithPrivateReadTool: true,
-      cause: error51.causeDescription
-    };
-  }
-  if (error51 instanceof XrocketHttpError) {
-    return {
-      ok: false,
-      code: "XROCKET_HTTP_ERROR",
-      message: error51.message,
-      status: error51.status,
-      ...error51.retryAfter ? { retryAfter: error51.retryAfter } : {},
-      details: boundedErrorDetails2(error51.details)
-    };
-  }
-  if (error51 instanceof ApprovalReceiptError) {
-    return { ok: false, code: "APPROVAL_RECEIPT_ERROR", message: error51.message };
-  }
-  return {
-    ok: false,
-    code: "TOOL_ERROR",
-    message: error51 instanceof Error ? error51.message : "Unknown tool error"
-  };
-}
-function boundedErrorDetails2(details) {
-  try {
-    const serialized = JSON.stringify(
-      details,
-      (key, value) => /token|authorization|secret|address|destination|memo|comment/i.test(key) ? "[REDACTED]" : value
-    );
-    if (serialized.length <= 4e3) return JSON.parse(serialized);
-    return { truncated: true, preview: serialized.slice(0, 4e3) };
-  } catch {
-    return "Unserializable upstream error details";
-  }
-}
-function isRecord2(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-function relevantSymbolAssets(symbolRules, symbol2) {
-  if (isRecord2(symbolRules)) {
-    const baseAsset = symbolRules.baseAsset;
-    const quoteAsset = symbolRules.quoteAsset;
-    if (typeof baseAsset === "string" && typeof quoteAsset === "string") {
-      return [baseAsset, quoteAsset];
-    }
-  }
-  return symbol2.split("-").filter((asset) => asset.length > 0);
-}
-function narrowBalances(data, assets) {
-  const requestedAssets = [...new Set(assets.map((asset) => asset.toUpperCase()))];
-  const wanted = new Set(requestedAssets);
-  const balances = Array.isArray(data) ? data : isRecord2(data) && Array.isArray(data.balances) ? data.balances : void 0;
-  if (!balances) {
-    throw new Error("Unexpected xRocket balance response shape; preparation stopped");
-  }
-  if (balances.some((balance) => !isRecord2(balance) || typeof balance.asset !== "string")) {
-    throw new Error("Unexpected xRocket balance row shape; preparation stopped");
-  }
-  return {
-    requestedAssets,
-    balances: balances.filter(
-      (balance) => isRecord2(balance) && typeof balance.asset === "string" && wanted.has(balance.asset.toUpperCase())
-    )
-  };
-}
-function assertTransferDirectionAvailable(assetMetadata, from, to) {
-  const availableTransfers = isRecord2(assetMetadata) ? assetMetadata.availableTransfers : void 0;
-  if (!Array.isArray(availableTransfers) || availableTransfers.some(
-    (direction) => direction !== "fundingToTrading" && direction !== "tradingToFunding"
-  )) {
-    throw new Error("Unexpected xRocket asset transfer metadata; preparation stopped");
-  }
-  const requiredDirection = from === "funding" && to === "trading" ? "fundingToTrading" : "tradingToFunding";
-  if (!availableTransfers.includes(requiredDirection)) {
-    throw new Error(`xRocket asset does not allow ${requiredDirection}; preparation stopped`);
-  }
-}
-async function run2(action) {
-  try {
-    return ok(await action());
-  } catch (error51) {
-    const payload = errorPayload2(error51);
-    return {
-      content: [{ type: "text", text: jsonText2(payload) }],
-      structuredContent: { result: payload },
-      isError: true
-    };
-  }
-}
-async function runWithText2(action) {
-  try {
-    const result = await action();
-    return okWithText(result.value, result.text);
-  } catch (error51) {
-    const payload = errorPayload2(error51);
-    return {
-      content: [{ type: "text", text: jsonText2(payload) }],
-      isError: true
-    };
-  }
-}
-function intent(environment, payload) {
-  return { environment, payload };
-}
-function receiptPayload(storedIntent, environment) {
-  if (storedIntent === null || typeof storedIntent !== "object" || !("environment" in storedIntent) || !("payload" in storedIntent) || storedIntent.environment !== environment) {
-    throw new ApprovalReceiptError("approval receipt environment does not match this server");
-  }
-  return storedIntent.payload;
-}
-function gateStatus(config2, capability) {
-  const capabilityEnabled = {
-    trading: config2.enableTrading,
-    transfers: config2.enableTransfers,
-    withdrawals: config2.enableWithdrawals
-  }[capability];
-  return {
-    capabilityEnabled,
-    mainnetWriteEnabled: config2.environment !== "mainnet" || config2.allowMainnetWrites,
-    executable: capabilityEnabled && (config2.environment !== "mainnet" || config2.allowMainnetWrites)
-  };
-}
-function executionStatus(config2, capability) {
-  const gate = gateStatus(config2, capability);
-  if (gate.executable) {
-    return {
-      ready: true,
-      blocker: null,
-      nextStep: "Obtain explicit user approval of this exact preview, then call execute once."
-    };
-  }
-  const capabilityVariable = {
-    trading: "XROCKET_ENABLE_TRADING",
-    transfers: "XROCKET_ENABLE_TRANSFERS",
-    withdrawals: "XROCKET_ENABLE_WITHDRAWALS"
-  }[capability];
-  if (!gate.capabilityEnabled) {
-    return {
-      ready: false,
-      blocker: `${capability} execution is disabled`,
-      nextStep: `If the user requested this operation, restart the local server with ${capabilityVariable}=true, re-run prepare, review and approve the new preview, then execute once. The current receipt cannot survive a restart.`
-    };
-  }
-  return {
-    ready: false,
-    blocker: "mainnet execution is disabled",
-    nextStep: "Use testnet, or after an explicit mainnet decision restart with XROCKET_ALLOW_MAINNET_WRITES=true. Then re-run prepare, review and approve the new preview, and execute once; the current receipt cannot survive a restart."
-  };
-}
-function prepareInstruction(config2, capability, executeTool) {
-  const execution = executionStatus(config2, capability);
-  return execution.ready ? `Review this exact intent, obtain explicit user approval, then pass only the receipt to ${executeTool}.` : `Execution is currently blocked. Follow execution.nextStep; do not attempt ${executeTool} with this receipt after restarting.`;
-}
-function createXrocketServer(options = {}) {
-  const config2 = options.config ?? loadConfig();
-  const client = new XrocketClient(config2, options.fetch);
-  const receipts = options.receipts ?? new ApprovalReceiptStore(config2.approvalTtlMs);
-  const server = new McpServer(
-    { name: "xrocket-mcp", version: VERSION },
-    {
-      capabilities: { tools: {} },
-      instructions: "Use xrocket_market_snapshot for broad market questions and xrocket_account_overview for a whole-account read. If account tools are unavailable, ask the user to sign in or configure XROCKET_API_TOKEN locally with XROCKET_PROFILE=private-read (or omit the profile); never ask them to paste the token into chat. Financial writes require prepare, explicit user approval of the returned exact intent, then execute with only the receipt. Never retry an unknown write outcome; reconcile it with private read tools."
-    }
-  );
-  registerPublicXrocketTools(server, client, config2.environment);
-  if (config2.profile === "public") return server;
-  server.registerTool(
-    "xrocket_account_overview",
-    {
-      title: "xRocket account overview",
-      description: "Read funding balances, trading balances, and active orders together. Values are not converted or valued in another asset.",
-      inputSchema: external_exports.object({}),
-      outputSchema: external_exports.object({
-        result: external_exports.object({
-          environment: external_exports.string(),
-          retrievedAt: external_exports.string(),
-          fundingBalances: external_exports.unknown(),
-          tradingBalances: external_exports.unknown(),
-          activeOrders: external_exports.unknown(),
-          valuation: external_exports.literal("not calculated")
-        })
-      }),
-      annotations: READ2
-    },
-    () => runWithText2(async () => {
-      const [fundingBalances, tradingBalances, activeOrders] = await Promise.all([
-        client.getBalances("funding"),
-        client.getBalances("trading"),
-        client.getOrders("active", {})
-      ]);
-      const overview = {
-        environment: config2.environment,
-        retrievedAt: (/* @__PURE__ */ new Date()).toISOString(),
-        fundingBalances,
-        tradingBalances,
-        activeOrders,
-        valuation: "not calculated"
-      };
-      return {
-        value: overview,
-        text: [
-          `# xRocket account overview (${config2.environment})`,
-          "",
-          "Funding balances, trading balances, and active orders are included in structured content.",
-          "No currency conversion or portfolio valuation was calculated.",
-          `Retrieved ${overview.retrievedAt}.`
-        ].join("\n")
-      };
-    })
-  );
-  server.registerTool(
-    "xrocket_account_balances",
-    {
-      title: "xRocket account balances",
-      description: "Read funding, trading, or both account balances using the token from the environment.",
-      inputSchema: external_exports.object({ account: external_exports.enum(["funding", "trading", "both"]).default("both") }),
-      outputSchema: resultSchema2,
-      annotations: READ2
-    },
-    ({ account }) => run2(async () => {
-      if (account === "both") {
-        const [funding, trading] = await Promise.all([
-          client.getBalances("funding"),
-          client.getBalances("trading")
-        ]);
-        return { environment: config2.environment, funding, trading };
-      }
-      return { environment: config2.environment, account, data: await client.getBalances(account) };
-    })
-  );
-  const ordersReadSchema = external_exports.object({
-    view: external_exports.enum(["active", "history", "one"]),
-    orderId: external_exports.string().min(1).max(100).optional(),
-    clientOrderId: orderClientIdSchema.optional(),
-    symbol: symbolSchema2.optional(),
-    side: sideSchema.optional(),
-    startAt: dateTimeSchema2.optional(),
-    endAt: dateTimeSchema2.optional(),
-    currentPage: external_exports.number().int().min(1).optional(),
-    pageSize: external_exports.number().int().min(1).max(100).optional(),
-    hideCanceled: external_exports.boolean().optional()
-  }).refine(
-    (value) => value.view !== "one" || value.orderId !== void 0 || value.clientOrderId !== void 0,
-    { message: "one-order view requires orderId or clientOrderId" }
-  );
-  server.registerTool(
-    "xrocket_orders",
-    {
-      title: "xRocket orders",
-      description: "Read one order, active orders, or paginated order history.",
-      inputSchema: ordersReadSchema,
-      outputSchema: resultSchema2,
-      annotations: READ2
-    },
-    (args) => run2(async () => {
-      const query = args.view === "one" ? { orderId: args.orderId, clientOrderId: args.clientOrderId } : args.view === "history" ? {
-        symbol: args.symbol,
-        side: args.side,
-        startAt: args.startAt,
-        endAt: args.endAt,
-        currentPage: args.currentPage,
-        pageSize: args.pageSize,
-        hideCanceled: args.hideCanceled
-      } : {};
-      return { environment: config2.environment, data: await client.getOrders(args.view, query) };
-    })
-  );
-  const transfersReadSchema = external_exports.object({
-    view: external_exports.enum(["history", "one"]),
-    transferId: external_exports.string().min(1).max(20).optional(),
-    clientTransferId: clientId64Schema.optional(),
-    assets: external_exports.array(assetSchema2).min(1).max(100).optional(),
-    from: external_exports.enum(["funding", "trading"]).optional(),
-    to: external_exports.enum(["funding", "trading"]).optional(),
-    startAt: dateTimeSchema2.optional(),
-    endAt: dateTimeSchema2.optional(),
-    currentPage: external_exports.number().int().min(1).optional(),
-    pageSize: external_exports.number().int().min(1).max(100).optional()
-  }).refine(
-    (value) => value.view !== "one" || value.transferId !== void 0 || value.clientTransferId !== void 0,
-    { message: "one-transfer view requires transferId or clientTransferId" }
-  );
-  server.registerTool(
-    "xrocket_transfers",
-    {
-      title: "xRocket internal transfers",
-      description: "Read one or paginated funding-to-trading/trading-to-funding transfer records.",
-      inputSchema: transfersReadSchema,
-      outputSchema: resultSchema2,
-      annotations: READ2
-    },
-    (args) => run2(async () => {
-      const query = args.view === "one" ? { transferId: args.transferId, clientTransferId: args.clientTransferId } : {
-        assets: args.assets,
-        from: args.from,
-        to: args.to,
-        startAt: args.startAt,
-        endAt: args.endAt,
-        currentPage: args.currentPage,
-        pageSize: args.pageSize
-      };
-      return { environment: config2.environment, data: await client.getTransfers(args.view, query) };
-    })
-  );
-  const withdrawalsReadSchema = external_exports.object({
-    view: external_exports.enum(["history", "one"]),
-    withdrawalId: external_exports.string().min(1).max(20).optional(),
-    clientWithdrawalId: clientId50Schema.optional(),
-    assets: external_exports.array(assetSchema2).min(1).max(100).optional(),
-    startAt: dateTimeSchema2.optional(),
-    endAt: dateTimeSchema2.optional(),
-    currentPage: external_exports.number().int().min(1).optional(),
-    pageSize: external_exports.number().int().min(1).max(100).optional()
-  }).refine(
-    (value) => value.view !== "one" || value.withdrawalId !== void 0 || value.clientWithdrawalId !== void 0,
-    { message: "one-withdrawal view requires withdrawalId or clientWithdrawalId" }
-  );
-  server.registerTool(
-    "xrocket_withdrawals",
-    {
-      title: "xRocket withdrawals",
-      description: "Read one external withdrawal or paginated withdrawal history.",
-      inputSchema: withdrawalsReadSchema,
-      outputSchema: resultSchema2,
-      annotations: READ2
-    },
-    (args) => run2(async () => {
-      const query = args.view === "one" ? {
-        withdrawalId: args.withdrawalId,
-        clientWithdrawalId: args.clientWithdrawalId
-      } : {
-        assets: args.assets,
-        startAt: args.startAt,
-        endAt: args.endAt,
-        currentPage: args.currentPage,
-        pageSize: args.pageSize
-      };
-      return { environment: config2.environment, data: await client.getWithdrawals(args.view, query) };
-    })
-  );
-  server.registerTool(
-    "xrocket_withdrawal_quotas",
-    {
-      title: "xRocket withdrawal quotas",
-      description: "Read current withdrawal minimum, fee, precision, and available quota.",
-      inputSchema: external_exports.object({ asset: assetSchema2, network: networkSchema }),
-      outputSchema: resultSchema2,
-      annotations: READ2
-    },
-    ({ asset, network }) => run2(async () => ({
-      environment: config2.environment,
-      data: await client.getWithdrawalQuotas(asset, network)
-    }))
-  );
-  if (config2.profile !== "full") return server;
-  server.registerTool(
-    "xrocket_order_prepare",
-    {
-      title: "Prepare xRocket order",
-      description: "Estimate an order and issue a short-lived receipt bound to the exact intent. This does not place an order.",
-      inputSchema: external_exports.object({ order: orderSchema }),
-      outputSchema: resultSchema2,
-      annotations: PREPARE
-    },
-    ({ order }) => run2(async () => {
-      const [estimate, symbolRules, tradingBalances, tradeFees] = await Promise.all([
-        client.estimateOrder(order),
-        client.getSymbols(order.symbol),
-        client.getBalances("trading"),
-        client.getTradeFees([order.symbol])
-      ]);
-      const boundIntent = intent(config2.environment, order);
-      return {
-        environment: config2.environment,
-        order,
-        estimate,
-        symbolRules,
-        tradingBalances: narrowBalances(
-          tradingBalances,
-          relevantSymbolAssets(symbolRules, order.symbol)
-        ),
-        tradeFees,
-        ...receipts.issue("order", boundIntent),
-        writeGate: gateStatus(config2, "trading"),
-        execution: executionStatus(config2, "trading"),
-        preview: { operation: "place order", exactIntent: order },
-        instruction: prepareInstruction(config2, "trading", "xrocket_order_execute")
-      };
-    })
-  );
-  server.registerTool(
-    "xrocket_order_execute",
-    {
-      title: "Execute xRocket order",
-      description: "Place the exact previously prepared order once. Ambiguous outcomes are never retried.",
-      inputSchema: external_exports.object({ approvalReceipt: external_exports.string().min(1) }),
-      outputSchema: resultSchema2,
-      annotations: WRITE
-    },
-    ({ approvalReceipt }) => run2(async () => {
-      assertWriteAllowed(config2, "trading");
-      const stored = receipts.consume("order", approvalReceipt);
-      const order = orderSchema.parse(receiptPayload(stored, config2.environment));
-      return {
-        environment: config2.environment,
-        clientOrderId: order.clientOrderId,
-        data: await client.placeOrder(order)
-      };
-    })
-  );
-  server.registerTool(
-    "xrocket_order_cancel_prepare",
-    {
-      title: "Prepare xRocket order cancellation",
-      description: "Read the target order and issue a short-lived receipt. This does not cancel it.",
-      inputSchema: external_exports.object({ cancellation: cancelIntentSchema }),
-      outputSchema: resultSchema2,
-      annotations: PREPARE
-    },
-    ({ cancellation }) => run2(async () => {
-      const currentOrder = await client.getOrders("one", cancellation);
-      const boundIntent = intent(config2.environment, cancellation);
-      return {
-        environment: config2.environment,
-        cancellation,
-        currentOrder,
-        ...receipts.issue("order-cancel", boundIntent),
-        writeGate: gateStatus(config2, "trading"),
-        execution: executionStatus(config2, "trading"),
-        preview: { operation: "cancel order", exactIntent: cancellation },
-        instruction: prepareInstruction(
-          config2,
-          "trading",
-          "xrocket_order_cancel_execute"
-        )
-      };
-    })
-  );
-  server.registerTool(
-    "xrocket_order_cancel_execute",
-    {
-      title: "Execute xRocket order cancellation",
-      description: "Cancel the exact previously prepared order once. Ambiguous outcomes are never retried.",
-      inputSchema: external_exports.object({ approvalReceipt: external_exports.string().min(1) }),
-      outputSchema: resultSchema2,
-      annotations: WRITE
-    },
-    ({ approvalReceipt }) => run2(async () => {
-      assertWriteAllowed(config2, "trading");
-      const stored = receipts.consume("order-cancel", approvalReceipt);
-      const cancellation = cancelIntentSchema.parse(
-        receiptPayload(stored, config2.environment)
-      );
-      return {
-        environment: config2.environment,
-        identifier: cancellation.orderId ?? cancellation.clientOrderId,
-        data: await client.cancelOrder(cancellation)
-      };
-    })
-  );
-  server.registerTool(
-    "xrocket_transfer_prepare",
-    {
-      title: "Prepare xRocket internal transfer",
-      description: "Read the source balance and issue a short-lived receipt for funding-to-trading or trading-to-funding movement. This does not transfer funds.",
-      inputSchema: external_exports.object({ transfer: transferSchema }),
-      outputSchema: resultSchema2,
-      annotations: PREPARE
-    },
-    ({ transfer }) => run2(async () => {
-      const [sourceBalances, assetMetadata] = await Promise.all([
-        client.getBalances(transfer.from),
-        client.getAssets(transfer.asset)
-      ]);
-      assertTransferDirectionAvailable(assetMetadata, transfer.from, transfer.to);
-      const boundIntent = intent(config2.environment, transfer);
-      return {
-        environment: config2.environment,
-        transfer,
-        sourceBalances: narrowBalances(sourceBalances, [transfer.asset]),
-        assetMetadata,
-        ...receipts.issue("transfer", boundIntent),
-        writeGate: gateStatus(config2, "transfers"),
-        execution: executionStatus(config2, "transfers"),
-        preview: { operation: "internal transfer", exactIntent: transfer },
-        instruction: prepareInstruction(config2, "transfers", "xrocket_transfer_execute")
-      };
-    })
-  );
-  server.registerTool(
-    "xrocket_transfer_execute",
-    {
-      title: "Execute xRocket internal transfer",
-      description: "Execute the exact prepared funding/trading transfer once. This is not a user-to-user transfer.",
-      inputSchema: external_exports.object({ approvalReceipt: external_exports.string().min(1) }),
-      outputSchema: resultSchema2,
-      annotations: WRITE
-    },
-    ({ approvalReceipt }) => run2(async () => {
-      assertWriteAllowed(config2, "transfers");
-      const stored = receipts.consume("transfer", approvalReceipt);
-      const transfer = transferSchema.parse(receiptPayload(stored, config2.environment));
-      return {
-        environment: config2.environment,
-        clientTransferId: transfer.clientTransferId,
-        data: await client.createTransfer(transfer)
-      };
-    })
-  );
-  server.registerTool(
-    "xrocket_withdrawal_prepare",
-    {
-      title: "Prepare xRocket withdrawal",
-      description: "Read current funding balances and quota, then issue a short-lived receipt. This does not withdraw funds.",
-      inputSchema: external_exports.object({ withdrawal: withdrawalSchema }),
-      outputSchema: resultSchema2,
-      annotations: PREPARE
-    },
-    ({ withdrawal }) => run2(async () => {
-      const [fundingBalances, quota, assetMetadata] = await Promise.all([
-        client.getBalances("funding"),
-        client.getWithdrawalQuotas(withdrawal.asset, withdrawal.network),
-        client.getAssets(withdrawal.asset)
-      ]);
-      const boundIntent = intent(config2.environment, withdrawal);
-      return {
-        environment: config2.environment,
-        withdrawal,
-        fundingBalances: narrowBalances(fundingBalances, [withdrawal.asset]),
-        quota,
-        assetMetadata,
-        ...receipts.issue("withdrawal", boundIntent),
-        writeGate: gateStatus(config2, "withdrawals"),
-        execution: executionStatus(config2, "withdrawals"),
-        preview: { operation: "external withdrawal", exactIntent: withdrawal },
-        instruction: prepareInstruction(
-          config2,
-          "withdrawals",
-          "xrocket_withdrawal_execute"
-        )
-      };
-    })
-  );
-  server.registerTool(
-    "xrocket_withdrawal_execute",
-    {
-      title: "Execute xRocket withdrawal",
-      description: "Submit the exact prepared external withdrawal once. Ambiguous outcomes are never retried.",
-      inputSchema: external_exports.object({
-        approvalReceipt: external_exports.string().min(1)
-      }),
-      outputSchema: resultSchema2,
-      annotations: WRITE
-    },
-    ({ approvalReceipt }) => run2(async () => {
-      assertWriteAllowed(config2, "withdrawals");
-      const stored = receipts.consume("withdrawal", approvalReceipt);
-      const withdrawal = withdrawalSchema.parse(receiptPayload(stored, config2.environment));
-      return {
-        environment: config2.environment,
-        clientWithdrawalId: withdrawal.clientWithdrawalId,
-        data: await client.createWithdrawal(withdrawal)
-      };
-    })
-  );
-  return server;
-}
-
-// src/cli.ts
+// src/hosted.ts
 async function main() {
-  const command = parseCliCommand(process.argv.slice(2));
-  if (command === "help") return void process.stdout.write(`${helpText()}
-`);
-  if (command === "version") return void process.stdout.write(`${VERSION}
-`);
-  if (command === "config") return void process.stdout.write(`${renderMcpConfig()}
-`);
-  if (command === "doctor") return void process.stdout.write(`${doctorText(await runDoctor())}
-`);
-  if (command === "serve-http") {
-    const options = loadHostedHttpOptions();
-    const handle2 = await startHostedHttpServer({
-      ...options,
-      onerror: (error51) => process.stderr.write(`[xrocket-mcp:http] ${error51.message}
-`)
-    });
-    process.stdout.write(
-      `[xrocket-mcp:http] Listening on ${options.host}:${handle2.port}; profile=public environment=mainnet
-`
-    );
-    let closing = false;
-    const close2 = () => {
-      if (closing) return;
-      closing = true;
-      void handle2.close().catch((error51) => {
-        const message = error51 instanceof Error ? error51.message : "Unknown shutdown error";
-        process.stderr.write(`[xrocket-mcp:http] Shutdown failed: ${message}
-`);
-        process.exitCode = 1;
-      });
-    };
-    process.once("SIGINT", close2);
-    process.once("SIGTERM", close2);
-    return;
-  }
-  const config2 = loadConfig();
-  const handle = serveStdio(() => createXrocketServer({ config: config2 }), {
-    onerror: (error51) => process.stderr.write(`[xrocket-mcp] ${error51.message}
+  const options = loadHostedHttpOptions();
+  const handle = await startHostedHttpServer({
+    ...options,
+    onerror: (error51) => process.stderr.write(`[xrocket-mcp:http] ${error51.message}
 `)
   });
+  process.stdout.write(
+    `[xrocket-mcp:http] Listening on ${options.host}:${handle.port}; profile=public environment=mainnet
+`
+  );
+  let closing = false;
   const close = () => {
-    void handle.close().finally(() => {
-      process.exitCode = 0;
+    if (closing) return;
+    closing = true;
+    void handle.close().catch((error51) => {
+      const message = error51 instanceof Error ? error51.message : "Unknown shutdown error";
+      process.stderr.write(`[xrocket-mcp:http] Shutdown failed: ${message}
+`);
+      process.exitCode = 1;
     });
   };
   process.once("SIGINT", close);
@@ -33275,7 +31625,7 @@ async function main() {
 }
 main().catch((error51) => {
   const message = error51 instanceof Error ? error51.message : "Unknown startup error";
-  process.stderr.write(`[xrocket-mcp] Startup failed: ${message}
+  process.stderr.write(`[xrocket-mcp:http] Startup failed: ${message}
 `);
   process.exitCode = 1;
 });

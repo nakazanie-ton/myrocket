@@ -4,12 +4,8 @@ import { z } from "zod";
 import { assertWriteAllowed, loadConfig, type XrocketConfig } from "./config.js";
 import { XrocketClient, type FetchLike } from "./client.js";
 import { ApprovalReceiptError, UnknownWriteOutcomeError, XrocketHttpError } from "./errors.js";
+import { registerPublicXrocketTools } from "./public-server.js";
 import { ApprovalReceiptStore } from "./receipts.js";
-import {
-  buildMarketSnapshot,
-  marketSnapshotText,
-  resolveMarket,
-} from "./usability.js";
 import { VERSION } from "./version.js";
 
 const resultSchema = z.object({ result: z.unknown() });
@@ -138,7 +134,6 @@ const READ: ToolAnnotations = {
   idempotentHint: true,
   openWorldHint: true,
 };
-const LOCAL_READ: ToolAnnotations = { ...READ, openWorldHint: false };
 const PREPARE: ToolAnnotations = {
   readOnlyHint: false,
   destructiveHint: false,
@@ -403,209 +398,7 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
     },
   );
 
-  server.registerTool(
-    "xrocket_market_snapshot",
-    {
-      title: "xRocket market snapshot",
-      description:
-        "Resolve an exact symbol or base asset and return market rules, ticker, best bid/ask, recent trades, and fees in one read-only call. Exact symbols win; ambiguous assets are never guessed.",
-      inputSchema: z.object({
-        market: z
-          .string()
-          .trim()
-          .min(1)
-          .max(64)
-          .describe("Exact symbol such as GRAM-USDT, or a base asset such as GRAM"),
-        depth: z
-          .union([z.literal(5), z.literal(10), z.literal(20), z.literal(50), z.literal(100)])
-          .default(20),
-        precision: decimalSchema.optional(),
-      }),
-      outputSchema: z.object({
-        result: z.object({
-          environment: z.string(),
-          retrievedAt: z.string(),
-          summary: z.record(z.string(), z.unknown()),
-          constraints: z.object({ decimalValues: z.string(), consistency: z.string() }),
-          details: z.object({
-            symbolRules: z.unknown(),
-            ticker: z.unknown(),
-            orderbook: z.unknown(),
-            recentTrades: z.unknown(),
-            tradeFees: z.unknown(),
-          }),
-        }),
-      }),
-      annotations: READ,
-    },
-    ({ market, depth, precision }) =>
-      runWithText(async () => {
-        const symbols = await client.getSymbols();
-        const resolved = resolveMarket(symbols, market);
-        const [symbolRules, ticker, orderbook, trades, fees] = await Promise.all([
-          client.getSymbols(resolved.symbol),
-          client.getTickers("24h", [resolved.symbol]),
-          client.getOrderbook({ symbol: resolved.symbol, depth, precision }),
-          client.getTrades(resolved.symbol),
-          client.getTradeFees([resolved.symbol]),
-        ]);
-        const snapshot = buildMarketSnapshot({
-          environment: config.environment,
-          resolved,
-          symbolRules,
-          ticker,
-          orderbook,
-          trades,
-          fees,
-        });
-        return { value: snapshot, text: marketSnapshotText(snapshot) };
-      }),
-  );
-
-  server.registerTool(
-    "xrocket_market_symbols",
-    {
-      title: "xRocket symbols",
-      description: "List all exchange symbols or inspect one exact symbol and its trading constraints.",
-      inputSchema: z.object({ symbol: symbolSchema.optional() }),
-      outputSchema: resultSchema,
-      annotations: READ,
-    },
-    ({ symbol }) => run(async () => ({ environment: config.environment, data: await client.getSymbols(symbol) })),
-  );
-
-  server.registerTool(
-    "xrocket_market_tickers",
-    {
-      title: "xRocket 24h tickers",
-      description: "Get public 24-hour ticker data, optionally for a repeated list of symbols.",
-      inputSchema: z.object({ symbols: z.array(symbolSchema).min(1).max(100).optional() }),
-      outputSchema: resultSchema,
-      annotations: READ,
-    },
-    ({ symbols }) =>
-      run(async () => ({ environment: config.environment, data: await client.getTickers("24h", symbols) })),
-  );
-
-  server.registerTool(
-    "xrocket_market_candles",
-    {
-      title: "xRocket candles",
-      description: "Get public OHLCV candles for an exact ISO-8601 time window.",
-      inputSchema: z.object({
-        symbol: symbolSchema,
-        type: intervalSchema,
-        startAt: dateTimeSchema,
-        endAt: dateTimeSchema,
-      }),
-      outputSchema: resultSchema,
-      annotations: READ,
-    },
-    (args) => run(async () => ({ environment: config.environment, data: await client.getCandles(args) })),
-  );
-
-  server.registerTool(
-    "xrocket_market_orderbook",
-    {
-      title: "xRocket order book",
-      description: "Get a public order-book snapshot. Precision must be valid for the selected pair.",
-      inputSchema: z.object({
-        symbol: symbolSchema,
-        depth: z
-          .union([
-            z.literal(5),
-            z.literal(10),
-            z.literal(20),
-            z.literal(50),
-            z.literal(100),
-            z.literal(200),
-            z.literal(500),
-          ])
-          .optional(),
-        precision: decimalSchema.optional(),
-      }),
-      outputSchema: resultSchema,
-      annotations: READ,
-    },
-    (args) => run(async () => ({ environment: config.environment, data: await client.getOrderbook(args) })),
-  );
-
-  server.registerTool(
-    "xrocket_market_trades",
-    {
-      title: "xRocket recent trades",
-      description: "Get recent public trades for one symbol.",
-      inputSchema: z.object({ symbol: symbolSchema }),
-      outputSchema: resultSchema,
-      annotations: READ,
-    },
-    ({ symbol }) => run(async () => ({ environment: config.environment, data: await client.getTrades(symbol) })),
-  );
-
-  server.registerTool(
-    "xrocket_asset_info",
-    {
-      title: "xRocket assets",
-      description: "List public assets or inspect one exact asset identifier.",
-      inputSchema: z.object({ asset: assetSchema.optional() }),
-      outputSchema: resultSchema,
-      annotations: READ,
-    },
-    ({ asset }) => run(async () => ({ environment: config.environment, data: await client.getAssets(asset) })),
-  );
-
-  server.registerTool(
-    "xrocket_rates",
-    {
-      title: "xRocket rates",
-      description: "Get public conversion rates from one base asset to optional target assets.",
-      inputSchema: z.object({
-        base: assetSchema,
-        assets: z.array(assetSchema).min(1).max(100).optional(),
-      }),
-      outputSchema: resultSchema,
-      annotations: READ,
-    },
-    ({ base, assets }) =>
-      run(async () => ({ environment: config.environment, data: await client.getRates(base, assets) })),
-  );
-
-  server.registerTool(
-    "xrocket_trade_fees",
-    {
-      title: "xRocket trade fees",
-      description: "Get exchange trade-fee data, optionally for repeated symbols.",
-      inputSchema: z.object({ symbols: z.array(symbolSchema).min(1).max(100).optional() }),
-      outputSchema: resultSchema,
-      annotations: READ,
-    },
-    ({ symbols }) =>
-      run(async () => ({ environment: config.environment, data: await client.getTradeFees(symbols) })),
-  );
-
-  server.registerTool(
-    "xrocket_onboarding_links",
-    {
-      title: "Open xRocket",
-      description: "Return xRocket onboarding links and canonical API documentation.",
-      inputSchema: z.object({}),
-      outputSchema: resultSchema,
-      annotations: LOCAL_READ,
-    },
-    () =>
-      run(() => ({
-        environment: config.environment,
-        primary:
-          config.environment === "mainnet"
-            ? "https://t.me/xRocket?start=kaban"
-            : "https://t.me/xrocket_testnet_bot?start=kaban",
-        mainnet: "https://t.me/xRocket?start=kaban",
-        testnet: "https://t.me/xrocket_testnet_bot?start=kaban",
-        documentation: "https://docs.xrocket.exchange/api/exchange/exchange-api-overview",
-        depositNote:
-          "The Exchange REST API has no documented deposit-address endpoint. Open the bot with the onboarding link and use the deposit UI, then verify the funding balance with xrocket_account_balances.",
-      })),
-  );
+  registerPublicXrocketTools(server, client, config.environment);
 
   if (config.profile === "public") return server;
 

@@ -3,10 +3,11 @@ import { XrocketClient, type FetchLike } from "./client.js";
 import { XrocketHttpError } from "./errors.js";
 import { VERSION } from "./version.js";
 
-export type CliCommand = "serve" | "doctor" | "config" | "help" | "version";
+export type CliCommand = "serve" | "serve-http" | "doctor" | "config" | "help" | "version";
 
 export function parseCliCommand(args: readonly string[]): CliCommand {
   if (args.length === 0 || (args.length === 1 && args[0] === "serve")) return "serve";
+  if (args.length === 1 && args[0] === "serve-http") return "serve-http";
   if (args.length === 1 && args[0] === "doctor") return "doctor";
   if (args.length === 1 && args[0] === "config") return "config";
   if (args.length === 1 && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
@@ -23,11 +24,13 @@ export function helpText(): string {
     "Usage:",
     "  xrocket-mcp              Start the MCP stdio server",
     "  xrocket-mcp serve        Start the MCP stdio server",
+    "  xrocket-mcp serve-http   Start the hard public-only Streamable HTTP server",
     "  xrocket-mcp doctor       Check configuration and public API connectivity",
     "  xrocket-mcp config       Print a safe copy-paste MCP client configuration",
     "  xrocket-mcp --version    Print the version",
     "",
     "Defaults: public mainnet reads; every financial write gate is disabled.",
+    "serve-http always exposes only public mainnet tools and never reads account or write settings.",
     "With XROCKET_PROFILE omitted, setting XROCKET_API_TOKEN locally enables private reads. Never paste a token into a prompt.",
   ].join("\n");
 }

@@ -2,7 +2,7 @@
 
 Effective: 2026-08-24
 
-This repository provides an unofficial local MCP server and agent guidance. The project maintainers do not operate xRocket and do not receive exchange account credentials or tool traffic merely because you run this software locally.
+This repository provides an unofficial MCP server and agent guidance. It includes both a local package and a maintainer-operated public hosted endpoint.
 
 ## Data processed
 
@@ -15,14 +15,16 @@ Depending on the selected profile, the process may handle:
 
 ## Where data goes
 
-The server sends API requests only to the canonical xRocket Exchange endpoint for the selected environment. Public mode sends no bearer token. The project implements no analytics, advertising SDK, crash reporter, or maintainer-operated telemetry.
+The server sends API requests only to the canonical xRocket Exchange endpoint for the selected environment. Public mode sends no bearer token. The project implements no analytics, advertising SDK, crash reporter, or application-level telemetry.
+
+The public hosted endpoint at `xrocket-mcp-production.up.railway.app` accepts only public market-data MCP requests. Its build contains no private or financial-write tool registrations, and its configuration does not read `XROCKET_API_TOKEN` or write gates. Do not send credentials or private account data to it. The hosting platform may process ordinary connection metadata and bounded service logs under its own policy.
 
 The process may keep short-lived prepared intents and approval receipts in memory. It does not intentionally persist bearer tokens, approval receipts, prepared intents, or account responses. Your MCP client, terminal, operating system, deployment platform, or xRocket may keep separate logs or records under their own policies; configure those systems accordingly.
 
-If a third party hosts this MCP server, that operator can define different logging, access, and retention behavior. Review the operator's policy before sharing credentials. The maintainers recommend local stdio for all private profiles.
+If another third party hosts this MCP server, that operator can define different logging, access, and retention behavior. Review that operator's policy before use. The maintainers recommend local stdio for every private profile.
 
 ## Your choices
 
-Use `public` profile without a token, stop the local process, remove its MCP configuration, rotate a token, or delete your local logs at any time. Account data held by xRocket must be managed through xRocket's own services and policies.
+Disconnect the hosted endpoint, use the local `public` profile without a token, stop the local process, remove its MCP configuration, rotate a token, or delete your local logs at any time. Account data held by xRocket must be managed through xRocket's own services and policies.
 
 Questions and non-sensitive privacy reports may be opened as a GitHub issue. Send security-sensitive information through the private process in [SECURITY.md](SECURITY.md).

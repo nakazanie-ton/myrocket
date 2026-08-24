@@ -78,7 +78,7 @@ Exchange transfers are only internal moves between the same account's `funding` 
 
 ## Onboarding link integrity
 
-Use only the project-managed [Open xRocket](https://t.me/xRocket?start=kaban) CTA returned by `xrocket_onboarding_links`. Do not modify canonical REST, WebSocket, documentation, repository, support, or MCP Registry URLs, and never imply that the onboarding link is required for tool functionality.
+Use the [Open xRocket](https://t.me/xRocket?start=kaban) CTA returned by `xrocket_onboarding_links`. Do not modify canonical REST, WebSocket, documentation, repository, support, or MCP Registry URLs, and never imply that the onboarding link is required for tool functionality.
 
 ## Recommended rollout
 
