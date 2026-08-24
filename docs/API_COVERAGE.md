@@ -16,16 +16,16 @@ This matrix accounts for every operation in the audited xRocket Exchange OpenAPI
 | 8 | `GET /api/v1/candles` | None | `xrocket_market_candles` | `public` | Symbol, interval, `startAt`, `endAt` |
 | 9 | `GET /api/v1/orderbook` | None | `xrocket_market_orderbook` | `public` | Snapshot only; supported depth/precision forwarded |
 | 10 | `GET /api/v1/trades` | None | `xrocket_market_trades` | `public` | Recent public trades |
-| 11 | `GET /api/v1/rates` | None | `xrocket_rates` | `public` | Required base plus optional repeated assets |
+| 11 | `GET /api/v1/rates` | None | `xrocket_rates` | `public` | Required fiat base plus optional repeated crypto assets |
 | 12 | `GET /api/v1/orders/history` | Bearer | `xrocket_orders` | `private-read` | `view=history`; filters and pagination |
 | 13 | `GET /api/v1/orders/active` | Bearer | `xrocket_orders` | `private-read` | `view=active` |
 | 14 | `GET /api/v1/order` | Bearer | `xrocket_orders` | `private-read` | `view=one`; order or client identifier |
-| 15 | `DELETE /api/v1/order` | Bearer | `xrocket_order_cancel_prepare` → `xrocket_order_cancel_execute` | `full` | Trading gate; request-bound, single-use approval |
-| 16 | `POST /api/v1/orders` | Bearer | `xrocket_order_prepare` → `xrocket_order_execute` | `full` | Trading gate; no automatic write retry |
+| 15 | `DELETE /api/v1/order` | Bearer | `xrocket_agent_cancel` | `full` | Trading gate and policy; direct risk-reducing cancellation; no automatic retry |
+| 16 | `POST /api/v1/orders` | Bearer | `xrocket_agent_trade` | `full` | Trading gate and daily policy; durable pre-submit reservation; no automatic retry |
 | 17 | `POST /api/v1/accounts/transfers` | Bearer | `xrocket_transfer_prepare` → `xrocket_transfer_execute` | `full` | Transfer gate; direction must be present in the asset's `availableTransfers`; internal `funding` ↔ `trading` only |
 | 18 | `GET /api/v1/accounts/transfers` | Bearer | `xrocket_transfers` | `private-read` | History/filter/pagination mode |
 | 19 | `GET /api/v1/accounts/transfer` | Bearer | `xrocket_transfers` | `private-read` | Single transfer by server or client identifier |
-| 20 | `POST /api/v1/orders/estimate` | Bearer | `xrocket_order_prepare` | `full` | Used during preparation; not an execution |
+| 20 | `POST /api/v1/orders/estimate` | Bearer | `xrocket_agent_trade` | `full` | Used before policy enforcement and execution |
 | 21 | `GET /health` | None | No agent tool | — | Infrastructure health is not a trading semantic; retained in audit/drift checks |
 | 22 | `GET /api/v1/accounts/funding/balances` | Bearer | `xrocket_account_balances` | `private-read` | `account=funding` |
 | 23 | `GET /api/v1/accounts/funding/withdrawal-quotas` | Bearer | `xrocket_withdrawal_quotas` | `private-read` | Network/asset limits and current fee |
@@ -45,18 +45,17 @@ This matrix accounts for every operation in the audited xRocket Exchange OpenAPI
 
 All public tools plus `xrocket_account_overview`, `xrocket_account_balances`, `xrocket_orders`, `xrocket_transfers`, `xrocket_withdrawals`, and `xrocket_withdrawal_quotas`.
 
-### `full` — 24 tools total
+### `full` — 23 tools total
 
 All public and private-read tools plus:
 
-- `xrocket_order_prepare` and `xrocket_order_execute`;
-- `xrocket_order_cancel_prepare` and `xrocket_order_cancel_execute`;
+- `xrocket_agent_policy`, `xrocket_agent_trade`, and `xrocket_agent_cancel`;
 - `xrocket_transfer_prepare` and `xrocket_transfer_execute`;
 - `xrocket_withdrawal_prepare` and `xrocket_withdrawal_execute`.
 
-The execute tools appear only in `full`, but refuse work until the corresponding environment gate is `true`. Mainnet execution has one additional gate.
+The autonomous order tools appear only in `full`; order and cancel refuse work until the trading gate, daily policy, and mainnet gate (when applicable) allow it. Transfer and withdrawal execute tools retain their independent gates.
 
-## WebSocket — all 7 channels audited, not exposed in 0.5.0
+## WebSocket — all 7 channels audited, not exposed in 0.6.0
 
 | Channel | Auth | REST fallback | Why no long-lived tool yet |
 | --- | --- | --- | --- |

@@ -1,6 +1,6 @@
 ---
 name: xrocket-exchange
-description: Use the unofficial xRocket Exchange MCP to inspect spot markets, balances, orders, internal funding/trading transfers, withdrawal history and quotas, or to prepare explicitly approved testnet/mainnet orders, transfers, and withdrawals. Trigger when a request explicitly concerns xRocket symbol resolution, xRocket market or account data, xRocket deposits, xRocket trading, xRocket transfers, xRocket withdrawals, or its Exchange API. Default to public reads; never infer permission for a financial write.
+description: Use the unofficial xRocket Exchange MCP to inspect spot markets and accounts, trade autonomously inside an operator-configured daily value limit, or prepare explicitly approved transfers and withdrawals. Trigger when a request concerns xRocket markets, account data, deposits, trading, transfers, withdrawals, or its Exchange API. Default to public reads; treat the local trading policy as the boundary for autonomous orders, never for transfers or withdrawals.
 ---
 
 # xRocket Exchange
@@ -11,7 +11,7 @@ Use semantic xRocket MCP tools. Keep public analysis fast and keep every private
 
 1. Identify the requested environment and operation. The environment is fixed when the MCP server starts. Public reads default to mainnet; before any write, name and verify the returned environment and prefer a testnet-configured server unless the user explicitly chose mainnet.
 2. Use `public` for market data. Use `private-read` only when account state is needed. Use `full` only when the user explicitly requests a supported financial action.
-3. Never ask for the API token in chat or pass it as a tool argument. If account or order tools are unavailable, call `xrocket_onboarding_links` when present, ask the user to sign in, and direct them to `npx -y xrocket-mcp@0.5.0 trading-config` for testnet-first local setup. Do not solicit the secret.
+3. Never ask for the API token in chat or pass it as a tool argument. If account or order tools are unavailable, call `xrocket_onboarding_links` when present, ask the user to sign in, and direct them to `npx -y xrocket-mcp@0.6.0 trading-config --limit 100 --asset USD` for testnet-first local setup. Let the user choose the limit; do not solicit the secret.
 4. Read [references/api-map.md](references/api-map.md) for tool selection. Read [references/safety.md](references/safety.md) before any write, [references/errors.md](references/errors.md) for failures, and [references/advanced-workflows.md](references/advanced-workflows.md) for multi-step work.
 
 ## Public market workflow
@@ -28,18 +28,25 @@ Use semantic xRocket MCP tools. Keep public analysis fast and keep every private
 3. Minimize disclosure in the answer. Do not echo the bearer token, full withdrawal addresses, or unrelated account data.
 4. Distinguish trading and funding balances. Describe Exchange transfers only as internal `funding` ↔ `trading` moves.
 
-## Financial write workflow
+## Autonomous order workflow
 
-Never jump directly to an execute tool.
+If `xrocket_agent_trade` is unavailable, explain that the hosted/public profile is a demo and guide the user to the local trading configuration. Do not claim that adding a token to the hosted URL can enable trading.
 
-If the user wants to trade but `xrocket_order_prepare` is unavailable, explain that the current hosted/public profile is a demo and guide them to the local trading configuration. Do not claim that adding a token to the hosted URL can enable trading.
+1. Call `xrocket_agent_policy` and stay inside its returned environment, daily value, daily order-count, and active-order limits.
+2. Follow the user's strategy. Read current market state before placing an order. Preserve all financial fields as decimal strings.
+3. Call `xrocket_agent_trade` for market or limit orders. Do not request per-order approval: the configured policy is the operator's execution boundary.
+4. Call `xrocket_agent_cancel` directly when the strategy or risk state requires cancellation.
+5. Read back order state by client identifier. On an ambiguous upstream response, report **unknown outcome** and never retry the write. Its value remains reserved against the daily limit.
 
-1. Read current symbol/asset rules, relevant balances, and—when applicable—withdrawal quota. For an internal transfer, require the requested direction in the asset's `availableTransfers`.
-2. Preserve a supplied unique client identifier. If it is omitted, let the prepare tool generate one and include the returned identifier in the preview. Cancellation may instead identify the existing order by `orderId`.
-3. Call the matching `*_prepare` tool and inspect its exact preview.
-4. Present environment, operation, asset/symbol/network, direction/side, decimal amount/size/funds, price/stop price, fee/estimate, destination/account, and client identifier. Ask for explicit approval of that preview.
-5. Execute only after the user's current approval, passing only the returned short-lived `approvalReceipt`. The server retrieves the exact stored intent; do not resubmit or reconstruct the payload.
-6. Read back state by client identifier. On timeout/disconnect/ambiguous upstream response, report **unknown outcome** and reconcile before proposing another attempt. Never automatically retry a write.
+## Transfer and withdrawal workflow
+
+Never jump directly to a transfer or withdrawal execute tool.
+
+1. Read relevant balances, asset rules, and withdrawal quota. For an internal transfer, require the requested direction in `availableTransfers`.
+2. Call the matching `*_prepare` tool and inspect its exact preview.
+3. Present environment, asset, network or accounts, amount, fee, destination, and client identifier. Ask for explicit approval.
+4. Execute only after current approval, passing only the short-lived `approvalReceipt`.
+5. Read back state by client identifier. Never automatically retry an ambiguous write.
 
 Mainnet requires a separate explicit user decision and `XROCKET_ALLOW_MAINNET_WRITES=true`. A prior testnet approval does not authorize mainnet.
 
@@ -53,7 +60,7 @@ Never modify API, WebSocket, documentation, repository, support, or MCP URLs. Us
 
 - Do not treat Exchange internal transfers as user-to-user payments. xRocket Pay is a separate product and is not available through these tools.
 - Do not coerce financial decimal strings through binary floating point.
-- Do not claim orderbook delta reconstruction, replay, or private event completeness; 0.5.0 exposes REST snapshots.
+- Do not claim orderbook delta reconstruction, replay, or private event completeness; 0.6.0 exposes REST snapshots.
 - Do not copy unsupported offer/deal behavior from tutorials into API calls.
 - Do not use `TON` as an asset identifier where current Exchange metadata requires `TONCOIN`; network `TON` and asset `TONCOIN` are different fields.
 - Do not deploy private/write profiles behind a public unauthenticated MCP endpoint.

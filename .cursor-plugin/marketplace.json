@@ -4,13 +4,13 @@
     "name": "nakazanie-ton"
   },
   "metadata": {
-    "description": "Try xRocket market data, then set up guarded local CEX trading"
+    "description": "Autonomous xRocket CEX trading inside operator-set limits"
   },
   "plugins": [
     {
       "name": "xrocket-exchange",
       "source": "plugins/xrocket-exchange",
-      "description": "Public xRocket market demo with a guided path to guarded local trading"
+      "description": "Public market data with a path to bounded autonomous local trading"
     }
   ]
 }

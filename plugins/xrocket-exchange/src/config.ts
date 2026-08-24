@@ -3,6 +3,14 @@ export type XrocketEnvironment = "testnet" | "mainnet";
 
 export const XROCKET_API_TOKEN_PLACEHOLDER = "SET_YOUR_XROCKET_API_TOKEN_LOCALLY";
 
+export interface TradingPolicy {
+  dailyLimit: string;
+  limitAsset: string;
+  maxDailyOrders: number;
+  maxOpenOrders: number;
+  symbols?: readonly string[];
+}
+
 export interface XrocketConfig {
   profile: XrocketProfile;
   environment: XrocketEnvironment;
@@ -12,6 +20,8 @@ export interface XrocketConfig {
   enableTransfers: boolean;
   enableWithdrawals: boolean;
   allowMainnetWrites: boolean;
+  tradingPolicy?: TradingPolicy;
+  agentStatePath?: string;
   approvalTtlMs: number;
   requestTimeoutMs: number;
   maxResponseBytes: number;
@@ -57,6 +67,59 @@ function ttlValue(value: string | undefined): number {
   return parsed;
 }
 
+function positiveIntegerValue(
+  value: string | undefined,
+  fallback: number,
+  name: string,
+  maximum: number,
+): number {
+  if (value === undefined || value === "") return fallback;
+  if (!/^\d+$/.test(value)) throw new Error(`${name} must be a positive integer`);
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 1 || parsed > maximum) {
+    throw new Error(`${name} must be between 1 and ${maximum}`);
+  }
+  return parsed;
+}
+
+function tradingPolicy(env: NodeJS.ProcessEnv): TradingPolicy | undefined {
+  const rawLimit = env.XROCKET_TRADING_LIMIT?.trim();
+  if (!rawLimit) return undefined;
+  if (rawLimit.length > 150) {
+    throw new Error("XROCKET_TRADING_LIMIT must look like 100 USD or 2.5 TONCOIN");
+  }
+  const match = /^(0|[1-9]\d*)(?:\.(\d+))?(?:\s+([A-Za-z0-9]{2,16}))?$/.exec(rawLimit);
+  if (!match || !/[1-9]/.test(rawLimit.split(/\s+/)[0] ?? "")) {
+    throw new Error("XROCKET_TRADING_LIMIT must look like 100 USD or 2.5 TONCOIN");
+  }
+  const amount = match[1] + (match[2] ? `.${match[2]}` : "");
+  const limitAsset = (match[3] ?? "USD").toUpperCase();
+  const rawSymbols = env.XROCKET_TRADING_SYMBOLS?.trim();
+  const symbols = rawSymbols
+    ? [...new Set(rawSymbols.split(",").map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))]
+    : undefined;
+  if (symbols?.some((symbol) => !/^[A-Z0-9_-]{3,64}$/.test(symbol))) {
+    throw new Error("XROCKET_TRADING_SYMBOLS must be a comma-separated list of exact symbols");
+  }
+  return {
+    dailyLimit: amount,
+    limitAsset,
+    maxDailyOrders: positiveIntegerValue(
+      env.XROCKET_MAX_DAILY_ORDERS,
+      100,
+      "XROCKET_MAX_DAILY_ORDERS",
+      10_000,
+    ),
+    maxOpenOrders: positiveIntegerValue(
+      env.XROCKET_MAX_OPEN_ORDERS,
+      20,
+      "XROCKET_MAX_OPEN_ORDERS",
+      1_000,
+    ),
+    ...(symbols && symbols.length > 0 ? { symbols } : {}),
+  };
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): XrocketConfig {
   const apiToken = env.XROCKET_API_TOKEN?.trim();
   if (apiToken === XROCKET_API_TOKEN_PLACEHOLDER) {
@@ -83,18 +146,30 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): XrocketConfig 
     );
   }
 
+  const enableTrading = booleanValue(env.XROCKET_ENABLE_TRADING, "XROCKET_ENABLE_TRADING");
+  const policy = tradingPolicy(env);
+  if (enableTrading && !policy) {
+    throw new Error(
+      "XROCKET_TRADING_LIMIT is required when autonomous trading is enabled, for example 100 USD",
+    );
+  }
+
   return {
     profile,
     environment,
     apiBaseUrl: API_BASE_URLS[environment],
     ...(apiToken ? { apiToken } : {}),
-    enableTrading: booleanValue(env.XROCKET_ENABLE_TRADING, "XROCKET_ENABLE_TRADING"),
+    enableTrading,
     enableTransfers: booleanValue(env.XROCKET_ENABLE_TRANSFERS, "XROCKET_ENABLE_TRANSFERS"),
     enableWithdrawals: booleanValue(env.XROCKET_ENABLE_WITHDRAWALS, "XROCKET_ENABLE_WITHDRAWALS"),
     allowMainnetWrites: booleanValue(
       env.XROCKET_ALLOW_MAINNET_WRITES,
       "XROCKET_ALLOW_MAINNET_WRITES",
     ),
+    ...(policy ? { tradingPolicy: policy } : {}),
+    ...(env.XROCKET_AGENT_STATE_PATH?.trim()
+      ? { agentStatePath: env.XROCKET_AGENT_STATE_PATH.trim() }
+      : {}),
     approvalTtlMs: ttlValue(env.XROCKET_APPROVAL_TTL_MS),
     requestTimeoutMs: 15_000,
     maxResponseBytes: 2_000_000,

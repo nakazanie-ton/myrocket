@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes are applied to the latest released minor version. Until the first stable release, only `0.1.x` is supported.
+Security fixes are applied to the latest released minor version. Until the first stable release, only `0.6.x` is supported.
 
 ## Report a vulnerability
 
@@ -21,11 +21,11 @@ Include the affected version, profile, environment (`testnet` or `mainnet`), imp
 
 ## Financial-write model
 
-Financial writes are fail-closed: `full` profile, the capability-specific feature gate, and a short-lived request-bound approval receipt are all required. Mainnet also requires `XROCKET_ALLOW_MAINNET_WRITES=true`. The exact prepared intent and receipt record are held in memory; execute accepts only the receipt, which is single-use and consumed before the upstream request.
+Financial writes are fail-closed. Autonomous orders require `full`, the trading gate, a valid daily value policy, and (on mainnet) `XROCKET_ALLOW_MAINNET_WRITES=true`. Exact decimal arithmetic enforces daily value, daily order-count, and active-order ceilings. A local account-specific ledger reserves order value before transmission so restarts or unknown results cannot silently reset usage.
 
-An approval receipt proves only that an execute call matches a prepared intent. It does not prove who approved the preview. A client or out-of-band operator policy must enforce human approval; if the MCP client cannot provide that boundary, do not enable execute capabilities.
+Internal transfers and external withdrawals keep a separate short-lived request-bound approval receipt. It proves that execute matches the prepared intent, not who approved it; a trusted client UI must enforce explicit approval for those capabilities.
 
-The server does not automatically retry a write after timeout, disconnect, or malformed upstream response. Treat the result as unknown and reconcile by `clientOrderId`, `clientTransferId`, or `clientWithdrawalId` before any manually approved retry.
+The server does not automatically retry a write after timeout, disconnect, or malformed upstream response. Unknown order value remains reserved against the policy. Reconcile transfers and withdrawals by client identifier before any newly approved attempt.
 
 These controls reduce accidental execution; they are not custody, policy, fraud-detection, or risk-management guarantees. Run with the least-permissive profile and OS account possible.
 

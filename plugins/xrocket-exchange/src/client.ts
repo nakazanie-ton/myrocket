@@ -318,7 +318,7 @@ export class XrocketClient {
     return this.request("POST", "/api/v1/orders/estimate", { private: true, body: order });
   }
 
-  placeOrder(order: { clientOrderId: string } & Record<string, unknown>): Promise<unknown> {
+  placeOrder<T extends { clientOrderId: string }>(order: T): Promise<unknown> {
     return this.request("POST", "/api/v1/orders", {
       private: true,
       body: order,

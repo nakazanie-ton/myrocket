@@ -3,6 +3,7 @@ import {
   doctorText,
   helpText,
   parseCliCommand,
+  parseTradingConfigOptions,
   renderMcpConfig,
   renderTradingMcpConfig,
   runDoctor,
@@ -13,15 +14,22 @@ import { createXrocketServer } from "./server.js";
 import { VERSION } from "./version.js";
 
 async function main(): Promise<void> {
-  const command = parseCliCommand(process.argv.slice(2));
+  const args = process.argv.slice(2);
+  const command = parseCliCommand(args);
   if (command === "help") return void process.stdout.write(`${helpText()}\n`);
   if (command === "version") return void process.stdout.write(`${VERSION}\n`);
   if (command === "config") return void process.stdout.write(`${renderMcpConfig()}\n`);
   if (command === "trading-config-testnet") {
-    return void process.stdout.write(`${renderTradingMcpConfig("testnet")}\n`);
+    const options = parseTradingConfigOptions(args);
+    return void process.stdout.write(
+      `${renderTradingMcpConfig("testnet", options.limit, options.limitAsset)}\n`,
+    );
   }
   if (command === "trading-config-mainnet") {
-    return void process.stdout.write(`${renderTradingMcpConfig("mainnet")}\n`);
+    const options = parseTradingConfigOptions(args);
+    return void process.stdout.write(
+      `${renderTradingMcpConfig("mainnet", options.limit, options.limitAsset)}\n`,
+    );
   }
   if (command === "doctor") return void process.stdout.write(`${doctorText(await runDoctor())}\n`);
 

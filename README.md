@@ -1,17 +1,17 @@
 # xRocket Exchange MCP
 
-Prepare, review, and execute xRocket CEX orders from an MCP-capable AI client. Before an order is submitted, the local server fetches the exchange estimate, fee, market rules, relevant trading balances, and the exact intent; execution requires a separate explicit approval.
+Set one daily value limit, connect an xRocket API token locally, and let an MCP-capable AI agent place and cancel spot orders autonomously inside that limit. Internal transfers and external withdrawals remain separate prepare/approve/execute operations.
 
 The hosted endpoint is a zero-account market-data demo and onboarding path. Actual account reads and trading run locally with the user's xRocket token. This project is not affiliated with, endorsed by, or operated by xRocket.
 
-[Set up trading](https://xrocket-mcp-production.up.railway.app/#trade) · [Open xRocket](https://t.me/xRocket?start=kaban) · [Try the market demo](https://xrocket-mcp-production.up.railway.app/#connect) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Safety model](docs/SAFETY.md) · [Coverage](docs/API_COVERAGE.md) · [Distribution](docs/DISTRIBUTION.md)
+[Set up trading](https://xrocket-mcp-production.up.railway.app/#trade) · [Open xRocket](https://t.me/xRocket?start=kaban) · [Try the market demo](https://xrocket-mcp-production.up.railway.app/#demo) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Safety model](docs/SAFETY.md) · [Coverage](docs/API_COVERAGE.md) · [Distribution](docs/DISTRIBUTION.md)
 
 ## What is included
 
 | Layer | Purpose | Default |
 | --- | --- | --- |
 | MCP server | Semantic tools over the official REST API | `public`, mainnet, read-only |
-| Agent skill | Teaches agents safe discovery, analysis, approval, and reconciliation workflows | Read first; never infer write approval |
+| Agent skill | Teaches agents market analysis, bounded autonomous trading, explicit transfer/withdrawal approval, and reconciliation | Read first; stay inside the configured policy |
 | Codex plugin | Installs the server and skill together from a repo-local marketplace | Public tools only |
 | Registry metadata | `server.json` for `io.github.nakazanie-ton/xrocket` | Published in the Official MCP Registry |
 | Hosted endpoint | Public mainnet tools over Streamable HTTP | No install, token, or account access |
@@ -24,27 +24,27 @@ The API surface was re-audited on 2026-08-24 and still covers all **50 Exchange 
 | --- | ---: | --- | --- |
 | `public` | 10 public market-data and onboarding tools | Not used | Impossible |
 | `private-read` | Public tools plus 6 account/history tools | Required | Impossible |
-| `full` | Public and private reads plus 8 prepare/execute write tools | Required | Still disabled until each feature gate is enabled |
+| `full` | Public and private reads, 3 autonomous trading tools, and 4 transfer/withdrawal approval tools | Required | Still disabled until each feature gate is enabled |
 
-For normal questions, `xrocket_market_snapshot` resolves a symbol or base asset and returns rules, ticker, best bid/ask, recent trades, fees, and an Open xRocket next action in one call. Private mode adds `xrocket_account_overview` for funding balances, trading balances, and active orders without inventing portfolio valuation. Narrow tools remain available for detailed queries. Full mode adds guarded order, cancel, internal-transfer, and withdrawal workflows.
+For normal questions, `xrocket_market_snapshot` resolves a symbol or base asset and returns rules, ticker, best bid/ask, recent trades, fees, and an Open xRocket next action in one call. Private mode adds `xrocket_account_overview` for funding balances, trading balances, and active orders without inventing portfolio valuation. Full mode adds autonomous market/limit orders and cancellation inside the local policy; transfers and withdrawals keep their approval receipts.
 
 ## Quick start — trade through MCP
 
 1. [Sign in to xRocket](https://t.me/xRocket?start=kaban). In the bot, open **Menu → Settings → Exchange settings → API token**.
-2. Start with the generated testnet trading configuration:
+2. Generate a testnet configuration with one daily value limit:
 
    ```bash
-   npx -y xrocket-mcp@0.5.0 trading-config
+   npx -y xrocket-mcp@0.6.0 trading-config --limit 100 --asset USD
    ```
 
 3. Paste the printed JSON into your local MCP client and replace `SET_YOUR_XROCKET_API_TOKEN_LOCALLY` in that client's local secret or environment settings. Do not paste the token into chat, this website, an issue, or a committed file.
-4. Ask:
+4. Give the agent a strategy:
 
-   > On testnet, prepare a market buy of GRAM-USDT using 10 USDT. Show the estimate, fee, balances, rules, and exact intent. Do not execute until I explicitly approve.
+   > Use xRocket on testnet. Trade GRAM-USDT with this strategy: [describe strategy]. Stay inside the configured daily trading limit. Do not transfer or withdraw funds.
 
-5. Review the prepared order. If it is correct, explicitly approve that exact preview; the client can then call `xrocket_order_execute` once with the short-lived receipt.
+5. The agent can now place and cancel market or limit orders on any available spot pair until the daily limit or the built-in order-count limits are reached.
 
-After testing, generate an explicit live-trading configuration with `npx -y xrocket-mcp@0.5.0 trading-config --mainnet`. That template enables the separate mainnet order gate but leaves transfers and withdrawals disabled.
+After testing, generate a live configuration with `npx -y xrocket-mcp@0.6.0 trading-config --limit 100 --asset USD --mainnet`. Transfers and withdrawals remain disabled.
 
 The xRocket API token is a broad bearer credential without documented granular scopes. Local MCP feature gates reduce what this server exposes, but they do not narrow the upstream token itself. Use a trusted local client and protect its configuration like a password.
 
@@ -70,15 +70,15 @@ Generic client configuration:
 
 The hosted service is structurally limited to the 10 public mainnet tools. It never reads tokens, account data, or financial-write settings. Its health endpoint is [`/health`](https://xrocket-mcp-production.up.railway.app/health).
 
-For balances, order history, or guarded order execution, use the local package above. The remote demo cannot be upgraded with a token.
+For balances, order history, or autonomous execution, use the local package above. The remote demo cannot be upgraded with a token.
 
 ## Local package
 
 Requirements: Node.js 20 or newer. No clone or configuration is needed for public market data:
 
 ```bash
-npx -y xrocket-mcp@0.5.0 doctor
-npx -y xrocket-mcp@0.5.0 config
+npx -y xrocket-mcp@0.6.0 doctor
+npx -y xrocket-mcp@0.6.0 config
 ```
 
 The second command prints this copy-paste MCP client configuration:
@@ -88,7 +88,7 @@ The second command prints this copy-paste MCP client configuration:
   "mcpServers": {
     "xrocket": {
       "command": "npx",
-      "args": ["-y", "xrocket-mcp@0.5.0"],
+      "args": ["-y", "xrocket-mcp@0.6.0"],
       "env": {
         "XROCKET_ENVIRONMENT": "mainnet",
         "XROCKET_ENABLE_TRADING": "false",
@@ -120,7 +120,7 @@ npm test
 npm run build
 ```
 
-The current package is [`xrocket-mcp@0.5.0`](https://www.npmjs.com/package/xrocket-mcp/v/0.5.0).
+The current package is [`xrocket-mcp@0.6.0`](https://www.npmjs.com/package/xrocket-mcp/v/0.6.0).
 
 ## Enabling private reads
 
@@ -143,18 +143,19 @@ export XROCKET_PROFILE=full
 export XROCKET_ENVIRONMENT=testnet
 export XROCKET_API_TOKEN='replace-with-your-token'
 export XROCKET_ENABLE_TRADING=true
+export XROCKET_TRADING_LIMIT='100 USD'
 # XROCKET_ENABLE_TRANSFERS and XROCKET_ENABLE_WITHDRAWALS remain false
 node dist/cli.js
 ```
 
-Every write is two-stage:
+Trading orders are autonomous:
 
-1. Call the matching `*_prepare` tool. It validates inputs, reads relevant limits/state, stores the exact prepared intent in server memory, and returns a short-lived approval receipt.
-2. Show the proposed action to the user and obtain explicit approval.
-3. Call the matching `*_execute` tool once with only that receipt. The server retrieves the stored intent; the receipt is single-use and writes are never automatically retried.
-4. If the network outcome is ambiguous, reconcile by client identifier before considering any retry.
+1. `xrocket_agent_trade` estimates the order, converts its quote value to the configured limit asset, checks the daily value, daily order-count, and active-order limits, reserves the amount durably, and submits once.
+2. `xrocket_agent_cancel` cancels an existing order directly. Cancellation does not need per-order approval.
+3. Unknown placement outcomes remain charged against the limit and are never retried automatically.
+4. All spot symbols are allowed by default. `XROCKET_TRADING_SYMBOLS` is an optional advanced allowlist, not an onboarding requirement.
 
-The receipt binds execution to the prepared payload, but it is not proof that a human approved it. Once a client exposes `full` execute tools and the corresponding gate is enabled, an agent can technically call them. Use a client with a trusted approval UI or an out-of-band operator policy; otherwise keep the execute capability disabled.
+Internal transfers and external withdrawals still use the exact prepare/approve/execute receipt flow. Their feature gates are off in the generated trading configuration.
 
 Mainnet writes additionally require `XROCKET_ENVIRONMENT=mainnet` and `XROCKET_ALLOW_MAINNET_WRITES=true`. See [configuration and safety details](docs/SAFETY.md).
 
@@ -164,7 +165,7 @@ Mainnet writes additionally require `XROCKET_ENVIRONMENT=mainnet` and `XROCKET_A
 - Exchange `POST /api/v1/accounts/transfers` moves funds only between the same user's `funding` and `trading` accounts. It is not a user-to-user payment tool.
 - xRocket Pay is a different product, uses different authentication, and is outside this server.
 - The official API currently uses asset identifier `TONCOIN` in places where the UI may say TON.
-- The 0.5.0 server uses REST snapshots. WebSocket channels are audited but not exposed until the upstream documentation defines reliable replay, gap recovery, and orderbook delta deletion semantics.
+- The 0.6.0 server uses REST snapshots. WebSocket channels are audited but not exposed until the upstream documentation defines reliable replay, gap recovery, and orderbook delta deletion semantics.
 - Decimal financial values remain strings. Do not coerce them through binary floating point.
 
 ## Development

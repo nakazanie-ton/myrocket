@@ -23,7 +23,7 @@ Implementation consequence: this project cannot determine a user's legal eligibi
 
 The terms characterize digital assets as high risk and volatile and disclaim guarantees around accuracy, availability, security, loss, execution, addresses, networks, and third parties.
 
-Implementation consequence: tools must not promise execution, profit, finality, address correctness, confirmation time, or loss prevention. Testnet-first setup, exact decimal strings, prepare/approve/execute, and unknown-outcome reconciliation are mandatory product behavior, not a substitute for user judgment.
+Implementation consequence: tools must not promise execution, profit, finality, address correctness, confirmation time, or loss prevention. Testnet-first setup, exact decimal strings, operator-set autonomous trading limits, explicit approval for transfers/withdrawals, and unknown-outcome reconciliation are mandatory product behavior, not a substitute for user judgment.
 
 ### KYC, AML, sanctions, suspension, and freeze powers
 

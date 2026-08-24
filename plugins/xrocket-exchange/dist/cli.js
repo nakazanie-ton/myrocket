@@ -828,10 +828,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path) {
-  if (!path)
+function getElementAtPath(obj, path2) {
+  if (!path2)
     return obj;
-  return path.reduce((acc, key) => acc?.[key], obj);
+  return path2.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -1240,11 +1240,11 @@ function explicitlyAborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path, issues) {
+function prefixIssues(path2, issues) {
   return issues.map((iss) => {
     var _a3;
     (_a3 = iss).path ?? (_a3.path = []);
-    iss.path.unshift(path);
+    iss.path.unshift(path2);
     return iss;
   });
 }
@@ -1391,16 +1391,16 @@ function flattenError(error51, mapper = (issue2) => issue2.message) {
 }
 function formatError(error51, mapper = (issue2) => issue2.message) {
   const fieldErrors = { _errors: [] };
-  const processError = (error52, path = []) => {
+  const processError = (error52, path2 = []) => {
     for (const issue2 of error52.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path2, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
       } else {
-        const fullpath = [...path, ...issue2.path];
+        const fullpath = [...path2, ...issue2.path];
         if (fullpath.length === 0) {
           fieldErrors._errors.push(mapper(issue2));
         } else {
@@ -1427,17 +1427,17 @@ function formatError(error51, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error51, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error52, path = []) => {
+  const processError = (error52, path2 = []) => {
     var _a3, _b;
     for (const issue2 of error52.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path2, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
       } else {
-        const fullpath = [...path, ...issue2.path];
+        const fullpath = [...path2, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -1469,8 +1469,8 @@ function treeifyError(error51, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path) {
+  const path2 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path2) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -2642,11 +2642,11 @@ var $ZodCIDRv6 = /* @__PURE__ */ $constructor("$ZodCIDRv6", (inst, def) => {
   def.pattern ?? (def.pattern = cidrv6);
   $ZodStringFormat.init(inst, def);
   inst._zod.check = (payload) => {
-    const parts = payload.value.split("/");
+    const parts2 = payload.value.split("/");
     try {
-      if (parts.length !== 2)
+      if (parts2.length !== 2)
         throw new Error();
-      const [address, prefix] = parts;
+      const [address, prefix] = parts2;
       if (!prefix)
         throw new Error();
       const prefixNum = Number(prefix);
@@ -11303,10 +11303,10 @@ function _readonly(Class2, innerType) {
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _templateLiteral(Class2, parts, params) {
+function _templateLiteral(Class2, parts2, params) {
   return new Class2({
     type: "template_literal",
-    parts,
+    parts: parts2,
     ...normalizeParams(params)
   });
 }
@@ -11454,13 +11454,13 @@ function _stringbool(Classes, _params) {
   return codec2;
 }
 // @__NO_SIDE_EFFECTS__
-function _stringFormat(Class2, format, fnOrRegex, _params = {}) {
+function _stringFormat(Class2, format2, fnOrRegex, _params = {}) {
   const params = normalizeParams(_params);
   const def = {
     ...normalizeParams(_params),
     check: "string_format",
     type: "string",
-    format,
+    format: format2,
     fn: typeof fnOrRegex === "function" ? fnOrRegex : (val) => fnOrRegex.test(val),
     ...params
   };
@@ -11842,16 +11842,16 @@ var formatMap = {
 var stringProcessor = (schema, ctx, _json, _params) => {
   const json2 = _json;
   json2.type = "string";
-  const { minimum, maximum, format, patterns, contentEncoding } = schema._zod.bag;
+  const { minimum, maximum, format: format2, patterns, contentEncoding } = schema._zod.bag;
   if (typeof minimum === "number")
     json2.minLength = minimum;
   if (typeof maximum === "number")
     json2.maxLength = maximum;
-  if (format) {
-    json2.format = formatMap[format] ?? format;
+  if (format2) {
+    json2.format = formatMap[format2] ?? format2;
     if (json2.format === "")
       delete json2.format;
-    if (format === "time") {
+    if (format2 === "time") {
       delete json2.format;
     }
   }
@@ -11873,8 +11873,8 @@ var stringProcessor = (schema, ctx, _json, _params) => {
 };
 var numberProcessor = (schema, ctx, _json, _params) => {
   const json2 = _json;
-  const { minimum, maximum, format, multipleOf, exclusiveMaximum, exclusiveMinimum } = schema._zod.bag;
-  if (typeof format === "string" && format.includes("int"))
+  const { minimum, maximum, format: format2, multipleOf, exclusiveMaximum, exclusiveMinimum } = schema._zod.bag;
+  if (typeof format2 === "string" && format2.includes("int"))
     json2.type = "integer";
   else
     json2.type = "number";
@@ -13173,8 +13173,8 @@ var ZodCustomStringFormat = /* @__PURE__ */ $constructor("ZodCustomStringFormat"
   $ZodCustomStringFormat.init(inst, def);
   ZodStringFormat.init(inst, def);
 });
-function stringFormat(format, fnOrRegex, _params = {}) {
-  return _stringFormat(ZodCustomStringFormat, format, fnOrRegex, _params);
+function stringFormat(format2, fnOrRegex, _params = {}) {
+  return _stringFormat(ZodCustomStringFormat, format2, fnOrRegex, _params);
 }
 function hostname2(_params) {
   return _stringFormat(ZodCustomStringFormat, "hostname", regexes_exports.hostname, _params);
@@ -13184,11 +13184,11 @@ function hex2(_params) {
 }
 function hash(alg, params) {
   const enc = params?.enc ?? "hex";
-  const format = `${alg}_${enc}`;
-  const regex = regexes_exports[format];
+  const format2 = `${alg}_${enc}`;
+  const regex = regexes_exports[format2];
   if (!regex)
-    throw new Error(`Unrecognized hash format: ${format}`);
-  return _stringFormat(ZodCustomStringFormat, format, regex, params);
+    throw new Error(`Unrecognized hash format: ${format2}`);
+  return _stringFormat(ZodCustomStringFormat, format2, regex, params);
 }
 var ZodNumber = /* @__PURE__ */ $constructor("ZodNumber", (inst, def) => {
   $ZodNumber.init(inst, def);
@@ -13934,10 +13934,10 @@ var ZodTemplateLiteral = /* @__PURE__ */ $constructor("ZodTemplateLiteral", (ins
   ZodType.init(inst, def);
   inst._zod.processJSONSchema = (ctx, json2, params) => templateLiteralProcessor(inst, ctx, json2, params);
 });
-function templateLiteral(parts, params) {
+function templateLiteral(parts2, params) {
   return new ZodTemplateLiteral({
     type: "template_literal",
-    parts,
+    parts: parts2,
     ...util_exports.normalizeParams(params)
   });
 }
@@ -14162,13 +14162,13 @@ function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path = ref.slice(1).split("/").filter(Boolean);
-  if (path.length === 0) {
+  const path2 = ref.slice(1).split("/").filter(Boolean);
+  if (path2.length === 0) {
     return ctx.rootSchema;
   }
   const defsKey = ctx.version === "draft-2020-12" ? "$defs" : "definitions";
-  if (path[0] === defsKey) {
-    const key = path[1];
+  if (path2[0] === defsKey) {
+    const key = path2[1];
     if (!key || !ctx.defs[key]) {
       throw new Error(`Reference not found: ${ref}`);
     }
@@ -14260,52 +14260,52 @@ function convertBaseSchema(schema, ctx) {
     case "string": {
       let stringSchema = z.string();
       if (schema.format) {
-        const format = schema.format;
-        if (format === "email") {
+        const format2 = schema.format;
+        if (format2 === "email") {
           stringSchema = stringSchema.check(z.email());
-        } else if (format === "uri" || format === "uri-reference") {
+        } else if (format2 === "uri" || format2 === "uri-reference") {
           stringSchema = stringSchema.check(z.url());
-        } else if (format === "uuid" || format === "guid") {
+        } else if (format2 === "uuid" || format2 === "guid") {
           stringSchema = stringSchema.check(z.uuid());
-        } else if (format === "date-time") {
+        } else if (format2 === "date-time") {
           stringSchema = stringSchema.check(z.iso.datetime());
-        } else if (format === "date") {
+        } else if (format2 === "date") {
           stringSchema = stringSchema.check(z.iso.date());
-        } else if (format === "time") {
+        } else if (format2 === "time") {
           stringSchema = stringSchema.check(z.iso.time());
-        } else if (format === "duration") {
+        } else if (format2 === "duration") {
           stringSchema = stringSchema.check(z.iso.duration());
-        } else if (format === "ipv4") {
+        } else if (format2 === "ipv4") {
           stringSchema = stringSchema.check(z.ipv4());
-        } else if (format === "ipv6") {
+        } else if (format2 === "ipv6") {
           stringSchema = stringSchema.check(z.ipv6());
-        } else if (format === "mac") {
+        } else if (format2 === "mac") {
           stringSchema = stringSchema.check(z.mac());
-        } else if (format === "cidr") {
+        } else if (format2 === "cidr") {
           stringSchema = stringSchema.check(z.cidrv4());
-        } else if (format === "cidr-v6") {
+        } else if (format2 === "cidr-v6") {
           stringSchema = stringSchema.check(z.cidrv6());
-        } else if (format === "base64") {
+        } else if (format2 === "base64") {
           stringSchema = stringSchema.check(z.base64());
-        } else if (format === "base64url") {
+        } else if (format2 === "base64url") {
           stringSchema = stringSchema.check(z.base64url());
-        } else if (format === "e164") {
+        } else if (format2 === "e164") {
           stringSchema = stringSchema.check(z.e164());
-        } else if (format === "jwt") {
+        } else if (format2 === "jwt") {
           stringSchema = stringSchema.check(z.jwt());
-        } else if (format === "emoji") {
+        } else if (format2 === "emoji") {
           stringSchema = stringSchema.check(z.emoji());
-        } else if (format === "nanoid") {
+        } else if (format2 === "nanoid") {
           stringSchema = stringSchema.check(z.nanoid());
-        } else if (format === "cuid") {
+        } else if (format2 === "cuid") {
           stringSchema = stringSchema.check(z.cuid());
-        } else if (format === "cuid2") {
+        } else if (format2 === "cuid2") {
           stringSchema = stringSchema.check(z.cuid2());
-        } else if (format === "ulid") {
+        } else if (format2 === "ulid") {
           stringSchema = stringSchema.check(z.ulid());
-        } else if (format === "xid") {
+        } else if (format2 === "xid") {
           stringSchema = stringSchema.check(z.xid());
-        } else if (format === "ksuid") {
+        } else if (format2 === "ksuid") {
           stringSchema = stringSchema.check(z.ksuid());
         }
       }
@@ -18141,9 +18141,9 @@ var rev2026Codec = {
     });
     const parsed = buildSchemas2026().RequestMetaEnvelopeSchema.safeParse(meta3);
     if (!parsed.success) for (const issue2 of parsed.error.issues) {
-      const path = issue2.path.map(String);
-      const key = path.length > 0 ? path.join(".") : "_meta";
-      if (path.length === 1 && issues.some((existing) => existing.key === key && existing.problem === "missing")) continue;
+      const path2 = issue2.path.map(String);
+      const key = path2.length > 0 ? path2.join(".") : "_meta";
+      if (path2.length === 1 && issues.some((existing) => existing.key === key && existing.problem === "missing")) continue;
       issues.push({
         key,
         problem: issue2.message
@@ -18466,29 +18466,29 @@ var PERMITTED_X_MCP_HEADER_TYPES = /* @__PURE__ */ new Set([
 function scanXMcpHeaderDeclarations(inputSchema) {
   const declarations = [];
   const seenLower = /* @__PURE__ */ new Map();
-  const visit = (node, path, reachable) => {
+  const visit = (node, path2, reachable) => {
     if (node === null || typeof node !== "object") return void 0;
     const schema = node;
     if (X_MCP_HEADER_KEY in schema) {
-      if (!reachable || path.length === 0) return `${pathName(path)}: x-mcp-header is only permitted on properties statically reachable via a chain of 'properties' keys (not under items, additionalProperties, oneOf/anyOf/allOf/not, if/then/else, or $ref)`;
+      if (!reachable || path2.length === 0) return `${pathName(path2)}: x-mcp-header is only permitted on properties statically reachable via a chain of 'properties' keys (not under items, additionalProperties, oneOf/anyOf/allOf/not, if/then/else, or $ref)`;
       const raw = schema[X_MCP_HEADER_KEY];
-      if (typeof raw !== "string" || raw.length === 0) return `${pathName(path)}: x-mcp-header MUST be a non-empty string`;
-      if (!RFC9110_TOKEN.test(raw)) return `${pathName(path)}: x-mcp-header '${raw}' is not a valid RFC 9110 token (no spaces, control characters or HTTP delimiters)`;
+      if (typeof raw !== "string" || raw.length === 0) return `${pathName(path2)}: x-mcp-header MUST be a non-empty string`;
+      if (!RFC9110_TOKEN.test(raw)) return `${pathName(path2)}: x-mcp-header '${raw}' is not a valid RFC 9110 token (no spaces, control characters or HTTP delimiters)`;
       const type = typeof schema.type === "string" ? schema.type : void 0;
-      if (type === void 0 || !PERMITTED_X_MCP_HEADER_TYPES.has(type)) return `${pathName(path)}: x-mcp-header is only permitted on primitive-typed properties (string, integer, boolean); got ${type ?? "<none>"}`;
+      if (type === void 0 || !PERMITTED_X_MCP_HEADER_TYPES.has(type)) return `${pathName(path2)}: x-mcp-header is only permitted on primitive-typed properties (string, integer, boolean); got ${type ?? "<none>"}`;
       const lower = raw.toLowerCase();
       const prior = seenLower.get(lower);
       if (prior !== void 0) return `x-mcp-header '${raw}' is not case-insensitively unique (also declared as '${prior}')`;
       seenLower.set(lower, raw);
       declarations.push({
-        path,
+        path: path2,
         headerName: raw,
         type
       });
     }
     const properties = schema.properties;
     if (properties !== null && typeof properties === "object") for (const [key, child] of Object.entries(properties)) {
-      const fault$1 = visit(child, [...path, key], reachable);
+      const fault$1 = visit(child, [...path2, key], reachable);
       if (fault$1 !== void 0) return fault$1;
     }
     for (const k of NON_REACHABLE_SUBSCHEMA_KEYWORDS) {
@@ -18496,7 +18496,7 @@ function scanXMcpHeaderDeclarations(inputSchema) {
       if (sub === void 0) continue;
       const branches = Array.isArray(sub) ? sub : sub !== null && typeof sub === "object" && OBJECT_VALUED_SUBSCHEMA_KEYWORDS.has(k) ? Object.values(sub) : [sub];
       for (const branch of branches) {
-        const fault$1 = visit(branch, [...path, `<${k}>`], false);
+        const fault$1 = visit(branch, [...path2, `<${k}>`], false);
         if (fault$1 !== void 0) return fault$1;
       }
     }
@@ -18536,8 +18536,8 @@ var OBJECT_VALUED_SUBSCHEMA_KEYWORDS = /* @__PURE__ */ new Set([
   "$defs",
   "definitions"
 ]);
-function pathName(path) {
-  return path.length === 0 ? "<root>" : path.join(".");
+function pathName(path2) {
+  return path2.length === 0 ? "<root>" : path2.join(".");
 }
 var BASE64_SENTINEL_PREFIX = "=?base64?";
 var BASE64_SENTINEL_SUFFIX = "?=";
@@ -18568,9 +18568,9 @@ function decodeMcpParamValue(value) {
     return;
   }
 }
-function valueAtPath(root, path) {
+function valueAtPath(root, path2) {
   let node = root;
-  for (const key of path) {
+  for (const key of path2) {
     if (node === null || typeof node !== "object") return void 0;
     node = node[key];
   }
@@ -18995,9 +18995,9 @@ function datetimeReferenceSchemas(pattern) {
     precision
   }))));
 }
-function referencePatternsForFormat(format, pattern) {
+function referencePatternsForFormat(format2, pattern) {
   let referenceSchemas;
-  switch (format) {
+  switch (format2) {
     case "email":
       referenceSchemas = [email2()];
       break;
@@ -19013,9 +19013,9 @@ function referencePatternsForFormat(format, pattern) {
   }
   return new Set(referenceSchemas.map((schema) => zodEmittedPattern(schema)).filter((emitted) => emitted !== void 0));
 }
-function isLibraryFormatPattern(format, pattern, vendor) {
+function isLibraryFormatPattern(format2, pattern, vendor) {
   if (vendor !== "zod") return true;
-  return referencePatternsForFormat(format, pattern).has(pattern);
+  return referencePatternsForFormat(format2, pattern).has(pattern);
 }
 function promptArgumentsFromStandardSchema(schema) {
   const jsonSchema = standardSchemaToJsonSchema(schema, "input");
@@ -19064,7 +19064,7 @@ var PROPERTY_KEYS_BY_TYPE = {
   array: shapeKeys([UntitledMultiSelectEnumSchemaSchema, TitledMultiSelectEnumSchemaSchema])
 };
 var SUPPORTED_STRING_FORMATS = new Set(StringSchemaSchema.shape.format.unwrap().options);
-function walkProperty(node, path, vendor, unsupported) {
+function walkProperty(node, path2, vendor, unsupported) {
   if (!isJsonObject(node)) return node;
   const allowedKeys = typeof node.type === "string" && Object.hasOwn(PROPERTY_KEYS_BY_TYPE, node.type) ? PROPERTY_KEYS_BY_TYPE[node.type] : void 0;
   if (allowedKeys === void 0) return node;
@@ -19072,8 +19072,8 @@ function walkProperty(node, path, vendor, unsupported) {
   for (const [key, value] of Object.entries(node)) if (allowedKeys.has(key) || isAnnotationOnlyJsonSchemaKeyword(key)) pruned[key] = value;
   else if (key === "pattern" && node.type === "string" && typeof node.format === "string") {
     if (!SUPPORTED_STRING_FORMATS.has(node.format)) pruned[key] = value;
-    else if (typeof value !== "string" || !isLibraryFormatPattern(node.format, value, vendor)) unsupported.push(`${path}.${key}`);
-  } else unsupported.push(`${path}.${key}`);
+    else if (typeof value !== "string" || !isLibraryFormatPattern(node.format, value, vendor)) unsupported.push(`${path2}.${key}`);
+  } else unsupported.push(`${path2}.${key}`);
   return pruned;
 }
 function walkRequestedSchema(converted, vendor) {
@@ -19090,11 +19090,11 @@ function describeUnsupportedProperties(pruned, fallback) {
   const offenders = Object.entries(pruned.properties).filter(([, node]) => !parseSchema(PrimitiveSchemaDefinitionSchema, node).success).map(([name]) => `properties.${name}`);
   return offenders.length > 0 ? offenders.join(", ") : fallback;
 }
-function findDroppedConstraintPaths(original, parsed, path = "") {
-  if (Array.isArray(original) && Array.isArray(parsed)) return original.flatMap((item, index) => findDroppedConstraintPaths(item, parsed[index], `${path}[${index}]`));
+function findDroppedConstraintPaths(original, parsed, path2 = "") {
+  if (Array.isArray(original) && Array.isArray(parsed)) return original.flatMap((item, index) => findDroppedConstraintPaths(item, parsed[index], `${path2}[${index}]`));
   if (!isJsonObject(original) || !isJsonObject(parsed)) return [];
   return Object.entries(original).flatMap(([key, value]) => {
-    const childPath = path ? `${path}.${key}` : key;
+    const childPath = path2 ? `${path2}.${key}` : key;
     if (!Object.prototype.hasOwnProperty.call(parsed, key)) return isAnnotationOnlyJsonSchemaKeyword(key) ? [] : [childPath];
     return findDroppedConstraintPaths(value, parsed[key], childPath);
   });
@@ -23186,8 +23186,8 @@ var require_utils = /* @__PURE__ */ __commonJSMin(((exports, module) => {
     for (let i = 0; i < str.length; i++) if (str[i] === token) ind++;
     return ind;
   }
-  function removeDotSegments(path) {
-    let input = path;
+  function removeDotSegments(path2) {
+    let input = path2;
     const output = [];
     let nextSlash = -1;
     let len = 0;
@@ -23340,8 +23340,8 @@ var require_schemes = /* @__PURE__ */ __commonJSMin(((exports, module) => {
       wsComponent.secure = void 0;
     }
     if (wsComponent.resourceName) {
-      const [path, query] = wsComponent.resourceName.split("?");
-      wsComponent.path = path && path !== "/" ? path : void 0;
+      const [path2, query] = wsComponent.resourceName.split("?");
+      wsComponent.path = path2 && path2 !== "/" ? path2 : void 0;
       wsComponent.query = query;
       wsComponent.resourceName = void 0;
     }
@@ -24016,9 +24016,9 @@ var require_core$3 = /* @__PURE__ */ __commonJSMin(((exports) => {
       }
       return this;
     }
-    addFormat(name, format) {
-      if (typeof format == "string") format = new RegExp(format);
-      this.formats[name] = format;
+    addFormat(name, format2) {
+      if (typeof format2 == "string") format2 = new RegExp(format2);
+      this.formats[name] = format2;
       return this;
     }
     errorsText(errors = this.errors, { separator = ", ", dataVar = "data" } = {}) {
@@ -24119,8 +24119,8 @@ var require_core$3 = /* @__PURE__ */ __commonJSMin(((exports) => {
   }
   function addInitialFormats() {
     for (const name in this.opts.formats) {
-      const format = this.opts.formats[name];
-      if (format) this.addFormat(name, format);
+      const format2 = this.opts.formats[name];
+      if (format2) this.addFormat(name, format2);
     }
   }
   function addInitialKeywords(defs) {
@@ -25509,17 +25509,17 @@ var require_format$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
         });
         const fDef = gen.const("fDef", (0, codegen_1._)`${fmts}[${schemaCode}]`);
         const fType = gen.let("fType");
-        const format = gen.let("format");
-        gen.if((0, codegen_1._)`typeof ${fDef} == "object" && !(${fDef} instanceof RegExp)`, () => gen.assign(fType, (0, codegen_1._)`${fDef}.type || "string"`).assign(format, (0, codegen_1._)`${fDef}.validate`), () => gen.assign(fType, (0, codegen_1._)`"string"`).assign(format, fDef));
+        const format2 = gen.let("format");
+        gen.if((0, codegen_1._)`typeof ${fDef} == "object" && !(${fDef} instanceof RegExp)`, () => gen.assign(fType, (0, codegen_1._)`${fDef}.type || "string"`).assign(format2, (0, codegen_1._)`${fDef}.validate`), () => gen.assign(fType, (0, codegen_1._)`"string"`).assign(format2, fDef));
         cxt.fail$data((0, codegen_1.or)(unknownFmt(), invalidFmt()));
         function unknownFmt() {
           if (opts.strictSchema === false) return codegen_1.nil;
-          return (0, codegen_1._)`${schemaCode} && !${format}`;
+          return (0, codegen_1._)`${schemaCode} && !${format2}`;
         }
         function invalidFmt() {
-          const callFormat = schemaEnv.$async ? (0, codegen_1._)`(${fDef}.async ? await ${format}(${data}) : ${format}(${data}))` : (0, codegen_1._)`${format}(${data})`;
-          const validData = (0, codegen_1._)`(typeof ${format} == "function" ? ${callFormat} : ${format}.test(${data}))`;
-          return (0, codegen_1._)`${format} && ${format} !== true && ${fType} === ${ruleType} && !${validData}`;
+          const callFormat = schemaEnv.$async ? (0, codegen_1._)`(${fDef}.async ? await ${format2}(${data}) : ${format2}(${data}))` : (0, codegen_1._)`${format2}(${data})`;
+          const validData = (0, codegen_1._)`(typeof ${format2} == "function" ? ${callFormat} : ${format2}.test(${data}))`;
+          return (0, codegen_1._)`${format2} && ${format2} !== true && ${fType} === ${ruleType} && !${validData}`;
         }
       }
       function validateFormat() {
@@ -25529,7 +25529,7 @@ var require_format$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
           return;
         }
         if (formatDef === true) return;
-        const [fmtType, format, fmtRef] = getFormat(formatDef);
+        const [fmtType, format2, fmtRef] = getFormat(formatDef);
         if (fmtType === ruleType) cxt.pass(validCondition());
         function unknownFormat() {
           if (opts.strictSchema === false) {
@@ -25564,7 +25564,7 @@ var require_format$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
             if (!schemaEnv.$async) throw new Error("async format in sync schema");
             return (0, codegen_1._)`await ${fmtRef}(${data})`;
           }
-          return typeof format == "function" ? (0, codegen_1._)`${fmtRef}(${data})` : (0, codegen_1._)`${fmtRef}.test(${data})`;
+          return typeof format2 == "function" ? (0, codegen_1._)`${fmtRef}(${data})` : (0, codegen_1._)`${fmtRef}.test(${data})`;
         }
       }
     }
@@ -25573,8 +25573,8 @@ var require_format$2 = /* @__PURE__ */ __commonJSMin(((exports) => {
 }));
 var require_format$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
   Object.defineProperty(exports, "__esModule", { value: true });
-  const format = [require_format$2().default];
-  exports.default = format;
+  const format2 = [require_format$2().default];
+  exports.default = format2;
 }));
 var require_metadata = /* @__PURE__ */ __commonJSMin(((exports) => {
   Object.defineProperty(exports, "__esModule", { value: true });
@@ -26475,7 +26475,7 @@ var require_json_schema_2019_09 = /* @__PURE__ */ __commonJSMin(((exports) => {
   const applicator = require_applicator$1();
   const content = require_content$1();
   const core = require_core$1();
-  const format = require_format();
+  const format2 = require_format();
   const metadata = require_meta_data$1();
   const validation = require_validation$1();
   const META_SUPPORT_DATA = ["/properties"];
@@ -26485,7 +26485,7 @@ var require_json_schema_2019_09 = /* @__PURE__ */ __commonJSMin(((exports) => {
       applicator,
       content,
       core,
-      with$data(this, format),
+      with$data(this, format2),
       metadata,
       with$data(this, validation)
     ].forEach((sch) => this.addMetaSchema(sch, void 0, false));
@@ -26925,7 +26925,7 @@ var require_json_schema_2020_12 = /* @__PURE__ */ __commonJSMin(((exports) => {
   const unevaluated = require_unevaluated();
   const content = require_content();
   const core = require_core();
-  const format = require_format_annotation();
+  const format2 = require_format_annotation();
   const metadata = require_meta_data();
   const validation = require_validation();
   const META_SUPPORT_DATA = ["/properties"];
@@ -26936,7 +26936,7 @@ var require_json_schema_2020_12 = /* @__PURE__ */ __commonJSMin(((exports) => {
       unevaluated,
       content,
       core,
-      with$data(this, format),
+      with$data(this, format2),
       metadata,
       with$data(this, validation)
     ].forEach((sch) => this.addMetaSchema(sch, void 0, false));
@@ -27284,14 +27284,14 @@ var require_limit = /* @__PURE__ */ __commonJSMin(((exports) => {
         cxt.fail$data((0, codegen_1.or)((0, codegen_1._)`typeof ${fmt} != "object"`, (0, codegen_1._)`${fmt} instanceof RegExp`, (0, codegen_1._)`typeof ${fmt}.compare != "function"`, compareCode(fmt)));
       }
       function validateFormat() {
-        const format = fCxt.schema;
-        const fmtDef = self.formats[format];
+        const format2 = fCxt.schema;
+        const fmtDef = self.formats[format2];
         if (!fmtDef || fmtDef === true) return;
-        if (typeof fmtDef != "object" || fmtDef instanceof RegExp || typeof fmtDef.compare != "function") throw new Error(`"${keyword}": format "${format}" does not define "compare" function`);
+        if (typeof fmtDef != "object" || fmtDef instanceof RegExp || typeof fmtDef.compare != "function") throw new Error(`"${keyword}": format "${format2}" does not define "compare" function`);
         const fmt = gen.scopeValue("formats", {
-          key: format,
+          key: format2,
           ref: fmtDef,
-          code: opts.code.formats ? (0, codegen_1._)`${opts.code.formats}${(0, codegen_1.getProperty)(format)}` : void 0
+          code: opts.code.formats ? (0, codegen_1._)`${opts.code.formats}${(0, codegen_1.getProperty)(format2)}` : void 0
         });
         cxt.fail$data(compareCode(fmt));
       }
@@ -27329,11 +27329,11 @@ var require_dist = /* @__PURE__ */ __commonJSMin(((exports, module) => {
     if (!f) throw new Error(`Unknown format "${name}"`);
     return f;
   };
-  function addFormats2(ajv, list, fs, exportName) {
+  function addFormats2(ajv, list, fs2, exportName) {
     var _a3;
     var _b;
     (_a3 = (_b = ajv.opts.code).formats) !== null && _a3 !== void 0 || (_b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`);
-    for (const f of list) ajv.addFormat(f, fs[f]);
+    for (const f of list) ajv.addFormat(f, fs2[f]);
   }
   module.exports = exports = formatsPlugin;
   Object.defineProperty(exports, "__esModule", { value: true });
@@ -29642,6 +29642,50 @@ function ttlValue(value) {
   }
   return parsed;
 }
+function positiveIntegerValue(value, fallback, name, maximum) {
+  if (value === void 0 || value === "") return fallback;
+  if (!/^\d+$/.test(value)) throw new Error(`${name} must be a positive integer`);
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 1 || parsed > maximum) {
+    throw new Error(`${name} must be between 1 and ${maximum}`);
+  }
+  return parsed;
+}
+function tradingPolicy(env) {
+  const rawLimit = env.XROCKET_TRADING_LIMIT?.trim();
+  if (!rawLimit) return void 0;
+  if (rawLimit.length > 150) {
+    throw new Error("XROCKET_TRADING_LIMIT must look like 100 USD or 2.5 TONCOIN");
+  }
+  const match = /^(0|[1-9]\d*)(?:\.(\d+))?(?:\s+([A-Za-z0-9]{2,16}))?$/.exec(rawLimit);
+  if (!match || !/[1-9]/.test(rawLimit.split(/\s+/)[0] ?? "")) {
+    throw new Error("XROCKET_TRADING_LIMIT must look like 100 USD or 2.5 TONCOIN");
+  }
+  const amount = match[1] + (match[2] ? `.${match[2]}` : "");
+  const limitAsset = (match[3] ?? "USD").toUpperCase();
+  const rawSymbols = env.XROCKET_TRADING_SYMBOLS?.trim();
+  const symbols = rawSymbols ? [...new Set(rawSymbols.split(",").map((symbol2) => symbol2.trim().toUpperCase()).filter(Boolean))] : void 0;
+  if (symbols?.some((symbol2) => !/^[A-Z0-9_-]{3,64}$/.test(symbol2))) {
+    throw new Error("XROCKET_TRADING_SYMBOLS must be a comma-separated list of exact symbols");
+  }
+  return {
+    dailyLimit: amount,
+    limitAsset,
+    maxDailyOrders: positiveIntegerValue(
+      env.XROCKET_MAX_DAILY_ORDERS,
+      100,
+      "XROCKET_MAX_DAILY_ORDERS",
+      1e4
+    ),
+    maxOpenOrders: positiveIntegerValue(
+      env.XROCKET_MAX_OPEN_ORDERS,
+      20,
+      "XROCKET_MAX_OPEN_ORDERS",
+      1e3
+    ),
+    ...symbols && symbols.length > 0 ? { symbols } : {}
+  };
+}
 function loadConfig(env = process.env) {
   const apiToken = env.XROCKET_API_TOKEN?.trim();
   if (apiToken === XROCKET_API_TOKEN_PLACEHOLDER) {
@@ -29666,18 +29710,27 @@ function loadConfig(env = process.env) {
       `XROCKET_API_TOKEN is required for profile ${profile}. Sign in to xRocket, open Menu > Settings > Exchange settings > API token, and configure it locally.`
     );
   }
+  const enableTrading = booleanValue(env.XROCKET_ENABLE_TRADING, "XROCKET_ENABLE_TRADING");
+  const policy = tradingPolicy(env);
+  if (enableTrading && !policy) {
+    throw new Error(
+      "XROCKET_TRADING_LIMIT is required when autonomous trading is enabled, for example 100 USD"
+    );
+  }
   return {
     profile,
     environment,
     apiBaseUrl: API_BASE_URLS[environment],
     ...apiToken ? { apiToken } : {},
-    enableTrading: booleanValue(env.XROCKET_ENABLE_TRADING, "XROCKET_ENABLE_TRADING"),
+    enableTrading,
     enableTransfers: booleanValue(env.XROCKET_ENABLE_TRANSFERS, "XROCKET_ENABLE_TRANSFERS"),
     enableWithdrawals: booleanValue(env.XROCKET_ENABLE_WITHDRAWALS, "XROCKET_ENABLE_WITHDRAWALS"),
     allowMainnetWrites: booleanValue(
       env.XROCKET_ALLOW_MAINNET_WRITES,
       "XROCKET_ALLOW_MAINNET_WRITES"
     ),
+    ...policy ? { tradingPolicy: policy } : {},
+    ...env.XROCKET_AGENT_STATE_PATH?.trim() ? { agentStatePath: env.XROCKET_AGENT_STATE_PATH.trim() } : {},
     approvalTtlMs: ttlValue(env.XROCKET_APPROVAL_TTL_MS),
     requestTimeoutMs: 15e3,
     maxResponseBytes: 2e6
@@ -29824,8 +29877,8 @@ var XrocketClient = class {
   }
   config;
   fetchImpl;
-  async request(method, path, options = {}) {
-    const url2 = new URL(path, this.config.apiBaseUrl);
+  async request(method, path2, options = {}) {
+    const url2 = new URL(path2, this.config.apiBaseUrl);
     addQuery(url2, options.query);
     const headers = new Headers({ Accept: "application/json" });
     if (options.private) {
@@ -29970,16 +30023,16 @@ var XrocketClient = class {
     return this.request("GET", `/api/v1/accounts/${account}/balances`, { private: true });
   }
   getOrders(view, query) {
-    const path = view === "active" ? "/api/v1/orders/active" : view === "history" ? "/api/v1/orders/history" : "/api/v1/order";
-    return this.request("GET", path, { private: true, query });
+    const path2 = view === "active" ? "/api/v1/orders/active" : view === "history" ? "/api/v1/orders/history" : "/api/v1/order";
+    return this.request("GET", path2, { private: true, query });
   }
   getTransfers(view, query) {
-    const path = view === "history" ? "/api/v1/accounts/transfers" : "/api/v1/accounts/transfer";
-    return this.request("GET", path, { private: true, query });
+    const path2 = view === "history" ? "/api/v1/accounts/transfers" : "/api/v1/accounts/transfer";
+    return this.request("GET", path2, { private: true, query });
   }
   getWithdrawals(view, query) {
-    const path = view === "history" ? "/api/v1/accounts/funding/withdrawals" : "/api/v1/accounts/funding/withdrawal";
-    return this.request("GET", path, { private: true, query });
+    const path2 = view === "history" ? "/api/v1/accounts/funding/withdrawals" : "/api/v1/accounts/funding/withdrawal";
+    return this.request("GET", path2, { private: true, query });
   }
   getWithdrawalQuotas(asset, network) {
     return this.request("GET", "/api/v1/accounts/funding/withdrawal-quotas", {
@@ -30022,19 +30075,49 @@ var XrocketClient = class {
 };
 
 // src/version.ts
-var VERSION = "0.5.0";
+var VERSION = "0.6.0";
 
 // src/cli-commands.ts
+function parseTradingConfigOptions(args) {
+  if (args[0] !== "trading-config") throw new Error("Expected trading-config command");
+  let environment = "testnet";
+  let limit = "100";
+  let limitAsset = "USD";
+  for (let index = 1; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument === "--mainnet") {
+      environment = "mainnet";
+      continue;
+    }
+    if (argument === "--limit" || argument === "--asset") {
+      const value = args[index + 1];
+      if (!value) throw new Error(`${argument} requires a value`);
+      if (argument === "--limit") {
+        if (value.length > 128 || !/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value) || !/[1-9]/.test(value)) {
+          throw new Error("--limit must be a positive decimal value");
+        }
+        limit = value;
+      } else {
+        if (!/^[A-Za-z0-9]{2,16}$/.test(value)) {
+          throw new Error("--asset must be a 2-16 character asset or fiat code");
+        }
+        limitAsset = value.toUpperCase();
+      }
+      index += 1;
+      continue;
+    }
+    throw new Error(`Unknown trading-config option: ${argument}`);
+  }
+  return { environment, limit, limitAsset };
+}
 function parseCliCommand(args) {
   if (args.length === 0 || args.length === 1 && args[0] === "serve") return "serve";
   if (args.length === 1 && args[0] === "serve-http") return "serve-http";
   if (args.length === 1 && args[0] === "doctor") return "doctor";
   if (args.length === 1 && args[0] === "config") return "config";
-  if (args.length === 1 && args[0] === "trading-config") {
-    return "trading-config-testnet";
-  }
-  if (args.length === 2 && args[0] === "trading-config" && args[1] === "--mainnet") {
-    return "trading-config-mainnet";
+  if (args[0] === "trading-config") {
+    const options = parseTradingConfigOptions(args);
+    return options.environment === "mainnet" ? "trading-config-mainnet" : "trading-config-testnet";
   }
   if (args.length === 1 && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
     return "help";
@@ -30052,14 +30135,15 @@ function helpText() {
     "  xrocket-mcp serve-http   Start the hard public-only Streamable HTTP server",
     "  xrocket-mcp doctor       Check configuration and public API connectivity",
     "  xrocket-mcp config       Print a safe copy-paste MCP client configuration",
-    "  xrocket-mcp trading-config            Print a testnet trading configuration",
-    "  xrocket-mcp trading-config --mainnet  Print an explicit live-trading configuration",
+    "  xrocket-mcp trading-config [--limit 100] [--asset USD] [--mainnet]",
+    "                                      Print an autonomous trading configuration",
     "  xrocket-mcp --version    Print the version",
     "",
     "Defaults: public mainnet reads; every financial write gate is disabled.",
     "serve-http always exposes only public mainnet tools and never reads account or write settings.",
     "With XROCKET_PROFILE omitted, setting XROCKET_API_TOKEN locally enables private reads. Never paste a token into a prompt.",
-    "Trading config enables orders only; transfers and withdrawals stay disabled. Testnet is the default."
+    "Trading config lets the agent trade any market inside one daily value limit.",
+    "Transfers and withdrawals stay disabled and keep explicit approval. Testnet is the default."
   ].join("\n");
 }
 function renderMcpConfig() {
@@ -30083,7 +30167,7 @@ function renderMcpConfig() {
     2
   );
 }
-function renderTradingMcpConfig(environment = "testnet") {
+function renderTradingMcpConfig(environment = "testnet", limit = "100", limitAsset = "USD") {
   return JSON.stringify(
     {
       mcpServers: {
@@ -30095,6 +30179,7 @@ function renderTradingMcpConfig(environment = "testnet") {
             XROCKET_ENVIRONMENT: environment,
             XROCKET_API_TOKEN: XROCKET_API_TOKEN_PLACEHOLDER,
             XROCKET_ENABLE_TRADING: "true",
+            XROCKET_TRADING_LIMIT: `${limit} ${limitAsset}`,
             XROCKET_ENABLE_TRANSFERS: "false",
             XROCKET_ENABLE_WITHDRAWALS: "false",
             XROCKET_ALLOW_MAINNET_WRITES: environment === "mainnet" ? "true" : "false"
@@ -31837,13 +31922,7 @@ var XROCKET_API_DOCS_URL = "https://docs.xrocket.exchange/api/exchange/exchange-
 
 // src/landing.ts
 var MCP_CONFIG = JSON.stringify(
-  {
-    mcpServers: {
-      xrocket: {
-        url: HOSTED_MCP_URL
-      }
-    }
-  },
+  { mcpServers: { xrocket: { url: HOSTED_MCP_URL } } },
   null,
   2
 );
@@ -31855,12 +31934,12 @@ var LANDING_PAGE = `<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>xRocket MCP \u2014 trade from your AI with explicit approval</title>
-  <meta name="description" content="Prepare, review, and execute xRocket orders through a local MCP client. Start on testnet; keep the account token local.">
-  <meta name="theme-color" content="#090a18">
+  <title>xRocket MCP \u2014 autonomous CEX trading for AI agents</title>
+  <meta name="description" content="Set a daily trading limit, connect xRocket locally, and let your AI agent trade. Transfers and withdrawals stay locked behind explicit approval.">
+  <meta name="theme-color" content="#080a08">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Trade xRocket from your AI">
-  <meta property="og:description" content="Market context, order estimates, explicit approval, and guarded execution through MCP.">
+  <meta property="og:title" content="Give your agent a limit. It trades.">
+  <meta property="og:description" content="Autonomous xRocket trading over MCP, bounded by one daily value limit.">
   <meta property="og:url" content="${HOSTED_ORIGIN}/">
   <meta name="twitter:card" content="summary">
   <link rel="canonical" href="${HOSTED_ORIGIN}/">
@@ -31868,178 +31947,196 @@ var LANDING_PAGE = `<!doctype html>
   <link rel="stylesheet" href="/landing.css">
   <script src="/landing.js" defer></script>
 </head>
-<body>
-  <a class="skip-link" href="#trade">Skip to trading setup</a>
-  <header class="nav shell">
+<body data-version="${VERSION}">
+  <a class="skip-link" href="#trade">Skip to setup</a>
+  <header class="topbar frame">
     <a class="brand" href="/" aria-label="xRocket MCP home">
-      <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 64 64" role="img">
-          <path d="M37 8c9 3 15 9 18 18L36 45 19 28C22 18 28 11 37 8Z" fill="currentColor"/>
-          <circle cx="39" cy="23" r="4" fill="#6967ff"/>
-          <path d="m22 34-9 3 14 14 3-9" fill="#ffd36a"/>
-        </svg>
-      </span>
-      <span>xRocket <span class="muted">MCP</span></span>
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M19 3c5 2 8 5 10 10L18 24 8 14C10 8 14 5 19 3Z"/><circle cx="20" cy="11" r="2"/><path d="m10 18-6 2 8 8 2-6"/></svg>
+      <span>xRocket</span><b>MCP</b>
     </a>
-    <nav aria-label="Project links">
+    <nav aria-label="Main navigation">
+      <a href="#trade">Set up</a>
+      <a href="#demo">Market data</a>
       <a href="https://github.com/nakazanie-ton/myrocket">GitHub</a>
-      <a href="#trade">Trading</a>
-      <a href="#connect">Market demo</a>
-      <a href="#examples">Examples</a>
-      <a class="nav-cta" href="#trade">Set up</a>
+      <a class="nav-action" href="#trade">Connect agent</a>
     </nav>
   </header>
 
   <main>
-    <section class="hero shell">
+    <section class="hero frame">
       <div class="hero-copy">
-        <p class="eyebrow"><span></span> Local execution \xB7 testnet first</p>
-        <h1>Trade xRocket from your AI. <em>Review every order.</em></h1>
-        <p class="lede">Ask your MCP client to prepare an order. It returns the market rules, estimate, fee, relevant balance, and exact intent. Nothing is submitted until you explicitly approve.</p>
-        <div class="hero-actions">
-          <a class="button primary" href="#trade">Set up trading</a>
-          <a class="button secondary" href="#connect">Try market demo</a>
+        <p class="signal"><span></span> xRocket spot \xB7 MCP</p>
+        <h1>Give your agent<br>a limit. <em>It trades.</em></h1>
+        <p class="lead">Set one daily value limit. Add your API key locally. Give the agent a strategy.</p>
+        <div class="actions">
+          <a class="button primary" href="#trade">Set up the agent</a>
+          <a class="button text-button" href="#how">See how it works <span>\u2198</span></a>
         </div>
-        <ul class="trust" aria-label="Service boundaries">
-          <li>Token stays local</li>
-          <li>Estimate before execution</li>
-          <li>Single-use approval receipt</li>
-        </ul>
+        <p class="microcopy">Orders run automatically inside the limit. Transfers and withdrawals do not.</p>
       </div>
-      <div class="terminal" aria-label="Example guarded order flow">
-        <div class="terminal-head"><span></span><span></span><span></span><b>Testnet order</b></div>
-        <div class="message user">Prepare a market buy of GRAM-USDT using 10 USDT. Do not execute yet.</div>
-        <div class="message agent">
-          <div class="agent-label"><span class="spark">\u2726</span> xRocket MCP</div>
-          <p><strong>Prepared \u2014 not submitted</strong></p>
-          <div class="quote-grid">
-            <span>Buy GRAM-USDT<small>market \xB7 IOC</small></span>
-            <span>10 USDT<small>exact requested funds</small></span>
-            <span>Fee + estimate<small>from xRocket API</small></span>
-            <span>Balance + rules<small>included in the preview</small></span>
-          </div>
-          <p class="terminal-note">Awaiting your explicit approval. The receipt expires and can be used once.</p>
+
+      <div class="mandate" aria-label="Example autonomous trading mandate">
+        <div class="mandate-head">
+          <div><span class="status-dot"></span> AGENT MANDATE</div>
+          <span>TESTNET</span>
+        </div>
+        <div class="limit-row">
+          <span>Daily limit</span>
+          <strong>100 <small>USD</small></strong>
+        </div>
+        <div class="usage">
+          <div><span>Used today</span><b>24.80 USD</b></div>
+          <i><span></span></i>
+          <small>75.20 USD available</small>
+        </div>
+        <dl class="permissions">
+          <div><dt>Markets</dt><dd>ALL SPOT</dd></div>
+          <div><dt>Orders</dt><dd class="on">AUTONOMOUS</dd></div>
+          <div><dt>Transfers</dt><dd class="off">LOCKED</dd></div>
+          <div><dt>Withdrawals</dt><dd class="off">LOCKED</dd></div>
+        </dl>
+        <div class="activity">
+          <div class="activity-head"><span>Recent execution</span><span>VALUE</span><span>STATUS</span></div>
+          <div><span><b>BUY</b> GRAM\u2013USDT</span><span>8.00</span><i>FILLED</i></div>
+          <div><span><b>SELL</b> BTC\u2013USDT</span><span>12.40</span><i>FILLED</i></div>
+          <div><span><b>BUY</b> XROCK\u2013USDT</span><span>4.40</span><i>WORKING</i></div>
         </div>
       </div>
     </section>
 
-    <section class="section shell" id="trade">
-      <div class="section-heading">
-        <p class="kicker">Your first guarded order</p>
-        <h2>Sign in once. Keep the token on your machine.</h2>
-        <p>The local MCP profile can read your account and trade. The hosted website never receives your token.</p>
+    <section class="ticker" aria-label="Product capabilities">
+      <div><span>01</span> LIVE MARKET DATA</div>
+      <div><span>02</span> AUTONOMOUS ORDERS</div>
+      <div><span>03</span> LOCAL CREDENTIALS</div>
+      <div><span>04</span> HARD DAILY LIMIT</div>
+    </section>
+
+    <section class="setup frame" id="trade">
+      <div class="section-label">SETUP / 01</div>
+      <div class="setup-heading">
+        <h2>One limit.<br>One local config.</h2>
+        <p>No symbol list is required. The agent can trade any available spot pair inside the daily value limit you set.</p>
       </div>
-      <div class="setup-grid">
-        <article class="setup-card featured">
-          <div class="step">1</div>
-          <h3>Sign in and create an API token</h3>
-          <p>Open xRocket, then go to <strong>Menu \u2192 Settings \u2192 Exchange settings \u2192 API token</strong>.</p>
-          <a class="small-button inline-button" href="/open" rel="nofollow">Open xRocket <span aria-hidden="true">\u2197</span></a>
-          <p class="hint warning">The token has broad account access. Put it only in your local MCP client's secret or environment settings \u2014 never in chat.</p>
-        </article>
-        <article class="setup-card">
-          <div class="step">2</div>
-          <h3>Generate the trading config</h3>
-          <div class="copy-row">
-            <code id="trade-command">npx -y xrocket-mcp@${VERSION} trading-config</code>
-            <button type="button" data-copy="trade-command">Copy</button>
+
+      <div class="configurator">
+        <div class="config-controls">
+          <div class="field-group">
+            <label for="limit-amount">Daily trading limit</label>
+            <div class="limit-control">
+              <input id="limit-amount" inputmode="decimal" value="100" aria-describedby="limit-help">
+              <input id="limit-asset" list="limit-assets" value="USD" maxlength="16" aria-label="Limit asset">
+              <datalist id="limit-assets"><option value="USD"><option value="USDT"><option value="TONCOIN"><option value="BTC"></datalist>
+            </div>
+            <p id="limit-help">All agent orders together cannot exceed this value per UTC day.</p>
           </div>
-          <p class="hint">Run it locally, paste the printed JSON into your MCP client, then replace the token placeholder locally. This starts on testnet and enables trading only.</p>
-        </article>
-        <article class="setup-card">
-          <div class="step">3</div>
-          <h3>Prepare, review, approve</h3>
-          <p class="starter">\u201COn testnet, prepare a market buy of GRAM-USDT using 10 USDT. Show the estimate, fee, balances, rules, and exact intent. Do not execute until I explicitly approve.\u201D</p>
-          <button class="small-button" type="button" data-copy-text="On testnet, prepare a market buy of GRAM-USDT using 10 USDT. Show the estimate, fee, balances, rules, and exact intent. Do not execute until I explicitly approve.">Copy prompt</button>
-        </article>
+          <fieldset>
+            <legend>Environment</legend>
+            <label><input type="radio" name="environment" value="testnet" checked><span>Testnet</span></label>
+            <label><input type="radio" name="environment" value="mainnet"><span>Mainnet</span></label>
+          </fieldset>
+          <div class="locked-row"><span>Transfers</span><b>EXPLICIT ONLY</b></div>
+          <div class="locked-row"><span>Withdrawals</span><b>EXPLICIT ONLY</b></div>
+        </div>
+
+        <div class="command-panel">
+          <div class="command-head"><span>GENERATED COMMAND</span><span>v${VERSION}</span></div>
+          <pre id="trade-command">npx -y xrocket-mcp@${VERSION} trading-config --limit 100 --asset USD</pre>
+          <button class="copy-command" type="button" data-copy="trade-command">Copy command</button>
+          <p>Run locally. The command prints the MCP config with a token placeholder and your limit.</p>
+        </div>
       </div>
-      <div class="trade-note">
-        <strong>Going live later?</strong>
-        <span>After testing, run <code>npx -y xrocket-mcp@${VERSION} trading-config --mainnet</code>. This explicitly opens the separate mainnet trading gate; transfers and withdrawals remain disabled.</span>
-      </div>
+
+      <ol class="steps" id="how">
+        <li>
+          <span>01</span><h3>Get the key</h3>
+          <p>Sign in to xRocket. Open <strong>Menu \u2192 Settings \u2192 Exchange settings \u2192 API token</strong>.</p>
+          <a href="/open" rel="nofollow">Open xRocket \u2197</a>
+        </li>
+        <li>
+          <span>02</span><h3>Add it locally</h3>
+          <p>Run the generated command, paste its JSON into your MCP client, and replace the placeholder on your machine.</p>
+        </li>
+        <li>
+          <span>03</span><h3>Give it a strategy</h3>
+          <p>Tell your agent what to trade and when. Orders inside the limit execute without asking again.</p>
+          <button type="button" data-copy-text="Use xRocket on testnet. Trade GRAM-USDT with this strategy: [describe strategy]. Stay inside the configured daily trading limit. Do not transfer or withdraw funds.">Copy starter prompt</button>
+        </li>
+      </ol>
+      <p class="secret-note"><b>API keys stay local.</b> This website and the hosted MCP endpoint never receive account credentials.</p>
       <p class="copy-status" aria-live="polite"></p>
     </section>
 
-    <section class="section shell" id="connect">
-      <div class="section-heading compact">
-        <p class="kicker">No-account market demo</p>
-        <h2>Try the data before connecting your account.</h2>
-        <p>The remote endpoint is useful for prices, spreads, order books, trades, candles, fees, and market rules. It is structurally unable to trade.</p>
-      </div>
-      <div class="setup-grid demo-grid">
-        <article class="setup-card featured">
-          <h3>Remote MCP endpoint</h3>
-          <div class="copy-row">
-            <code id="mcp-url">${HOSTED_MCP_URL}</code>
-            <button type="button" data-copy="mcp-url">Copy URL</button>
-          </div>
-          <p class="hint">Choose Streamable HTTP in a compatible MCP client. No login or token is required.</p>
-        </article>
-        <article class="setup-card">
-          <h3>Generic client JSON</h3>
-          <pre id="mcp-config"><code>${escapeHtml(MCP_CONFIG)}</code></pre>
-          <button class="small-button" type="button" data-copy="mcp-config">Copy config</button>
-        </article>
+    <section class="proof frame">
+      <div class="section-label">CONTROL / 02</div>
+      <h2>The agent gets execution.<br>Not the keys to everything.</h2>
+      <div class="control-table">
+        <div class="table-head"><span>CAPABILITY</span><span>BEHAVIOUR</span><span>CONTROL</span></div>
+        <div><strong>Market + limit orders</strong><span>Runs automatically</span><b class="green">DAILY LIMIT</b></div>
+        <div><strong>Order cancellation</strong><span>Runs automatically</span><b class="green">TRADING SCOPE</b></div>
+        <div><strong>Internal transfers</strong><span>Prepared, then approved</span><b>EXPLICIT</b></div>
+        <div><strong>External withdrawals</strong><span>Prepared, then approved</span><b>EXPLICIT</b></div>
+        <div><strong>Unknown write result</strong><span>Never sent twice</span><b>FAIL CLOSED</b></div>
       </div>
     </section>
 
-    <section class="section examples shell" id="examples">
-      <div class="section-heading compact">
-        <p class="kicker">Trade by intent</p>
-        <h2>Say the outcome and the safety boundary.</h2>
-      </div>
-      <div class="prompt-grid">
-        <button class="prompt" type="button" data-copy-text="Prepare a limit buy of GRAM-USDT: size 1000 GRAM at 0.003 USDT, GTC. Show the estimate and exact intent. Do not execute.">
-          <span>01</span><strong>Prepare a limit order</strong><small>Review size, price, fee, rules, and available balance before anything is sent.</small>
-        </button>
-        <button class="prompt" type="button" data-copy-text="Show my active xRocket orders and explain which funds are currently held.">
-          <span>02</span><strong>Inspect active orders</strong><small>Read private order and trading-balance state without changing it.</small>
-        </button>
-        <button class="prompt" type="button" data-copy-text="Prepare cancellation of this xRocket order. Show the exact order first and wait for my approval.">
-          <span>03</span><strong>Cancel with review</strong><small>Bind cancellation to the exact current order and approve it separately.</small>
-        </button>
-      </div>
-    </section>
-
-    <section class="section shell boundary">
+    <section class="demo frame" id="demo">
       <div>
-        <p class="kicker">Two hard boundaries</p>
-        <h2>Demo is remote. Trading is local.</h2>
+        <div class="section-label">PUBLIC DEMO / 03</div>
+        <h2>Market data.<br>No account needed.</h2>
+        <p>Connect the hosted endpoint for prices, books, trades, candles, fees, and market rules. It cannot access an account or trade.</p>
       </div>
-      <p>The hosted MCP cannot see balances, accounts, orders, or tokens. The local trading template enables orders, but keeps transfers and withdrawals off. Every order still requires prepare and explicit approval before execution.</p>
-      <a href="https://github.com/nakazanie-ton/myrocket/blob/main/docs/SAFETY.md">Read the safety model <span aria-hidden="true">\u2192</span></a>
+      <div class="demo-config">
+        <div class="command-head"><span>STREAMABLE HTTP</span><span>PUBLIC</span></div>
+        <code id="mcp-url">${HOSTED_MCP_URL}</code>
+        <button type="button" data-copy="mcp-url">Copy URL</button>
+        <details>
+          <summary>Generic client JSON</summary>
+          <pre id="mcp-config">${escapeHtml(MCP_CONFIG)}</pre>
+          <button type="button" data-copy="mcp-config">Copy JSON</button>
+        </details>
+      </div>
     </section>
 
-    <section class="final-cta shell">
-      <div>
-        <p class="kicker">Start without live-money risk</p>
-        <h2>Prepare your first testnet order.</h2>
-      </div>
-      <div class="hero-actions">
-        <a class="button primary" href="#trade">Set up trading</a>
-        <a class="button secondary" href="/open" rel="nofollow">Open xRocket <span aria-hidden="true">\u2197</span></a>
-      </div>
+    <section class="closing frame">
+      <p>YOUR STRATEGY.<br>YOUR LIMIT.</p>
+      <h2>Let the agent<br>run the orders.</h2>
+      <a class="button primary" href="#trade">Configure xRocket MCP</a>
     </section>
   </main>
 
-  <footer class="shell">
+  <footer class="frame">
     <p>xRocket MCP v${VERSION} \xB7 unofficial open-source integration</p>
-    <nav aria-label="Legal and package links">
+    <nav aria-label="Package and policy links">
+      <a href="https://github.com/nakazanie-ton/myrocket">Source</a>
+      <a href="https://www.npmjs.com/package/xrocket-mcp">npm</a>
       <a href="https://github.com/nakazanie-ton/myrocket/blob/main/PRIVACY.md">Privacy</a>
       <a href="https://github.com/nakazanie-ton/myrocket/blob/main/TERMS.md">Terms</a>
-      <a href="https://www.npmjs.com/package/xrocket-mcp">npm</a>
-      <a href="https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.nakazanie-ton%2Fxrocket">MCP Registry</a>
     </nav>
   </footer>
 </body>
 </html>`;
 var LANDING_SCRIPT = `(() => {
   const status = document.querySelector('.copy-status');
+  const amount = document.getElementById('limit-amount');
+  const asset = document.getElementById('limit-asset');
+  const command = document.getElementById('trade-command');
+  const version = document.body.dataset.version;
   const showStatus = (message) => {
     if (!status) return;
     status.textContent = message;
     window.clearTimeout(showStatus.timeout);
     showStatus.timeout = window.setTimeout(() => { status.textContent = ''; }, 2400);
+  };
+  const updateCommand = () => {
+    const raw = amount && amount.value.trim();
+    const safeAmount = /^(?:0|[1-9]\\d*)(?:\\.\\d+)?$/.test(raw || '') && /[1-9]/.test(raw || '') ? raw : '100';
+    const rawAsset = asset && asset.value.trim();
+    const selectedAsset = /^[A-Za-z0-9]{2,16}$/.test(rawAsset || '') ? rawAsset.toUpperCase() : 'USD';
+    const invalidAsset = Boolean(rawAsset) && selectedAsset === 'USD' && rawAsset.toUpperCase() !== 'USD';
+    if (asset) asset.setAttribute('aria-invalid', String(invalidAsset));
+    const environment = document.querySelector('input[name="environment"]:checked');
+    const mainnet = environment && environment.value === 'mainnet' ? ' --mainnet' : '';
+    if (command) command.textContent = 'npx -y xrocket-mcp@' + version + ' trading-config --limit ' + safeAmount + ' --asset ' + selectedAsset + mainnet;
   };
   const copy = async (value) => {
     try {
@@ -32049,6 +32146,8 @@ var LANDING_SCRIPT = `(() => {
       showStatus('Copy failed. Select the text and copy it manually.');
     }
   };
+  document.addEventListener('input', updateCommand);
+  document.addEventListener('change', updateCommand);
   document.addEventListener('click', (event) => {
     const button = event.target.closest('[data-copy], [data-copy-text]');
     if (!button) return;
@@ -32057,15 +32156,17 @@ var LANDING_SCRIPT = `(() => {
     const value = button.getAttribute('data-copy-text') || (target ? target.textContent : '');
     if (value) void copy(value);
   });
+  updateCommand();
 })();`;
 var LANDING_STYLES = `
-:root{color-scheme:dark;--bg:#090a18;--panel:#111326;--panel-2:#171a31;--line:#292d4a;--text:#f7f7ff;--muted:#a8adc8;--violet:#7775ff;--violet-2:#a29fff;--gold:#ffd36a;--green:#70e0ac;--shadow:0 24px 80px rgba(0,0,0,.35)}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 76% 8%,rgba(106,103,255,.17),transparent 31rem),radial-gradient(circle at 10% 38%,rgba(49,201,155,.07),transparent 28rem),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}a{color:inherit;text-decoration:none}button{font:inherit}.shell{width:min(1160px,calc(100% - 40px));margin-inline:auto}.skip-link{position:fixed;left:16px;top:-100px;background:#fff;color:#090a18;padding:10px 14px;border-radius:10px;z-index:50}.skip-link:focus{top:16px}.nav{height:84px;display:flex;align-items:center;justify-content:space-between}.brand{display:flex;align-items:center;gap:11px;font-size:18px;font-weight:760;letter-spacing:-.02em}.brand-mark{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(145deg,#8e8cff,#5552e8);box-shadow:0 10px 28px rgba(105,103,255,.35);color:white}.brand-mark svg{width:27px;height:27px}.muted{color:var(--muted);font-weight:600}.nav nav,.hero-actions,.trust,footer nav{display:flex;align-items:center;gap:24px}.nav nav a{font-size:14px;color:var(--muted);transition:color .2s}.nav nav a:hover,.nav nav a:focus-visible{color:var(--text)}.nav .nav-cta{color:var(--text);border:1px solid var(--line);padding:9px 15px;border-radius:11px}.hero{min-height:640px;display:grid;grid-template-columns:1.02fr .98fr;gap:68px;align-items:center;padding-block:72px 104px}.eyebrow,.kicker{text-transform:uppercase;letter-spacing:.16em;font-size:12px;font-weight:800;color:var(--violet-2)}.eyebrow{display:flex;align-items:center;gap:9px;margin:0 0 23px}.eyebrow span{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 5px rgba(112,224,172,.1)}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(48px,6vw,78px);line-height:.98;letter-spacing:-.06em;margin-bottom:26px;max-width:760px}h1 em{display:block;font-style:normal;color:var(--violet-2)}.lede{font-size:19px;line-height:1.65;color:var(--muted);max-width:650px;margin-bottom:32px}.button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:49px;padding:0 20px;border-radius:13px;font-size:15px;font-weight:760;transition:transform .2s,border-color .2s,background .2s}.button:hover{transform:translateY(-2px)}.button:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid rgba(162,159,255,.55);outline-offset:3px}.primary{background:linear-gradient(135deg,#8481ff,#5c58eb);box-shadow:0 15px 34px rgba(91,88,235,.27)}.secondary{border:1px solid var(--line);background:rgba(17,19,38,.55)}.secondary:hover{border-color:#464b72;background:var(--panel)}.trust{list-style:none;padding:0;margin:26px 0 0;gap:20px;color:var(--muted);font-size:13px}.trust li::before{content:"\u2713";color:var(--green);margin-right:7px;font-weight:900}.terminal{border:1px solid var(--line);border-radius:22px;background:linear-gradient(160deg,rgba(23,26,49,.97),rgba(13,15,31,.98));box-shadow:var(--shadow);overflow:hidden;transform:rotate(1deg)}.terminal-head{height:52px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:7px;padding:0 18px;color:var(--muted);font-size:12px}.terminal-head span{width:8px;height:8px;border-radius:50%;background:#353955}.terminal-head span:first-child{background:#f47f78}.terminal-head span:nth-child(2){background:#f2c86b}.terminal-head span:nth-child(3){background:#64d59a}.terminal-head b{margin-left:auto;font-weight:650}.message{margin:18px;padding:17px 19px;border-radius:15px;font-size:14px}.message.user{margin-left:64px;background:#232744;color:#e8e9fb}.message.agent{border:1px solid #303552;background:#101225;margin-right:36px}.agent-label{font-size:12px;font-weight:800;color:var(--violet-2);text-transform:uppercase;letter-spacing:.11em;margin-bottom:17px}.spark{color:var(--gold);margin-right:5px}.message.agent p{margin-bottom:14px}.quote-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.quote-grid span{border:1px solid #292e49;background:#171a31;border-radius:11px;padding:12px;font-weight:700}.quote-grid small{display:block;color:var(--muted);font-weight:500;margin-top:3px}.terminal-note{color:var(--muted);font-size:12px;margin-top:15px!important;margin-bottom:0!important}.section{padding-block:100px;border-top:1px solid rgba(41,45,74,.72)}.section-heading{max-width:710px;margin-bottom:40px}.section-heading.compact{max-width:680px}.kicker{margin-bottom:13px}h2{font-size:clamp(34px,5vw,54px);line-height:1.04;letter-spacing:-.045em;margin-bottom:18px}.section-heading>p:last-child,.boundary>p{color:var(--muted);font-size:17px}.setup-grid{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:15px}.demo-grid{grid-template-columns:1.35fr 1fr}.setup-card{position:relative;min-width:0;padding:27px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(150deg,rgba(23,26,49,.92),rgba(14,16,33,.92))}.setup-card.featured{border-color:#4a4e79}.step{width:31px;height:31px;display:grid;place-items:center;border-radius:9px;background:rgba(119,117,255,.15);color:var(--violet-2);font-weight:800;font-size:13px;margin-bottom:34px}.setup-card h3{font-size:19px;letter-spacing:-.02em;margin-bottom:15px}.setup-card>p{color:#d9daf0}.copy-row{display:flex;align-items:center;gap:10px;border:1px solid #343957;border-radius:12px;background:#0c0e20;padding:7px 7px 7px 13px}.copy-row code{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#d9daf0;font-size:12px}.copy-row button,.small-button{cursor:pointer;border:1px solid #42476b;color:var(--text);background:#242844;border-radius:9px;padding:9px 12px;font-weight:750;font-size:12px;white-space:nowrap}.copy-row button:hover,.small-button:hover{background:#303554}.inline-button{display:inline-flex;align-items:center;gap:6px}.hint{color:var(--muted)!important;font-size:12px;margin:13px 0 0}.warning{color:#f0d997!important}.setup-card pre{min-height:112px;overflow:auto;margin:0 0 13px;padding:13px;border:1px solid #303550;border-radius:11px;background:#0c0e20;color:#d9daf0;font-size:11px;line-height:1.55}.starter{min-height:112px;color:#d9daf0;font-size:15px;line-height:1.65}.trade-note{display:flex;gap:18px;margin-top:15px;padding:17px 20px;border:1px solid #343957;border-radius:14px;background:rgba(17,19,38,.72);color:var(--muted);font-size:13px}.trade-note strong{flex:0 0 auto;color:var(--text)}.trade-note code{color:#d9daf0}.copy-status{min-height:24px;color:var(--green);font-size:13px;margin:15px 0 0}.prompt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.prompt{text-align:left;cursor:pointer;color:var(--text);min-height:220px;padding:25px;border:1px solid var(--line);border-radius:18px;background:rgba(17,19,38,.72);transition:transform .2s,border-color .2s,background .2s}.prompt:hover{transform:translateY(-3px);border-color:#4c517c;background:var(--panel-2)}.prompt>span{display:block;color:var(--violet-2);font-size:12px;font-weight:800;letter-spacing:.12em;margin-bottom:42px}.prompt strong{display:block;font-size:18px;margin-bottom:10px}.prompt small{display:block;color:var(--muted);font-size:13px;line-height:1.6}.boundary{display:grid;grid-template-columns:1fr 1.2fr auto;align-items:end;gap:42px}.boundary h2{margin-bottom:0}.boundary>p{margin-bottom:2px}.boundary>a{color:var(--violet-2);font-weight:750;white-space:nowrap;margin-bottom:5px}.final-cta{margin-block:90px;padding:42px;border:1px solid #3a3f62;border-radius:24px;background:linear-gradient(120deg,rgba(119,117,255,.13),rgba(20,22,43,.9));display:flex;justify-content:space-between;align-items:center;gap:30px}.final-cta h2{font-size:38px;margin:0}.final-cta .kicker{margin-bottom:10px}footer{min-height:100px;padding-block:30px;border-top:1px solid rgba(41,45,74,.72);display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}footer p{margin:0}footer nav{gap:18px}footer a:hover{color:var(--text)}
-@media(max-width:900px){.hero{grid-template-columns:1fr;gap:50px;padding-top:52px}.terminal{transform:none;max-width:680px}.setup-grid,.prompt-grid{grid-template-columns:1fr 1fr}.setup-card.featured{grid-column:1/-1}.demo-grid .setup-card.featured{grid-column:auto}.boundary{grid-template-columns:1fr 1fr}.boundary>a{grid-column:1/-1}.final-cta{align-items:flex-start;flex-direction:column}}
-@media(max-width:620px){.shell{width:min(100% - 28px,1160px)}.nav{height:70px}.nav nav>a:not(.nav-cta){display:none}.hero{min-height:auto;padding-block:50px 80px}h1{font-size:48px}.lede{font-size:17px}.hero-actions{align-items:stretch;flex-direction:column;gap:10px}.button{width:100%}.trust{display:grid;grid-template-columns:1fr;gap:7px}.terminal{margin-inline:-2px}.message.user{margin-left:34px}.message.agent{margin-right:18px}.quote-grid{grid-template-columns:1fr}.section{padding-block:76px}.setup-grid,.prompt-grid{grid-template-columns:1fr}.setup-card.featured{grid-column:auto}.copy-row{align-items:stretch;flex-direction:column}.copy-row code{white-space:normal;overflow-wrap:anywhere}.copy-row button{width:100%}.trade-note{flex-direction:column}.prompt{min-height:190px}.boundary{grid-template-columns:1fr;gap:20px}.boundary>a{grid-column:auto}.final-cta{margin-block:65px;padding:29px}.final-cta h2{font-size:32px}footer{align-items:flex-start;flex-direction:column;gap:18px}footer nav{flex-wrap:wrap}}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important}}
+#limit-asset{border-left:1px solid var(--line-strong);font-size:12px;text-transform:uppercase}#limit-asset[aria-invalid="true"]{box-shadow:inset 0 0 0 2px var(--red)}
+:root{color-scheme:dark;--bg:#080a08;--surface:#0d100d;--line:#2a3029;--line-strong:#465044;--text:#f3f5f0;--muted:#929b8f;--acid:#c7ff4f;--red:#ff735d}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:"Arial Narrow","Helvetica Neue",Arial,sans-serif;line-height:1.45}body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.035;background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px);background-size:64px 64px}a{color:inherit;text-decoration:none}button,input,select{font:inherit}.frame{width:min(1180px,calc(100% - 48px));margin-inline:auto}.skip-link{position:fixed;left:16px;top:-100px;background:var(--acid);color:#080a08;padding:10px 14px;z-index:50}.skip-link:focus{top:16px}.topbar{height:78px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:800;letter-spacing:-.02em}.brand svg{width:27px;height:27px;fill:var(--text)}.brand svg circle{fill:var(--bg)}.brand b{color:var(--muted);font-size:11px;letter-spacing:.12em}.topbar nav{display:flex;align-items:center;gap:28px}.topbar nav a{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.topbar nav a:hover,.topbar nav a:focus-visible{color:var(--text)}.topbar .nav-action{color:var(--bg);background:var(--acid);padding:11px 15px}.hero{min-height:690px;padding:92px 0 105px;display:grid;grid-template-columns:1.05fr .95fr;gap:78px;align-items:center}.signal,.section-label,.command-head,.mandate-head,.table-head{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase}.signal{display:flex;align-items:center;gap:10px;color:var(--muted);margin:0 0 28px}.signal span,.status-dot{width:7px;height:7px;border-radius:50%;background:var(--acid);box-shadow:0 0 0 4px rgba(199,255,79,.08)}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(54px,6.5vw,88px);line-height:.91;letter-spacing:-.07em;margin:0 0 30px;font-weight:760}h1 em{color:var(--acid);font-style:normal}.lead{max-width:570px;color:#c9cec5;font-size:19px;line-height:1.55;margin-bottom:34px}.actions{display:flex;align-items:center;gap:22px}.button{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 19px;font-size:13px;font-weight:800;letter-spacing:.04em}.button.primary{background:var(--acid);color:#080a08}.button:hover{filter:brightness(1.06)}.text-button{padding-inline:0;color:var(--muted)}.text-button span{color:var(--acid);margin-left:9px}.microcopy{margin:25px 0 0;color:#6f786d;font-size:12px}.mandate{border:1px solid var(--line-strong);background:var(--surface);box-shadow:16px 16px 0 #030403}.mandate-head{height:52px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);color:var(--muted)}.mandate-head div{display:flex;align-items:center;gap:10px;color:var(--text)}.limit-row{padding:27px 24px 23px;display:flex;align-items:end;justify-content:space-between}.limit-row>span{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}.limit-row strong{font-size:48px;line-height:1;letter-spacing:-.05em}.limit-row small{color:var(--muted);font-size:13px;letter-spacing:.08em}.usage{padding:0 24px 25px}.usage>div,.usage>small{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}.usage b{color:var(--text)}.usage i{display:block;height:3px;background:#252b24;margin:10px 0 8px}.usage i span{display:block;width:24.8%;height:100%;background:var(--acid)}.permissions{display:grid;grid-template-columns:1fr 1fr;margin:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.permissions div{padding:16px 20px;display:flex;justify-content:space-between;border-right:1px solid var(--line);border-bottom:1px solid var(--line);font-size:11px}.permissions div:nth-child(2n){border-right:0}.permissions div:nth-last-child(-n+2){border-bottom:0}.permissions dt{color:var(--muted)}.permissions dd{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;letter-spacing:.08em}.permissions .on{color:var(--acid)}.permissions .off{color:var(--red)}.activity{padding:18px 20px 14px}.activity>div{display:grid;grid-template-columns:1.5fr .6fr .5fr;gap:10px;padding:9px 0;border-bottom:1px solid #20251f;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px}.activity>div:last-child{border-bottom:0}.activity .activity-head{color:#687065;letter-spacing:.1em}.activity b{color:var(--acid);font-weight:500;margin-right:5px}.activity i{font-style:normal;color:var(--muted);text-align:right}.ticker{min-height:72px;border-block:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr)}.ticker div{display:flex;align-items:center;justify-content:center;gap:14px;border-right:1px solid var(--line);font-size:10px;font-weight:800;letter-spacing:.1em}.ticker div:last-child{border-right:0}.ticker span{color:var(--acid);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.setup,.proof,.demo{padding-block:118px}.section-label{color:var(--acid);margin-bottom:30px}.setup-heading{display:grid;grid-template-columns:1.15fr .85fr;gap:80px;align-items:end;margin-bottom:55px}.setup-heading h2,.proof h2,.demo h2,.closing h2{font-size:clamp(43px,5.4vw,68px);line-height:.95;letter-spacing:-.06em;margin:0}.setup-heading p,.demo>div>p{max-width:520px;color:var(--muted);font-size:17px;margin:0}.configurator{display:grid;grid-template-columns:.9fr 1.1fr;border:1px solid var(--line-strong);background:var(--surface)}.config-controls{padding:30px;border-right:1px solid var(--line)}.field-group label,fieldset legend{display:block;margin-bottom:12px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em}.limit-control{display:grid;grid-template-columns:1fr 130px;border:1px solid var(--line-strong)}.limit-control input,.limit-control select{height:60px;border:0;background:#090b09;color:var(--text);padding:0 17px;outline:none}.limit-control input{font-size:25px;font-weight:800}.limit-control select{border-left:1px solid var(--line-strong);font-size:12px;font-weight:800}.limit-control input:focus,.limit-control select:focus{box-shadow:inset 0 0 0 2px var(--acid)}.field-group p{font-size:11px;color:#717a6f;margin:10px 0 25px}fieldset{border:0;padding:0;margin:0 0 24px;display:grid;grid-template-columns:1fr 1fr}fieldset legend{grid-column:1/-1}fieldset label input{position:absolute;opacity:0}fieldset label span{height:43px;border:1px solid var(--line-strong);display:grid;place-items:center;color:var(--muted);font-size:11px;text-transform:uppercase;cursor:pointer}fieldset label+label span{border-left:0}fieldset input:checked+span{background:var(--acid);color:#080a08;font-weight:800}.locked-row{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);font-size:11px}.locked-row span{color:var(--muted)}.locked-row b{color:var(--red);font-size:9px;letter-spacing:.08em}.command-panel{padding:30px;display:flex;flex-direction:column}.command-head{display:flex;justify-content:space-between;color:var(--muted);margin-bottom:17px}.command-panel pre{white-space:pre-wrap;overflow-wrap:anywhere;min-height:116px;padding:20px;margin:0;background:#050605;border:1px solid var(--line);color:#e3e8df;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace}.copy-command,.demo-config>button,.demo-config details button,.steps button{cursor:pointer;border:0;background:var(--acid);color:#080a08;min-height:42px;padding:0 15px;font-size:11px;font-weight:800;letter-spacing:.05em}.command-panel .copy-command{align-self:flex-start;margin-top:15px}.command-panel>p{color:var(--muted);font-size:11px;margin:auto 0 0;padding-top:24px}.steps{list-style:none;padding:0;margin:48px 0 0;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.steps li{min-height:268px;padding:26px 28px 25px 0;border-right:1px solid var(--line)}.steps li+li{padding-left:28px}.steps li:last-child{border-right:0}.steps>li>span{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--acid)}.steps h3{font-size:22px;letter-spacing:-.03em;margin:55px 0 12px}.steps p{min-height:62px;color:var(--muted);font-size:13px;line-height:1.6}.steps a,.steps button{display:inline-flex;margin-top:11px;color:var(--text);font-size:11px;font-weight:800;border-bottom:1px solid var(--line-strong)}.steps button{background:none;padding:0 0 4px;min-height:0}.secret-note{margin:22px 0 0;color:var(--muted);font-size:12px}.secret-note b{color:var(--text)}.copy-status{position:fixed;right:20px;bottom:20px;z-index:20;min-width:0;margin:0;background:var(--acid);color:#080a08;font-size:11px;font-weight:800}.copy-status:not(:empty){padding:10px 14px}.proof{border-top:1px solid var(--line)}.proof h2{max-width:850px;margin-bottom:58px}.control-table{border-top:1px solid var(--line-strong)}.control-table>div{display:grid;grid-template-columns:1.15fr 1fr .55fr;gap:25px;align-items:center;min-height:68px;border-bottom:1px solid var(--line);font-size:13px}.control-table span{color:var(--muted)}.control-table b{font:9px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em}.control-table b.green{color:var(--acid)}.control-table .table-head{min-height:43px;color:#697167}.demo{border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:95px}.demo>div>p{margin-top:24px}.demo-config{border:1px solid var(--line-strong);background:var(--surface);padding:24px}.demo-config code,.demo-config pre{display:block;padding:18px;background:#050605;border:1px solid var(--line);font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;white-space:pre-wrap}.demo-config>button{margin-top:12px}.demo-config details{margin-top:22px;border-top:1px solid var(--line);padding-top:17px}.demo-config summary{cursor:pointer;color:var(--muted);font-size:11px}.demo-config details pre{margin:15px 0 10px}.closing{margin-block:20px 110px;padding:70px;border:1px solid var(--line-strong);display:grid;grid-template-columns:.6fr 1.4fr auto;gap:50px;align-items:center}.closing>p{font:10px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--acid);margin:0}.closing h2{font-size:55px}footer{min-height:95px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;color:#6f776d;font-size:10px}footer p{margin:0}footer nav{display:flex;gap:23px}footer a:hover{color:var(--text)}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--acid);outline-offset:3px}
+@media(max-width:900px){.hero{grid-template-columns:1fr;gap:65px}.mandate{max-width:630px}.ticker{grid-template-columns:1fr 1fr}.ticker div:nth-child(2){border-right:0}.ticker div:nth-child(-n+2){border-bottom:1px solid var(--line)}.setup-heading,.demo{grid-template-columns:1fr;gap:35px}.configurator{grid-template-columns:1fr}.config-controls{border-right:0;border-bottom:1px solid var(--line)}.closing{grid-template-columns:1fr;align-items:start}.closing h2{font-size:48px}}
+@media(max-width:650px){.frame{width:min(100% - 28px,1180px)}.topbar{height:68px}.topbar nav>a:not(.nav-action){display:none}.hero{padding:67px 0 80px;min-height:auto}h1{font-size:52px}.lead{font-size:17px}.actions{align-items:stretch;flex-direction:column}.text-button{justify-content:flex-start}.mandate{box-shadow:8px 8px 0 #030403}.permissions{grid-template-columns:1fr}.permissions div{border-right:0}.permissions div:nth-last-child(-n+2){border-bottom:1px solid var(--line)}.permissions div:last-child{border-bottom:0}.ticker{grid-template-columns:1fr}.ticker div{min-height:52px;border-right:0;border-bottom:1px solid var(--line)!important}.ticker div:last-child{border-bottom:0!important}.setup,.proof,.demo{padding-block:82px}.setup-heading h2,.proof h2,.demo h2{font-size:44px}.config-controls,.command-panel{padding:20px}.limit-control{grid-template-columns:1fr 100px}.steps{grid-template-columns:1fr}.steps li,.steps li+li{min-height:auto;padding:24px 0;border-right:0;border-bottom:1px solid var(--line)}.steps li:last-child{border-bottom:0}.steps h3{margin-top:30px}.steps p{min-height:auto}.control-table>div{grid-template-columns:1fr;gap:7px;padding:16px 0}.control-table .table-head{display:none}.closing{padding:34px;margin-bottom:75px}.closing h2{font-size:43px}footer{align-items:flex-start;flex-direction:column;gap:16px;padding-block:25px}footer nav{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 `;
-var FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#6967ff"/><path d="M37 8c9 3 15 9 18 18L36 45 19 28C22 18 28 11 37 8Z" fill="#fff"/><circle cx="39" cy="23" r="4" fill="#6967ff"/><path d="m22 34-9 3 14 14 3-9" fill="#ffd36a"/></svg>`;
+var FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#080a08"/><path d="M37 8c9 3 15 9 18 18L36 45 19 28C22 18 28 11 37 8Z" fill="#f3f5f0"/><circle cx="39" cy="23" r="4" fill="#080a08"/><path d="m22 34-9 3 14 14 3-9" fill="#c7ff4f"/></svg>`;
 var ROBOTS_TXT = `User-agent: *
 Allow: /
 Sitemap: ${HOSTED_ORIGIN}/sitemap.xml
@@ -32233,6 +32334,7 @@ function marketSnapshotText(snapshot) {
 var resultSchema = external_exports.object({ result: external_exports.unknown() });
 var symbolSchema = external_exports.string().min(1).max(64).describe("Exact current xRocket symbol, for example GRAM-USDT");
 var assetSchema = external_exports.string().min(1).max(64).describe("Exact xRocket asset identifier; TON is currently TONCOIN");
+var fiatSchema = external_exports.string().min(3).max(8).regex(/^[A-Z0-9]+$/, "use the uppercase fiat code documented by xRocket").describe("Fiat base currency, for example USD");
 var decimalSchema = external_exports.string().regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/, "must be a plain non-negative decimal string").refine((value) => /[1-9]/.test(value), "must be greater than zero").describe("Exact positive decimal string; never use a JSON number");
 var intervalSchema = external_exports.enum([
   "1min",
@@ -32512,9 +32614,9 @@ function registerPublicXrocketTools(server, client, environment, onToolSuccess) 
     "xrocket_rates",
     {
       title: "xRocket rates",
-      description: "Get public conversion rates from one base asset to optional target assets.",
+      description: "Get public crypto-asset rates in one fiat base currency.",
       inputSchema: external_exports.object({
-        base: assetSchema,
+        base: fiatSchema,
         assets: external_exports.array(assetSchema).min(1).max(100).optional()
       }),
       outputSchema: resultSchema,
@@ -32543,7 +32645,7 @@ function registerPublicXrocketTools(server, client, environment, onToolSuccess) 
     "xrocket_onboarding_links",
     {
       title: "Set up xRocket trading",
-      description: "Return xRocket sign-in links, local MCP trading setup, the prepare/approve/execute flow, and canonical API documentation.",
+      description: "Return xRocket sign-in links, the local autonomous trading setup, and canonical API documentation.",
       inputSchema: external_exports.object({}),
       outputSchema: resultSchema,
       annotations: LOCAL_READ
@@ -32560,13 +32662,14 @@ function registerPublicXrocketTools(server, client, environment, onToolSuccess) 
           localSetupUrl: HOSTED_TRADING_URL,
           apiTokenMenu: "Menu > Settings > Exchange settings > API token",
           tokenHandling: "Sign in to xRocket and configure the broad account token only in the local MCP client's secret or environment settings. Never paste it into chat or send it to the hosted endpoint.",
-          testnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config`,
-          mainnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config --mainnet`,
-          recommendedFirstPrompt: "On testnet, prepare a market buy of GRAM-USDT using 10 USDT. Show the estimate, fee, balances, rules, and exact intent. Do not execute until I explicitly approve.",
-          orderFlow: [
-            "prepare: estimate the order and return the exact intent plus a short-lived receipt",
-            "approve: show the preview and obtain explicit user approval",
-            "execute: submit only the prepared receipt once; never retry an unknown outcome"
+          testnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config --limit 100 --asset USD`,
+          mainnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config --limit 100 --asset USD --mainnet`,
+          recommendedFirstPrompt: "Use xRocket on testnet. Trade GRAM-USDT with this strategy: [describe strategy]. Stay inside the configured daily trading limit. Do not transfer or withdraw funds.",
+          autonomousTrading: [
+            "set one daily value limit in USD or another asset; all spot markets are available by default",
+            "the agent can place and cancel market or limit orders without per-order approval inside that limit",
+            "transfers and withdrawals remain separate and require explicit approval",
+            "unknown order outcomes are reserved against the limit and never retried"
           ]
         },
         depositNote: "The Exchange REST API has no documented deposit-address endpoint. Open the bot with the onboarding link and use the deposit UI. Account balance verification is available only through a separately configured local private-read profile; the hosted endpoint never accepts account tokens."
@@ -32581,7 +32684,7 @@ function createHostedPublicXrocketServer(fetchImpl, onToolSuccess) {
     { name: "xrocket-mcp", version: VERSION },
     {
       capabilities: { tools: {} },
-      instructions: "This hosted endpoint exposes only public xRocket mainnet market data. Use xrocket_market_snapshot for broad market questions and the narrow public tools for exact details. If the user wants to trade, call xrocket_onboarding_links and guide them to the local trading profile; do not imply this hosted endpoint can place an order. The local flow is prepare, show the exact estimate and intent, obtain explicit approval, then execute the receipt once. This endpoint never accepts account tokens and cannot expose balances, orders, transfers, withdrawals, prepare, or execute tools. Ask the user to sign in to xRocket when credentials are needed, and never ask them to paste a token into chat."
+      instructions: "This hosted endpoint exposes only public xRocket mainnet market data. Use xrocket_market_snapshot for broad market questions and the narrow public tools for exact details. If the user wants to trade, call xrocket_onboarding_links and guide them to the local autonomous trading profile; do not imply this hosted endpoint can place an order. Locally, the user sets one daily value limit and the agent may place and cancel orders inside it without per-order approval. Transfers and withdrawals remain separate explicit-approval operations. This endpoint never accepts account tokens and cannot expose balances or account writes. Ask the user to sign in to xRocket when credentials are needed, and never ask them to paste a token into chat."
     }
   );
   const client = new XrocketClient(config2, fetchImpl);
@@ -32779,8 +32882,8 @@ async function startHostedHttpServer(options) {
     void (async () => {
       response.setHeader("Cache-Control", "no-store");
       response.setHeader("X-Content-Type-Options", "nosniff");
-      const path = requestPath(request);
-      if (request.method === "GET" && (path === "/health" || path === "/healthz" || path === "/readyz")) {
+      const path2 = requestPath(request);
+      if (request.method === "GET" && (path2 === "/health" || path2 === "/healthz" || path2 === "/readyz")) {
         jsonResponse(response, closing ? 503 : 200, {
           status: closing ? "stopping" : "ok",
           service: "xrocket-mcp",
@@ -32791,9 +32894,9 @@ async function startHostedHttpServer(options) {
         });
         return;
       }
-      if (path === "/" || path === "/landing.css" || path === "/landing.js" || path === "/favicon.svg" || path === "/robots.txt" || path === "/sitemap.xml" || path === "/open") {
+      if (path2 === "/" || path2 === "/landing.css" || path2 === "/landing.js" || path2 === "/favicon.svg" || path2 === "/robots.txt" || path2 === "/sitemap.xml" || path2 === "/open") {
         if (!validateHost(request, response)) return;
-        if (path === "/open") {
+        if (path2 === "/open") {
           if (request.method !== "GET") {
             response.setHeader("Allow", "GET");
             jsonResponse(response, 405, { error: "method_not_allowed" });
@@ -32814,23 +32917,23 @@ async function startHostedHttpServer(options) {
           jsonResponse(response, 405, { error: "method_not_allowed" });
           return;
         }
-        if (path === "/") {
+        if (path2 === "/") {
           if (request.method === "GET") metrics.record("landing_views");
           staticResponse(request, response, "text/html; charset=utf-8", LANDING_PAGE);
-        } else if (path === "/landing.css") {
+        } else if (path2 === "/landing.css") {
           staticResponse(request, response, "text/css; charset=utf-8", LANDING_STYLES);
-        } else if (path === "/landing.js") {
+        } else if (path2 === "/landing.js") {
           staticResponse(request, response, "text/javascript; charset=utf-8", LANDING_SCRIPT);
-        } else if (path === "/favicon.svg") {
+        } else if (path2 === "/favicon.svg") {
           staticResponse(request, response, "image/svg+xml; charset=utf-8", FAVICON_SVG, "public, max-age=86400");
-        } else if (path === "/robots.txt") {
+        } else if (path2 === "/robots.txt") {
           staticResponse(request, response, "text/plain; charset=utf-8", ROBOTS_TXT);
         } else {
           staticResponse(request, response, "application/xml; charset=utf-8", SITEMAP_XML);
         }
         return;
       }
-      if (path !== "/mcp") {
+      if (path2 !== "/mcp") {
         jsonResponse(response, 404, { error: "not_found" });
         return;
       }
@@ -32963,10 +33066,442 @@ async function startHostedHttpServer(options) {
 }
 
 // src/server.ts
-import { randomUUID as randomUUID2 } from "node:crypto";
+import { randomUUID as randomUUID3 } from "node:crypto";
+
+// src/agent-trading.ts
+import { createHash, randomUUID } from "node:crypto";
+import { promises as fs } from "node:fs";
+import { homedir } from "node:os";
+import path from "node:path";
+
+// src/decimal.ts
+var DECIMAL = /^(?:0|[1-9]\d*)(?:\.(\d+))?$/;
+function parts(input) {
+  const match = DECIMAL.exec(input);
+  if (!match) throw new Error(`Invalid decimal value: ${input}`);
+  const fraction = match[1] ?? "";
+  return {
+    value: BigInt(input.replace(".", "")),
+    scale: fraction.length
+  };
+}
+function power10(exponent) {
+  return 10n ** BigInt(exponent);
+}
+function align(left, right) {
+  const scale = Math.max(left.scale, right.scale);
+  return [
+    left.value * power10(scale - left.scale),
+    right.value * power10(scale - right.scale),
+    scale
+  ];
+}
+function format(value, scale) {
+  if (scale === 0) return value.toString();
+  const raw = value.toString().padStart(scale + 1, "0");
+  const whole = raw.slice(0, -scale);
+  const fraction = raw.slice(-scale).replace(/0+$/, "");
+  return fraction ? `${whole}.${fraction}` : whole;
+}
+function compareDecimals(left, right) {
+  const [leftValue, rightValue] = align(parts(left), parts(right));
+  return leftValue < rightValue ? -1 : leftValue > rightValue ? 1 : 0;
+}
+function addDecimals(left, right) {
+  const [leftValue, rightValue, scale] = align(parts(left), parts(right));
+  return format(leftValue + rightValue, scale);
+}
+function subtractDecimals(left, right) {
+  const [leftValue, rightValue, scale] = align(parts(left), parts(right));
+  if (rightValue > leftValue) throw new Error("Decimal subtraction would be negative");
+  return format(leftValue - rightValue, scale);
+}
+function multiplyDecimals(left, right) {
+  const leftParts = parts(left);
+  const rightParts = parts(right);
+  return format(leftParts.value * rightParts.value, leftParts.scale + rightParts.scale);
+}
+function sumDecimals(values) {
+  return values.reduce(addDecimals, "0");
+}
+
+// src/agent-trading.ts
+var nonnegativeDecimal = external_exports.string().max(128).regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/);
+var decimal = nonnegativeDecimal.refine((value) => /[1-9]/.test(value));
+var estimateSchema = external_exports.object({
+  symbol: external_exports.string(),
+  funds: decimal
+});
+var symbolRulesSchema = external_exports.object({
+  symbol: external_exports.string(),
+  quoteAsset: external_exports.string(),
+  enableTrading: external_exports.boolean().optional()
+});
+var orderRecordSchema = external_exports.object({
+  id: external_exports.string().optional(),
+  clientOrderId: external_exports.string().optional(),
+  symbol: external_exports.string(),
+  status: external_exports.string()
+});
+var accountOrderSchema = orderRecordSchema.extend({
+  createdAt: external_exports.string().datetime({ offset: true }),
+  quoteAsset: external_exports.string(),
+  funds: nonnegativeDecimal.optional(),
+  dealFunds: nonnegativeDecimal.optional()
+});
+var activeOrdersSchema = external_exports.object({ orders: external_exports.array(accountOrderSchema) });
+var orderHistorySchema = external_exports.object({
+  orders: external_exports.array(accountOrderSchema),
+  currentPage: external_exports.number().int().min(1),
+  totalPage: external_exports.number().int().min(0)
+});
+var ratesSchema = external_exports.record(external_exports.string(), external_exports.object({ rate: decimal }));
+var ledgerOrderSchema = external_exports.object({
+  clientOrderId: external_exports.string(),
+  createdAt: external_exports.string().datetime({ offset: true }),
+  day: external_exports.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  symbol: external_exports.string(),
+  usdValue: nonnegativeDecimal,
+  status: external_exports.enum(["unknown", "confirmed", "terminal"])
+});
+var ledgerSchema = external_exports.object({ version: external_exports.literal(1), orders: external_exports.array(ledgerOrderSchema) });
+function dayOf(date5) {
+  return date5.toISOString().slice(0, 10);
+}
+function defaultStatePath(config2) {
+  const account = createHash("sha256").update(config2.apiToken ?? "public").digest("hex").slice(0, 16);
+  return path.join(homedir(), ".xrocket-mcp", `${config2.environment}-${account}-agent-ledger.json`);
+}
+function isTerminalStatus(status) {
+  return ["rejected", "cancelled", "completed", "expired"].includes(status);
+}
+function isAgentOrder(clientOrderId) {
+  return clientOrderId?.startsWith("xrmcp-") === true;
+}
+function policyFor(config2) {
+  if (!config2.tradingPolicy) {
+    throw new Error("Autonomous trading requires XROCKET_TRADING_LIMIT, for example 100 USD");
+  }
+  return config2.tradingPolicy;
+}
+async function readLedger(statePath) {
+  try {
+    return ledgerSchema.parse(JSON.parse(await fs.readFile(statePath, "utf8")));
+  } catch (error51) {
+    if (error51.code === "ENOENT") return { version: 1, orders: [] };
+    throw new Error(`Cannot read the autonomous trading ledger at ${statePath}: ${error51 instanceof Error ? error51.message : "invalid data"}`);
+  }
+}
+async function writeLedger(statePath, ledger) {
+  await fs.mkdir(path.dirname(statePath), { recursive: true, mode: 448 });
+  const temporaryPath = `${statePath}.${process.pid}.${randomUUID()}.tmp`;
+  await fs.writeFile(temporaryPath, `${JSON.stringify(ledger, null, 2)}
+`, { mode: 384 });
+  await fs.rename(temporaryPath, statePath);
+}
+async function lockOwnerIsRunning(lockPath) {
+  const owner = Number((await fs.readFile(lockPath, "utf8")).trim());
+  if (!Number.isSafeInteger(owner) || owner < 1) return false;
+  try {
+    process.kill(owner, 0);
+    return true;
+  } catch (error51) {
+    return error51.code !== "ESRCH";
+  }
+}
+async function withFileLock(statePath, action) {
+  await fs.mkdir(path.dirname(statePath), { recursive: true, mode: 448 });
+  const lockPath = `${statePath}.lock`;
+  let handle;
+  try {
+    try {
+      handle = await fs.open(lockPath, "wx", 384);
+    } catch (error51) {
+      if (error51.code !== "EEXIST") throw error51;
+      const stat = await fs.stat(lockPath);
+      if (Date.now() - stat.mtimeMs <= 12e4 || await lockOwnerIsRunning(lockPath)) {
+        throw new Error("Another autonomous trade is in progress; wait for it to finish before trying again");
+      }
+      await fs.unlink(lockPath);
+      handle = await fs.open(lockPath, "wx", 384);
+    }
+    await handle.writeFile(`${process.pid}
+`);
+    return await action();
+  } finally {
+    await handle?.close();
+    if (handle) await fs.unlink(lockPath).catch(() => void 0);
+  }
+}
+function rateOf(rates, asset) {
+  if (asset === "USD") return "1";
+  const parsed = ratesSchema.parse(rates);
+  const rate = parsed[asset]?.rate;
+  if (!rate) throw new Error(`No current USD rate is available for ${asset}; the trade is blocked`);
+  return rate;
+}
+function trimLedger(ledger, currentDay) {
+  return {
+    version: 1,
+    orders: ledger.orders.filter((order) => order.day === currentDay || order.status === "unknown")
+  };
+}
+var AgentTradingController = class {
+  constructor(config2, client, options = {}) {
+    this.config = config2;
+    this.client = client;
+    this.statePath = options.statePath ?? config2.agentStatePath ?? defaultStatePath(config2);
+    this.now = options.now ?? (() => /* @__PURE__ */ new Date());
+  }
+  config;
+  client;
+  statePath;
+  now;
+  async reconcileUnknown(ledger) {
+    const reconciled = [];
+    for (const order of ledger.orders) {
+      if (order.status !== "unknown") {
+        reconciled.push(order);
+        continue;
+      }
+      try {
+        const current = orderRecordSchema.parse(
+          await this.client.getOrders("one", { clientOrderId: order.clientOrderId })
+        );
+        reconciled.push({
+          ...order,
+          status: isTerminalStatus(current.status) ? "terminal" : "confirmed"
+        });
+      } catch (error51) {
+        if (error51 instanceof XrocketHttpError && error51.status === 404) {
+          reconciled.push(order);
+          continue;
+        }
+        throw error51;
+      }
+    }
+    return { version: 1, orders: reconciled };
+  }
+  async usdRates(assets) {
+    const cryptoAssets = [...new Set(assets.filter((asset) => asset !== "USD"))];
+    return cryptoAssets.length === 0 ? {} : this.client.getRates("USD", cryptoAssets);
+  }
+  async todayHistory(now) {
+    const query = {
+      startAt: `${dayOf(now)}T00:00:00.000Z`,
+      endAt: now.toISOString(),
+      currentPage: 1,
+      pageSize: 100,
+      hideCanceled: false
+    };
+    const firstPage = orderHistorySchema.parse(await this.client.getOrders("history", query));
+    if (firstPage.totalPage > 100) {
+      throw new Error("Today's order history exceeds the safe reconciliation window; autonomous trading is blocked");
+    }
+    const orders = [...firstPage.orders];
+    for (let currentPage = 2; currentPage <= firstPage.totalPage; currentPage += 1) {
+      const page = orderHistorySchema.parse(
+        await this.client.getOrders("history", { ...query, currentPage })
+      );
+      if (page.currentPage !== currentPage || page.totalPage !== firstPage.totalPage) {
+        throw new Error("xRocket order history changed during policy reconciliation; retry after it settles");
+      }
+      orders.push(...page.orders);
+    }
+    return orders;
+  }
+  mergeRemoteOrders(ledger, currentDay, remoteOrders, rates) {
+    const merged = [...ledger.orders];
+    const byClientId = new Map(merged.map((order) => [order.clientOrderId, order]));
+    for (const remote of remoteOrders) {
+      if (!isAgentOrder(remote.clientOrderId) || dayOf(new Date(remote.createdAt)) !== currentDay) {
+        continue;
+      }
+      const existing = byClientId.get(remote.clientOrderId);
+      if (existing) {
+        existing.status = isTerminalStatus(remote.status) ? "terminal" : "confirmed";
+        continue;
+      }
+      const valueInQuote = remote.funds !== void 0 && compareDecimals(remote.funds, "0") > 0 ? remote.funds : remote.dealFunds;
+      if (valueInQuote === void 0) {
+        throw new Error(
+          `Cannot safely value prior autonomous order ${remote.clientOrderId}; autonomous trading is blocked`
+        );
+      }
+      if (!isTerminalStatus(remote.status) && compareDecimals(valueInQuote, "0") === 0) {
+        throw new Error(
+          `Cannot safely value active autonomous order ${remote.clientOrderId}; autonomous trading is blocked`
+        );
+      }
+      const recovered = {
+        clientOrderId: remote.clientOrderId,
+        createdAt: remote.createdAt,
+        day: currentDay,
+        symbol: remote.symbol,
+        usdValue: multiplyDecimals(valueInQuote, rateOf(rates, remote.quoteAsset)),
+        status: isTerminalStatus(remote.status) ? "terminal" : "confirmed"
+      };
+      merged.push(recovered);
+      byClientId.set(recovered.clientOrderId, recovered);
+    }
+    return { version: 1, orders: merged };
+  }
+  async trade(order) {
+    assertWriteAllowed(this.config, "trading");
+    const policy = policyFor(this.config);
+    if (policy.symbols && !policy.symbols.includes(order.symbol)) {
+      throw new Error(`${order.symbol} is outside the optional autonomous trading symbol list`);
+    }
+    return withFileLock(this.statePath, async () => {
+      const now = this.now();
+      const currentDay = dayOf(now);
+      let ledger = trimLedger(await readLedger(this.statePath), currentDay);
+      ledger = await this.reconcileUnknown(ledger);
+      const [estimateRaw, symbolRulesRaw, activeOrdersRaw, historyOrders] = await Promise.all([
+        this.client.estimateOrder(order),
+        this.client.getSymbols(order.symbol),
+        this.client.getOrders("active", {}),
+        this.todayHistory(now)
+      ]);
+      const estimate = estimateSchema.parse(estimateRaw);
+      const symbolRules = symbolRulesSchema.parse(symbolRulesRaw);
+      const activeOrders = activeOrdersSchema.parse(activeOrdersRaw).orders;
+      if (estimate.symbol !== order.symbol || symbolRules.symbol !== order.symbol) {
+        throw new Error("xRocket returned mismatched order or symbol data; the trade is blocked");
+      }
+      if (symbolRules.enableTrading === false) {
+        throw new Error(`${order.symbol} is currently unavailable for trading`);
+      }
+      const remoteAgentOrders = [...activeOrders, ...historyOrders].filter(
+        (entry) => isAgentOrder(entry.clientOrderId)
+      );
+      const rates = await this.usdRates([
+        symbolRules.quoteAsset,
+        policy.limitAsset,
+        ...remoteAgentOrders.map((entry) => entry.quoteAsset)
+      ]);
+      ledger = this.mergeRemoteOrders(ledger, currentDay, remoteAgentOrders, rates);
+      const orderValueUsd = multiplyDecimals(estimate.funds, rateOf(rates, symbolRules.quoteAsset));
+      const dailyLimitUsd = multiplyDecimals(policy.dailyLimit, rateOf(rates, policy.limitAsset));
+      const todaysOrders = ledger.orders.filter((entry) => entry.day === currentDay);
+      const usedUsd = sumDecimals(todaysOrders.map((entry) => entry.usdValue));
+      const nextUsedUsd = addDecimals(usedUsd, orderValueUsd);
+      if (compareDecimals(nextUsedUsd, dailyLimitUsd) > 0) {
+        throw new Error(
+          `Daily autonomous trading limit exceeded: ${nextUsedUsd} USD requested, ${dailyLimitUsd} USD allowed`
+        );
+      }
+      if (todaysOrders.length >= policy.maxDailyOrders) {
+        throw new Error(`Daily autonomous order limit reached: ${policy.maxDailyOrders}`);
+      }
+      const unresolved = ledger.orders.filter((entry) => entry.status === "unknown").length;
+      const activeCount = activeOrders.length + unresolved;
+      if (activeCount >= policy.maxOpenOrders) {
+        throw new Error(`Active autonomous order limit reached: ${policy.maxOpenOrders}`);
+      }
+      const reserved = {
+        clientOrderId: order.clientOrderId,
+        createdAt: now.toISOString(),
+        day: currentDay,
+        symbol: order.symbol,
+        usdValue: orderValueUsd,
+        status: "unknown"
+      };
+      ledger.orders.push(reserved);
+      await writeLedger(this.statePath, ledger);
+      let data;
+      try {
+        data = await this.client.placeOrder(order);
+      } catch (error51) {
+        if (error51 instanceof UnknownWriteOutcomeError) throw error51;
+        ledger.orders = ledger.orders.filter((entry) => entry !== reserved);
+        await writeLedger(this.statePath, ledger);
+        throw error51;
+      }
+      reserved.status = "confirmed";
+      try {
+        await writeLedger(this.statePath, ledger);
+      } catch (error51) {
+        throw new UnknownWriteOutcomeError(
+          "order placement",
+          order.clientOrderId,
+          `local accounting failed after the exchange accepted the order: ${error51 instanceof Error ? error51.name : "filesystem error"}`
+        );
+      }
+      return {
+        environment: this.config.environment,
+        clientOrderId: order.clientOrderId,
+        data,
+        policy: {
+          dailyLimit: `${policy.dailyLimit} ${policy.limitAsset}`,
+          orderValueUsd,
+          usedAfterOrderUsd: nextUsedUsd,
+          remainingUsd: subtractDecimals(dailyLimitUsd, nextUsedUsd),
+          ordersToday: todaysOrders.length + 1,
+          maxDailyOrders: policy.maxDailyOrders,
+          activeOrdersBeforePlacement: activeCount,
+          maxOpenOrders: policy.maxOpenOrders
+        }
+      };
+    });
+  }
+  async cancel(cancellation) {
+    assertWriteAllowed(this.config, "trading");
+    const policy = policyFor(this.config);
+    return withFileLock(this.statePath, async () => {
+      const current = orderRecordSchema.parse(await this.client.getOrders("one", cancellation));
+      if (policy.symbols && !policy.symbols.includes(current.symbol)) {
+        throw new Error(`${current.symbol} is outside the optional autonomous trading symbol list`);
+      }
+      return {
+        environment: this.config.environment,
+        order: current,
+        data: await this.client.cancelOrder(cancellation)
+      };
+    });
+  }
+  async status() {
+    const policy = policyFor(this.config);
+    const now = this.now();
+    const currentDay = dayOf(now);
+    const [activeOrdersRaw, historyOrders] = await Promise.all([
+      this.client.getOrders("active", {}),
+      this.todayHistory(now)
+    ]);
+    const activeOrders = activeOrdersSchema.parse(activeOrdersRaw).orders;
+    const remoteAgentOrders = [...activeOrders, ...historyOrders].filter(
+      (entry) => isAgentOrder(entry.clientOrderId)
+    );
+    const rates = await this.usdRates([
+      policy.limitAsset,
+      ...remoteAgentOrders.map((entry) => entry.quoteAsset)
+    ]);
+    const ledger = this.mergeRemoteOrders(
+      trimLedger(await readLedger(this.statePath), currentDay),
+      currentDay,
+      remoteAgentOrders,
+      rates
+    );
+    const todaysOrders = ledger.orders.filter((entry) => entry.day === currentDay);
+    const dailyLimitUsd = multiplyDecimals(policy.dailyLimit, rateOf(rates, policy.limitAsset));
+    const usedUsd = sumDecimals(todaysOrders.map((entry) => entry.usdValue));
+    return {
+      dailyLimit: policy.dailyLimit,
+      limitAsset: policy.limitAsset,
+      dailyLimitUsd,
+      usedUsd,
+      remainingUsd: compareDecimals(usedUsd, dailyLimitUsd) >= 0 ? "0" : subtractDecimals(dailyLimitUsd, usedUsd),
+      ordersToday: todaysOrders.length,
+      maxDailyOrders: policy.maxDailyOrders,
+      activeOrders: activeOrders.length + ledger.orders.filter((entry) => entry.status === "unknown").length,
+      maxOpenOrders: policy.maxOpenOrders,
+      symbols: policy.symbols ?? "all"
+    };
+  }
+};
 
 // src/receipts.ts
-import { createHash, randomUUID } from "node:crypto";
+import { createHash as createHash2, randomUUID as randomUUID2 } from "node:crypto";
 function canonicalize(value) {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonicalize).join(",")}]`;
@@ -32974,7 +33509,7 @@ function canonicalize(value) {
   return `{${Object.keys(record2).sort().map((key) => `${JSON.stringify(key)}:${canonicalize(record2[key])}`).join(",")}}`;
 }
 function digestIntent(kind, intent2) {
-  return createHash("sha256").update(canonicalize({ kind, intent: intent2 })).digest("hex");
+  return createHash2("sha256").update(canonicalize({ kind, intent: intent2 })).digest("hex");
 }
 var ApprovalReceiptStore = class {
   constructor(ttlMs, now = Date.now) {
@@ -32986,7 +33521,7 @@ var ApprovalReceiptStore = class {
   receipts = /* @__PURE__ */ new Map();
   issue(kind, intent2) {
     this.prune();
-    const opaqueId = randomUUID();
+    const opaqueId = randomUUID2();
     const digest = digestIntent(kind, intent2);
     const approvalReceipt = `xr1.${opaqueId}.${digest.slice(0, 12)}`;
     const expiresAt = this.now() + this.ttlMs;
@@ -33025,7 +33560,7 @@ var ApprovalReceiptStore = class {
 var resultSchema2 = external_exports.object({ result: external_exports.unknown() });
 var symbolSchema2 = external_exports.string().min(1).max(64).describe("Exact current xRocket symbol, for example GRAM-USDT");
 var assetSchema2 = external_exports.string().min(1).max(64).describe("Exact xRocket asset identifier; TON is currently TONCOIN");
-var decimalSchema2 = external_exports.string().regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/, "must be a plain non-negative decimal string").refine((value) => /[1-9]/.test(value), "must be greater than zero").describe("Exact positive decimal string; never use a JSON number");
+var decimalSchema2 = external_exports.string().max(128).regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/, "must be a plain non-negative decimal string").refine((value) => /[1-9]/.test(value), "must be greater than zero").describe("Exact positive decimal string; never use a JSON number");
 var clientId64Schema = external_exports.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/, "use only letters, numbers, underscore and hyphen");
 var clientId50Schema = external_exports.string().min(1).max(50).regex(/^[A-Za-z0-9_-]+$/, "use only letters, numbers, underscore and hyphen");
 var orderClientIdSchema = clientId64Schema;
@@ -33046,8 +33581,7 @@ var intervalSchema2 = external_exports.enum([
   "1month"
 ]);
 var dateTimeSchema2 = external_exports.string().datetime({ offset: true });
-var limitOrderSchema = external_exports.object({
-  clientOrderId: orderClientIdSchema.optional(),
+var agentLimitOrderSchema = external_exports.object({
   symbol: symbolSchema2,
   side: sideSchema,
   type: external_exports.literal("limit"),
@@ -33055,8 +33589,7 @@ var limitOrderSchema = external_exports.object({
   price: decimalSchema2,
   timeInForce: external_exports.enum(["GTC", "IOC", "FOK"])
 });
-var marketOrderSchema = external_exports.object({
-  clientOrderId: orderClientIdSchema.optional(),
+var agentMarketOrderSchema = external_exports.object({
   symbol: symbolSchema2,
   side: sideSchema,
   type: external_exports.literal("market"),
@@ -33066,28 +33599,9 @@ var marketOrderSchema = external_exports.object({
 }).refine((order) => order.size === void 0 !== (order.funds === void 0), {
   message: "market order requires exactly one of size or funds"
 });
-var stopLimitOrderSchema = external_exports.object({
-  clientOrderId: orderClientIdSchema.optional(),
-  symbol: symbolSchema2,
-  side: sideSchema,
-  type: external_exports.literal("stopLimit"),
-  size: decimalSchema2,
-  price: decimalSchema2,
-  stopPrice: decimalSchema2,
-  timeInForce: external_exports.enum(["GTC", "IOC", "FOK"])
-});
-var stopMarketOrderSchema = external_exports.object({
-  clientOrderId: orderClientIdSchema.optional(),
-  symbol: symbolSchema2,
-  side: sideSchema,
-  type: external_exports.literal("stopMarket"),
-  size: decimalSchema2,
-  stopPrice: decimalSchema2,
-  timeInForce: external_exports.enum(["IOC", "FOK"])
-});
-var orderSchema = external_exports.union([limitOrderSchema, marketOrderSchema, stopLimitOrderSchema, stopMarketOrderSchema]).transform((order) => ({
+var agentOrderSchema = external_exports.union([agentLimitOrderSchema, agentMarketOrderSchema]).transform((order) => ({
   ...order,
-  clientOrderId: order.clientOrderId ?? `order-${randomUUID2()}`
+  clientOrderId: `xrmcp-${randomUUID3()}`
 }));
 var cancelIntentSchema = external_exports.object({
   orderId: external_exports.string().min(1).max(100).optional(),
@@ -33103,7 +33617,7 @@ var transferSchema = external_exports.object({
   to: external_exports.enum(["funding", "trading"])
 }).refine((value) => value.from !== value.to, { message: "from and to accounts must differ" }).transform((transfer) => ({
   ...transfer,
-  clientTransferId: transfer.clientTransferId ?? `transfer-${randomUUID2()}`
+  clientTransferId: transfer.clientTransferId ?? `transfer-${randomUUID3()}`
 }));
 var withdrawalSchema = external_exports.object({
   clientWithdrawalId: clientId50Schema.optional(),
@@ -33114,7 +33628,7 @@ var withdrawalSchema = external_exports.object({
   comment: external_exports.string().max(256).optional()
 }).transform((withdrawal) => ({
   ...withdrawal,
-  clientWithdrawalId: withdrawal.clientWithdrawalId ?? `withdrawal-${randomUUID2()}`
+  clientWithdrawalId: withdrawal.clientWithdrawalId ?? `withdrawal-${randomUUID3()}`
 }));
 var READ2 = {
   readOnlyHint: true,
@@ -33196,16 +33710,6 @@ function boundedErrorDetails2(details) {
 }
 function isRecord3(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-function relevantSymbolAssets(symbolRules, symbol2) {
-  if (isRecord3(symbolRules)) {
-    const baseAsset = symbolRules.baseAsset;
-    const quoteAsset = symbolRules.quoteAsset;
-    if (typeof baseAsset === "string" && typeof quoteAsset === "string") {
-      return [baseAsset, quoteAsset];
-    }
-  }
-  return symbol2.split("-").filter((asset) => asset.length > 0);
 }
 function narrowBalances(data, assets) {
   const requestedAssets = [...new Set(assets.map((asset) => asset.toUpperCase()))];
@@ -33316,11 +33820,15 @@ function createXrocketServer(options = {}) {
   const config2 = options.config ?? loadConfig();
   const client = new XrocketClient(config2, options.fetch);
   const receipts = options.receipts ?? new ApprovalReceiptStore(config2.approvalTtlMs);
+  const agentTrading = new AgentTradingController(config2, client, {
+    ...options.agentStatePath ? { statePath: options.agentStatePath } : {},
+    ...options.now ? { now: options.now } : {}
+  });
   const server = new McpServer(
     { name: "xrocket-mcp", version: VERSION },
     {
       capabilities: { tools: {} },
-      instructions: "Use xrocket_market_snapshot for broad market questions and xrocket_account_overview for a whole-account read. If the user wants to trade but order tools are unavailable, ask them to sign in to xRocket and run xrocket-mcp trading-config for a local testnet-first trading profile; never ask them to paste the token into chat. Trading requires xrocket_order_prepare, a visible review of the estimate, fees, balances, rules, and exact intent, explicit user approval, then one xrocket_order_execute call with only the receipt. Never retry an unknown write outcome; reconcile it with private read tools."
+      instructions: "Use xrocket_market_snapshot for market context and xrocket_account_overview for account state. If autonomous trading tools are unavailable, ask the user to sign in to xRocket and run xrocket-mcp trading-config locally; never ask them to paste the token into chat. xrocket_agent_trade places market or limit orders autonomously inside the configured daily value and order-count limits. xrocket_agent_cancel cancels orders without per-order approval. Transfers and withdrawals still require prepare, explicit user approval, and execute. Never retry an unknown write outcome."
     }
   );
   registerPublicXrocketTools(server, client, config2.environment);
@@ -33515,109 +34023,37 @@ function createXrocketServer(options = {}) {
   );
   if (config2.profile !== "full") return server;
   server.registerTool(
-    "xrocket_order_prepare",
+    "xrocket_agent_policy",
     {
-      title: "Prepare xRocket order",
-      description: "Estimate an order and issue a short-lived receipt bound to the exact intent. This does not place an order.",
-      inputSchema: external_exports.object({ order: orderSchema }),
+      title: "xRocket agent trading policy",
+      description: "Read the autonomous daily trading limit, usage, and order limits.",
+      inputSchema: external_exports.object({}),
       outputSchema: resultSchema2,
-      annotations: PREPARE
+      annotations: READ2
     },
-    ({ order }) => run2(async () => {
-      const [estimate, symbolRules, tradingBalances, tradeFees] = await Promise.all([
-        client.estimateOrder(order),
-        client.getSymbols(order.symbol),
-        client.getBalances("trading"),
-        client.getTradeFees([order.symbol])
-      ]);
-      const boundIntent = intent(config2.environment, order);
-      return {
-        environment: config2.environment,
-        order,
-        estimate,
-        symbolRules,
-        tradingBalances: narrowBalances(
-          tradingBalances,
-          relevantSymbolAssets(symbolRules, order.symbol)
-        ),
-        tradeFees,
-        ...receipts.issue("order", boundIntent),
-        writeGate: gateStatus(config2, "trading"),
-        execution: executionStatus(config2, "trading"),
-        preview: { operation: "place order", exactIntent: order },
-        instruction: prepareInstruction(config2, "trading", "xrocket_order_execute")
-      };
-    })
+    () => run2(async () => ({ environment: config2.environment, ...await agentTrading.status() }))
   );
   server.registerTool(
-    "xrocket_order_execute",
+    "xrocket_agent_trade",
     {
-      title: "Execute xRocket order",
-      description: "Place the exact previously prepared order once. Ambiguous outcomes are never retried.",
-      inputSchema: external_exports.object({ approvalReceipt: external_exports.string().min(1) }),
+      title: "Trade on xRocket",
+      description: "Place one market or limit order immediately when it fits the configured autonomous daily value, daily order-count, and active-order limits. No per-order approval is required. Unknown outcomes are never retried.",
+      inputSchema: external_exports.object({ order: agentOrderSchema }),
       outputSchema: resultSchema2,
       annotations: WRITE
     },
-    ({ approvalReceipt }) => run2(async () => {
-      assertWriteAllowed(config2, "trading");
-      const stored = receipts.consume("order", approvalReceipt);
-      const order = orderSchema.parse(receiptPayload(stored, config2.environment));
-      return {
-        environment: config2.environment,
-        clientOrderId: order.clientOrderId,
-        data: await client.placeOrder(order)
-      };
-    })
+    ({ order }) => run2(() => agentTrading.trade(order))
   );
   server.registerTool(
-    "xrocket_order_cancel_prepare",
+    "xrocket_agent_cancel",
     {
-      title: "Prepare xRocket order cancellation",
-      description: "Read the target order and issue a short-lived receipt. This does not cancel it.",
+      title: "Cancel an xRocket order",
+      description: "Cancel an order immediately inside the autonomous trading scope. Cancellation reduces exposure and does not require per-order approval. Unknown outcomes are never retried.",
       inputSchema: external_exports.object({ cancellation: cancelIntentSchema }),
       outputSchema: resultSchema2,
-      annotations: PREPARE
-    },
-    ({ cancellation }) => run2(async () => {
-      const currentOrder = await client.getOrders("one", cancellation);
-      const boundIntent = intent(config2.environment, cancellation);
-      return {
-        environment: config2.environment,
-        cancellation,
-        currentOrder,
-        ...receipts.issue("order-cancel", boundIntent),
-        writeGate: gateStatus(config2, "trading"),
-        execution: executionStatus(config2, "trading"),
-        preview: { operation: "cancel order", exactIntent: cancellation },
-        instruction: prepareInstruction(
-          config2,
-          "trading",
-          "xrocket_order_cancel_execute"
-        )
-      };
-    })
-  );
-  server.registerTool(
-    "xrocket_order_cancel_execute",
-    {
-      title: "Execute xRocket order cancellation",
-      description: "Cancel the exact previously prepared order once. Ambiguous outcomes are never retried.",
-      inputSchema: external_exports.object({ approvalReceipt: external_exports.string().min(1) }),
-      outputSchema: resultSchema2,
       annotations: WRITE
     },
-    ({ approvalReceipt }) => run2(async () => {
-      assertWriteAllowed(config2, "trading");
-      const stored = receipts.consume("order-cancel", approvalReceipt);
-      const cancellation = cancelIntentSchema.parse(
-        receiptPayload(stored, config2.environment)
-      );
-      return {
-        environment: config2.environment,
-        identifier: cancellation.orderId ?? cancellation.clientOrderId,
-        data: await client.cancelOrder(cancellation)
-      };
-    })
+    ({ cancellation }) => run2(() => agentTrading.cancel(cancellation))
   );
   server.registerTool(
     "xrocket_transfer_prepare",
@@ -33729,7 +34165,8 @@ function createXrocketServer(options = {}) {
 
 // src/cli.ts
 async function main() {
-  const command = parseCliCommand(process.argv.slice(2));
+  const args = process.argv.slice(2);
+  const command = parseCliCommand(args);
   if (command === "help") return void process.stdout.write(`${helpText()}
 `);
   if (command === "version") return void process.stdout.write(`${VERSION}
@@ -33737,12 +34174,18 @@ async function main() {
   if (command === "config") return void process.stdout.write(`${renderMcpConfig()}
 `);
   if (command === "trading-config-testnet") {
-    return void process.stdout.write(`${renderTradingMcpConfig("testnet")}
-`);
+    const options = parseTradingConfigOptions(args);
+    return void process.stdout.write(
+      `${renderTradingMcpConfig("testnet", options.limit, options.limitAsset)}
+`
+    );
   }
   if (command === "trading-config-mainnet") {
-    return void process.stdout.write(`${renderTradingMcpConfig("mainnet")}
-`);
+    const options = parseTradingConfigOptions(args);
+    return void process.stdout.write(
+      `${renderTradingMcpConfig("mainnet", options.limit, options.limitAsset)}
+`
+    );
   }
   if (command === "doctor") return void process.stdout.write(`${doctorText(await runDoctor())}
 `);

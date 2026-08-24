@@ -59,10 +59,33 @@ describe("loadConfig", () => {
       XROCKET_API_TOKEN: "secret",
       XROCKET_ENVIRONMENT: "mainnet",
       XROCKET_ENABLE_TRADING: "true",
+      XROCKET_TRADING_LIMIT: "100 USD",
     });
     expect(() => assertWriteAllowed(config, "trading")).toThrow("mainnet writes are disabled");
     config.allowMainnetWrites = true;
     expect(() => assertWriteAllowed(config, "trading")).not.toThrow();
     expect(() => assertWriteAllowed(config, "withdrawals")).toThrow("withdrawals writes are disabled");
+  });
+
+  it("parses one simple daily trading limit and defaults to all markets", () => {
+    const config = loadConfig({
+      XROCKET_PROFILE: "full",
+      XROCKET_API_TOKEN: "secret",
+      XROCKET_ENABLE_TRADING: "true",
+      XROCKET_TRADING_LIMIT: "2.5 toncoin",
+    });
+    expect(config.tradingPolicy).toEqual({
+      dailyLimit: "2.5",
+      limitAsset: "TONCOIN",
+      maxDailyOrders: 100,
+      maxOpenOrders: 20,
+    });
+    expect(() =>
+      loadConfig({
+        XROCKET_PROFILE: "full",
+        XROCKET_API_TOKEN: "secret",
+        XROCKET_ENABLE_TRADING: "true",
+      }),
+    ).toThrow("XROCKET_TRADING_LIMIT is required");
   });
 });

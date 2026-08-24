@@ -2,13 +2,7 @@ import { HOSTED_MCP_URL, HOSTED_ORIGIN } from "./links.js";
 import { VERSION } from "./version.js";
 
 const MCP_CONFIG = JSON.stringify(
-  {
-    mcpServers: {
-      xrocket: {
-        url: HOSTED_MCP_URL,
-      },
-    },
-  },
+  { mcpServers: { xrocket: { url: HOSTED_MCP_URL } } },
   null,
   2,
 );
@@ -27,12 +21,12 @@ export const LANDING_PAGE = `<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>xRocket MCP — trade from your AI with explicit approval</title>
-  <meta name="description" content="Prepare, review, and execute xRocket orders through a local MCP client. Start on testnet; keep the account token local.">
-  <meta name="theme-color" content="#090a18">
+  <title>xRocket MCP — autonomous CEX trading for AI agents</title>
+  <meta name="description" content="Set a daily trading limit, connect xRocket locally, and let your AI agent trade. Transfers and withdrawals stay locked behind explicit approval.">
+  <meta name="theme-color" content="#080a08">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Trade xRocket from your AI">
-  <meta property="og:description" content="Market context, order estimates, explicit approval, and guarded execution through MCP.">
+  <meta property="og:title" content="Give your agent a limit. It trades.">
+  <meta property="og:description" content="Autonomous xRocket trading over MCP, bounded by one daily value limit.">
   <meta property="og:url" content="${HOSTED_ORIGIN}/">
   <meta name="twitter:card" content="summary">
   <link rel="canonical" href="${HOSTED_ORIGIN}/">
@@ -40,167 +34,170 @@ export const LANDING_PAGE = `<!doctype html>
   <link rel="stylesheet" href="/landing.css">
   <script src="/landing.js" defer></script>
 </head>
-<body>
-  <a class="skip-link" href="#trade">Skip to trading setup</a>
-  <header class="nav shell">
+<body data-version="${VERSION}">
+  <a class="skip-link" href="#trade">Skip to setup</a>
+  <header class="topbar frame">
     <a class="brand" href="/" aria-label="xRocket MCP home">
-      <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 64 64" role="img">
-          <path d="M37 8c9 3 15 9 18 18L36 45 19 28C22 18 28 11 37 8Z" fill="currentColor"/>
-          <circle cx="39" cy="23" r="4" fill="#6967ff"/>
-          <path d="m22 34-9 3 14 14 3-9" fill="#ffd36a"/>
-        </svg>
-      </span>
-      <span>xRocket <span class="muted">MCP</span></span>
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M19 3c5 2 8 5 10 10L18 24 8 14C10 8 14 5 19 3Z"/><circle cx="20" cy="11" r="2"/><path d="m10 18-6 2 8 8 2-6"/></svg>
+      <span>xRocket</span><b>MCP</b>
     </a>
-    <nav aria-label="Project links">
+    <nav aria-label="Main navigation">
+      <a href="#trade">Set up</a>
+      <a href="#demo">Market data</a>
       <a href="https://github.com/nakazanie-ton/myrocket">GitHub</a>
-      <a href="#trade">Trading</a>
-      <a href="#connect">Market demo</a>
-      <a href="#examples">Examples</a>
-      <a class="nav-cta" href="#trade">Set up</a>
+      <a class="nav-action" href="#trade">Connect agent</a>
     </nav>
   </header>
 
   <main>
-    <section class="hero shell">
+    <section class="hero frame">
       <div class="hero-copy">
-        <p class="eyebrow"><span></span> Local execution · testnet first</p>
-        <h1>Trade xRocket from your AI. <em>Review every order.</em></h1>
-        <p class="lede">Ask your MCP client to prepare an order. It returns the market rules, estimate, fee, relevant balance, and exact intent. Nothing is submitted until you explicitly approve.</p>
-        <div class="hero-actions">
-          <a class="button primary" href="#trade">Set up trading</a>
-          <a class="button secondary" href="#connect">Try market demo</a>
+        <p class="signal"><span></span> xRocket spot · MCP</p>
+        <h1>Give your agent<br>a limit. <em>It trades.</em></h1>
+        <p class="lead">Set one daily value limit. Add your API key locally. Give the agent a strategy.</p>
+        <div class="actions">
+          <a class="button primary" href="#trade">Set up the agent</a>
+          <a class="button text-button" href="#how">See how it works <span>↘</span></a>
         </div>
-        <ul class="trust" aria-label="Service boundaries">
-          <li>Token stays local</li>
-          <li>Estimate before execution</li>
-          <li>Single-use approval receipt</li>
-        </ul>
+        <p class="microcopy">Orders run automatically inside the limit. Transfers and withdrawals do not.</p>
       </div>
-      <div class="terminal" aria-label="Example guarded order flow">
-        <div class="terminal-head"><span></span><span></span><span></span><b>Testnet order</b></div>
-        <div class="message user">Prepare a market buy of GRAM-USDT using 10 USDT. Do not execute yet.</div>
-        <div class="message agent">
-          <div class="agent-label"><span class="spark">✦</span> xRocket MCP</div>
-          <p><strong>Prepared — not submitted</strong></p>
-          <div class="quote-grid">
-            <span>Buy GRAM-USDT<small>market · IOC</small></span>
-            <span>10 USDT<small>exact requested funds</small></span>
-            <span>Fee + estimate<small>from xRocket API</small></span>
-            <span>Balance + rules<small>included in the preview</small></span>
-          </div>
-          <p class="terminal-note">Awaiting your explicit approval. The receipt expires and can be used once.</p>
+
+      <div class="mandate" aria-label="Example autonomous trading mandate">
+        <div class="mandate-head">
+          <div><span class="status-dot"></span> AGENT MANDATE</div>
+          <span>TESTNET</span>
+        </div>
+        <div class="limit-row">
+          <span>Daily limit</span>
+          <strong>100 <small>USD</small></strong>
+        </div>
+        <div class="usage">
+          <div><span>Used today</span><b>24.80 USD</b></div>
+          <i><span></span></i>
+          <small>75.20 USD available</small>
+        </div>
+        <dl class="permissions">
+          <div><dt>Markets</dt><dd>ALL SPOT</dd></div>
+          <div><dt>Orders</dt><dd class="on">AUTONOMOUS</dd></div>
+          <div><dt>Transfers</dt><dd class="off">LOCKED</dd></div>
+          <div><dt>Withdrawals</dt><dd class="off">LOCKED</dd></div>
+        </dl>
+        <div class="activity">
+          <div class="activity-head"><span>Recent execution</span><span>VALUE</span><span>STATUS</span></div>
+          <div><span><b>BUY</b> GRAM–USDT</span><span>8.00</span><i>FILLED</i></div>
+          <div><span><b>SELL</b> BTC–USDT</span><span>12.40</span><i>FILLED</i></div>
+          <div><span><b>BUY</b> XROCK–USDT</span><span>4.40</span><i>WORKING</i></div>
         </div>
       </div>
     </section>
 
-    <section class="section shell" id="trade">
-      <div class="section-heading">
-        <p class="kicker">Your first guarded order</p>
-        <h2>Sign in once. Keep the token on your machine.</h2>
-        <p>The local MCP profile can read your account and trade. The hosted website never receives your token.</p>
+    <section class="ticker" aria-label="Product capabilities">
+      <div><span>01</span> LIVE MARKET DATA</div>
+      <div><span>02</span> AUTONOMOUS ORDERS</div>
+      <div><span>03</span> LOCAL CREDENTIALS</div>
+      <div><span>04</span> HARD DAILY LIMIT</div>
+    </section>
+
+    <section class="setup frame" id="trade">
+      <div class="section-label">SETUP / 01</div>
+      <div class="setup-heading">
+        <h2>One limit.<br>One local config.</h2>
+        <p>No symbol list is required. The agent can trade any available spot pair inside the daily value limit you set.</p>
       </div>
-      <div class="setup-grid">
-        <article class="setup-card featured">
-          <div class="step">1</div>
-          <h3>Sign in and create an API token</h3>
-          <p>Open xRocket, then go to <strong>Menu → Settings → Exchange settings → API token</strong>.</p>
-          <a class="small-button inline-button" href="/open" rel="nofollow">Open xRocket <span aria-hidden="true">↗</span></a>
-          <p class="hint warning">The token has broad account access. Put it only in your local MCP client's secret or environment settings — never in chat.</p>
-        </article>
-        <article class="setup-card">
-          <div class="step">2</div>
-          <h3>Generate the trading config</h3>
-          <div class="copy-row">
-            <code id="trade-command">npx -y xrocket-mcp@${VERSION} trading-config</code>
-            <button type="button" data-copy="trade-command">Copy</button>
+
+      <div class="configurator">
+        <div class="config-controls">
+          <div class="field-group">
+            <label for="limit-amount">Daily trading limit</label>
+            <div class="limit-control">
+              <input id="limit-amount" inputmode="decimal" value="100" aria-describedby="limit-help">
+              <input id="limit-asset" list="limit-assets" value="USD" maxlength="16" aria-label="Limit asset">
+              <datalist id="limit-assets"><option value="USD"><option value="USDT"><option value="TONCOIN"><option value="BTC"></datalist>
+            </div>
+            <p id="limit-help">All agent orders together cannot exceed this value per UTC day.</p>
           </div>
-          <p class="hint">Run it locally, paste the printed JSON into your MCP client, then replace the token placeholder locally. This starts on testnet and enables trading only.</p>
-        </article>
-        <article class="setup-card">
-          <div class="step">3</div>
-          <h3>Prepare, review, approve</h3>
-          <p class="starter">“On testnet, prepare a market buy of GRAM-USDT using 10 USDT. Show the estimate, fee, balances, rules, and exact intent. Do not execute until I explicitly approve.”</p>
-          <button class="small-button" type="button" data-copy-text="On testnet, prepare a market buy of GRAM-USDT using 10 USDT. Show the estimate, fee, balances, rules, and exact intent. Do not execute until I explicitly approve.">Copy prompt</button>
-        </article>
+          <fieldset>
+            <legend>Environment</legend>
+            <label><input type="radio" name="environment" value="testnet" checked><span>Testnet</span></label>
+            <label><input type="radio" name="environment" value="mainnet"><span>Mainnet</span></label>
+          </fieldset>
+          <div class="locked-row"><span>Transfers</span><b>EXPLICIT ONLY</b></div>
+          <div class="locked-row"><span>Withdrawals</span><b>EXPLICIT ONLY</b></div>
+        </div>
+
+        <div class="command-panel">
+          <div class="command-head"><span>GENERATED COMMAND</span><span>v${VERSION}</span></div>
+          <pre id="trade-command">npx -y xrocket-mcp@${VERSION} trading-config --limit 100 --asset USD</pre>
+          <button class="copy-command" type="button" data-copy="trade-command">Copy command</button>
+          <p>Run locally. The command prints the MCP config with a token placeholder and your limit.</p>
+        </div>
       </div>
-      <div class="trade-note">
-        <strong>Going live later?</strong>
-        <span>After testing, run <code>npx -y xrocket-mcp@${VERSION} trading-config --mainnet</code>. This explicitly opens the separate mainnet trading gate; transfers and withdrawals remain disabled.</span>
-      </div>
+
+      <ol class="steps" id="how">
+        <li>
+          <span>01</span><h3>Get the key</h3>
+          <p>Sign in to xRocket. Open <strong>Menu → Settings → Exchange settings → API token</strong>.</p>
+          <a href="/open" rel="nofollow">Open xRocket ↗</a>
+        </li>
+        <li>
+          <span>02</span><h3>Add it locally</h3>
+          <p>Run the generated command, paste its JSON into your MCP client, and replace the placeholder on your machine.</p>
+        </li>
+        <li>
+          <span>03</span><h3>Give it a strategy</h3>
+          <p>Tell your agent what to trade and when. Orders inside the limit execute without asking again.</p>
+          <button type="button" data-copy-text="Use xRocket on testnet. Trade GRAM-USDT with this strategy: [describe strategy]. Stay inside the configured daily trading limit. Do not transfer or withdraw funds.">Copy starter prompt</button>
+        </li>
+      </ol>
+      <p class="secret-note"><b>API keys stay local.</b> This website and the hosted MCP endpoint never receive account credentials.</p>
       <p class="copy-status" aria-live="polite"></p>
     </section>
 
-    <section class="section shell" id="connect">
-      <div class="section-heading compact">
-        <p class="kicker">No-account market demo</p>
-        <h2>Try the data before connecting your account.</h2>
-        <p>The remote endpoint is useful for prices, spreads, order books, trades, candles, fees, and market rules. It is structurally unable to trade.</p>
-      </div>
-      <div class="setup-grid demo-grid">
-        <article class="setup-card featured">
-          <h3>Remote MCP endpoint</h3>
-          <div class="copy-row">
-            <code id="mcp-url">${HOSTED_MCP_URL}</code>
-            <button type="button" data-copy="mcp-url">Copy URL</button>
-          </div>
-          <p class="hint">Choose Streamable HTTP in a compatible MCP client. No login or token is required.</p>
-        </article>
-        <article class="setup-card">
-          <h3>Generic client JSON</h3>
-          <pre id="mcp-config"><code>${escapeHtml(MCP_CONFIG)}</code></pre>
-          <button class="small-button" type="button" data-copy="mcp-config">Copy config</button>
-        </article>
+    <section class="proof frame">
+      <div class="section-label">CONTROL / 02</div>
+      <h2>The agent gets execution.<br>Not the keys to everything.</h2>
+      <div class="control-table">
+        <div class="table-head"><span>CAPABILITY</span><span>BEHAVIOUR</span><span>CONTROL</span></div>
+        <div><strong>Market + limit orders</strong><span>Runs automatically</span><b class="green">DAILY LIMIT</b></div>
+        <div><strong>Order cancellation</strong><span>Runs automatically</span><b class="green">TRADING SCOPE</b></div>
+        <div><strong>Internal transfers</strong><span>Prepared, then approved</span><b>EXPLICIT</b></div>
+        <div><strong>External withdrawals</strong><span>Prepared, then approved</span><b>EXPLICIT</b></div>
+        <div><strong>Unknown write result</strong><span>Never sent twice</span><b>FAIL CLOSED</b></div>
       </div>
     </section>
 
-    <section class="section examples shell" id="examples">
-      <div class="section-heading compact">
-        <p class="kicker">Trade by intent</p>
-        <h2>Say the outcome and the safety boundary.</h2>
-      </div>
-      <div class="prompt-grid">
-        <button class="prompt" type="button" data-copy-text="Prepare a limit buy of GRAM-USDT: size 1000 GRAM at 0.003 USDT, GTC. Show the estimate and exact intent. Do not execute.">
-          <span>01</span><strong>Prepare a limit order</strong><small>Review size, price, fee, rules, and available balance before anything is sent.</small>
-        </button>
-        <button class="prompt" type="button" data-copy-text="Show my active xRocket orders and explain which funds are currently held.">
-          <span>02</span><strong>Inspect active orders</strong><small>Read private order and trading-balance state without changing it.</small>
-        </button>
-        <button class="prompt" type="button" data-copy-text="Prepare cancellation of this xRocket order. Show the exact order first and wait for my approval.">
-          <span>03</span><strong>Cancel with review</strong><small>Bind cancellation to the exact current order and approve it separately.</small>
-        </button>
-      </div>
-    </section>
-
-    <section class="section shell boundary">
+    <section class="demo frame" id="demo">
       <div>
-        <p class="kicker">Two hard boundaries</p>
-        <h2>Demo is remote. Trading is local.</h2>
+        <div class="section-label">PUBLIC DEMO / 03</div>
+        <h2>Market data.<br>No account needed.</h2>
+        <p>Connect the hosted endpoint for prices, books, trades, candles, fees, and market rules. It cannot access an account or trade.</p>
       </div>
-      <p>The hosted MCP cannot see balances, accounts, orders, or tokens. The local trading template enables orders, but keeps transfers and withdrawals off. Every order still requires prepare and explicit approval before execution.</p>
-      <a href="https://github.com/nakazanie-ton/myrocket/blob/main/docs/SAFETY.md">Read the safety model <span aria-hidden="true">→</span></a>
+      <div class="demo-config">
+        <div class="command-head"><span>STREAMABLE HTTP</span><span>PUBLIC</span></div>
+        <code id="mcp-url">${HOSTED_MCP_URL}</code>
+        <button type="button" data-copy="mcp-url">Copy URL</button>
+        <details>
+          <summary>Generic client JSON</summary>
+          <pre id="mcp-config">${escapeHtml(MCP_CONFIG)}</pre>
+          <button type="button" data-copy="mcp-config">Copy JSON</button>
+        </details>
+      </div>
     </section>
 
-    <section class="final-cta shell">
-      <div>
-        <p class="kicker">Start without live-money risk</p>
-        <h2>Prepare your first testnet order.</h2>
-      </div>
-      <div class="hero-actions">
-        <a class="button primary" href="#trade">Set up trading</a>
-        <a class="button secondary" href="/open" rel="nofollow">Open xRocket <span aria-hidden="true">↗</span></a>
-      </div>
+    <section class="closing frame">
+      <p>YOUR STRATEGY.<br>YOUR LIMIT.</p>
+      <h2>Let the agent<br>run the orders.</h2>
+      <a class="button primary" href="#trade">Configure xRocket MCP</a>
     </section>
   </main>
 
-  <footer class="shell">
+  <footer class="frame">
     <p>xRocket MCP v${VERSION} · unofficial open-source integration</p>
-    <nav aria-label="Legal and package links">
+    <nav aria-label="Package and policy links">
+      <a href="https://github.com/nakazanie-ton/myrocket">Source</a>
+      <a href="https://www.npmjs.com/package/xrocket-mcp">npm</a>
       <a href="https://github.com/nakazanie-ton/myrocket/blob/main/PRIVACY.md">Privacy</a>
       <a href="https://github.com/nakazanie-ton/myrocket/blob/main/TERMS.md">Terms</a>
-      <a href="https://www.npmjs.com/package/xrocket-mcp">npm</a>
-      <a href="https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.nakazanie-ton%2Fxrocket">MCP Registry</a>
     </nav>
   </footer>
 </body>
@@ -208,11 +205,26 @@ export const LANDING_PAGE = `<!doctype html>
 
 export const LANDING_SCRIPT = `(() => {
   const status = document.querySelector('.copy-status');
+  const amount = document.getElementById('limit-amount');
+  const asset = document.getElementById('limit-asset');
+  const command = document.getElementById('trade-command');
+  const version = document.body.dataset.version;
   const showStatus = (message) => {
     if (!status) return;
     status.textContent = message;
     window.clearTimeout(showStatus.timeout);
     showStatus.timeout = window.setTimeout(() => { status.textContent = ''; }, 2400);
+  };
+  const updateCommand = () => {
+    const raw = amount && amount.value.trim();
+    const safeAmount = /^(?:0|[1-9]\\d*)(?:\\.\\d+)?$/.test(raw || '') && /[1-9]/.test(raw || '') ? raw : '100';
+    const rawAsset = asset && asset.value.trim();
+    const selectedAsset = /^[A-Za-z0-9]{2,16}$/.test(rawAsset || '') ? rawAsset.toUpperCase() : 'USD';
+    const invalidAsset = Boolean(rawAsset) && selectedAsset === 'USD' && rawAsset.toUpperCase() !== 'USD';
+    if (asset) asset.setAttribute('aria-invalid', String(invalidAsset));
+    const environment = document.querySelector('input[name="environment"]:checked');
+    const mainnet = environment && environment.value === 'mainnet' ? ' --mainnet' : '';
+    if (command) command.textContent = 'npx -y xrocket-mcp@' + version + ' trading-config --limit ' + safeAmount + ' --asset ' + selectedAsset + mainnet;
   };
   const copy = async (value) => {
     try {
@@ -222,6 +234,8 @@ export const LANDING_SCRIPT = `(() => {
       showStatus('Copy failed. Select the text and copy it manually.');
     }
   };
+  document.addEventListener('input', updateCommand);
+  document.addEventListener('change', updateCommand);
   document.addEventListener('click', (event) => {
     const button = event.target.closest('[data-copy], [data-copy-text]');
     if (!button) return;
@@ -230,17 +244,19 @@ export const LANDING_SCRIPT = `(() => {
     const value = button.getAttribute('data-copy-text') || (target ? target.textContent : '');
     if (value) void copy(value);
   });
+  updateCommand();
 })();`;
 
 export const LANDING_STYLES = `
-:root{color-scheme:dark;--bg:#090a18;--panel:#111326;--panel-2:#171a31;--line:#292d4a;--text:#f7f7ff;--muted:#a8adc8;--violet:#7775ff;--violet-2:#a29fff;--gold:#ffd36a;--green:#70e0ac;--shadow:0 24px 80px rgba(0,0,0,.35)}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 76% 8%,rgba(106,103,255,.17),transparent 31rem),radial-gradient(circle at 10% 38%,rgba(49,201,155,.07),transparent 28rem),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}a{color:inherit;text-decoration:none}button{font:inherit}.shell{width:min(1160px,calc(100% - 40px));margin-inline:auto}.skip-link{position:fixed;left:16px;top:-100px;background:#fff;color:#090a18;padding:10px 14px;border-radius:10px;z-index:50}.skip-link:focus{top:16px}.nav{height:84px;display:flex;align-items:center;justify-content:space-between}.brand{display:flex;align-items:center;gap:11px;font-size:18px;font-weight:760;letter-spacing:-.02em}.brand-mark{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(145deg,#8e8cff,#5552e8);box-shadow:0 10px 28px rgba(105,103,255,.35);color:white}.brand-mark svg{width:27px;height:27px}.muted{color:var(--muted);font-weight:600}.nav nav,.hero-actions,.trust,footer nav{display:flex;align-items:center;gap:24px}.nav nav a{font-size:14px;color:var(--muted);transition:color .2s}.nav nav a:hover,.nav nav a:focus-visible{color:var(--text)}.nav .nav-cta{color:var(--text);border:1px solid var(--line);padding:9px 15px;border-radius:11px}.hero{min-height:640px;display:grid;grid-template-columns:1.02fr .98fr;gap:68px;align-items:center;padding-block:72px 104px}.eyebrow,.kicker{text-transform:uppercase;letter-spacing:.16em;font-size:12px;font-weight:800;color:var(--violet-2)}.eyebrow{display:flex;align-items:center;gap:9px;margin:0 0 23px}.eyebrow span{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 5px rgba(112,224,172,.1)}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(48px,6vw,78px);line-height:.98;letter-spacing:-.06em;margin-bottom:26px;max-width:760px}h1 em{display:block;font-style:normal;color:var(--violet-2)}.lede{font-size:19px;line-height:1.65;color:var(--muted);max-width:650px;margin-bottom:32px}.button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:49px;padding:0 20px;border-radius:13px;font-size:15px;font-weight:760;transition:transform .2s,border-color .2s,background .2s}.button:hover{transform:translateY(-2px)}.button:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid rgba(162,159,255,.55);outline-offset:3px}.primary{background:linear-gradient(135deg,#8481ff,#5c58eb);box-shadow:0 15px 34px rgba(91,88,235,.27)}.secondary{border:1px solid var(--line);background:rgba(17,19,38,.55)}.secondary:hover{border-color:#464b72;background:var(--panel)}.trust{list-style:none;padding:0;margin:26px 0 0;gap:20px;color:var(--muted);font-size:13px}.trust li::before{content:"✓";color:var(--green);margin-right:7px;font-weight:900}.terminal{border:1px solid var(--line);border-radius:22px;background:linear-gradient(160deg,rgba(23,26,49,.97),rgba(13,15,31,.98));box-shadow:var(--shadow);overflow:hidden;transform:rotate(1deg)}.terminal-head{height:52px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:7px;padding:0 18px;color:var(--muted);font-size:12px}.terminal-head span{width:8px;height:8px;border-radius:50%;background:#353955}.terminal-head span:first-child{background:#f47f78}.terminal-head span:nth-child(2){background:#f2c86b}.terminal-head span:nth-child(3){background:#64d59a}.terminal-head b{margin-left:auto;font-weight:650}.message{margin:18px;padding:17px 19px;border-radius:15px;font-size:14px}.message.user{margin-left:64px;background:#232744;color:#e8e9fb}.message.agent{border:1px solid #303552;background:#101225;margin-right:36px}.agent-label{font-size:12px;font-weight:800;color:var(--violet-2);text-transform:uppercase;letter-spacing:.11em;margin-bottom:17px}.spark{color:var(--gold);margin-right:5px}.message.agent p{margin-bottom:14px}.quote-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.quote-grid span{border:1px solid #292e49;background:#171a31;border-radius:11px;padding:12px;font-weight:700}.quote-grid small{display:block;color:var(--muted);font-weight:500;margin-top:3px}.terminal-note{color:var(--muted);font-size:12px;margin-top:15px!important;margin-bottom:0!important}.section{padding-block:100px;border-top:1px solid rgba(41,45,74,.72)}.section-heading{max-width:710px;margin-bottom:40px}.section-heading.compact{max-width:680px}.kicker{margin-bottom:13px}h2{font-size:clamp(34px,5vw,54px);line-height:1.04;letter-spacing:-.045em;margin-bottom:18px}.section-heading>p:last-child,.boundary>p{color:var(--muted);font-size:17px}.setup-grid{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:15px}.demo-grid{grid-template-columns:1.35fr 1fr}.setup-card{position:relative;min-width:0;padding:27px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(150deg,rgba(23,26,49,.92),rgba(14,16,33,.92))}.setup-card.featured{border-color:#4a4e79}.step{width:31px;height:31px;display:grid;place-items:center;border-radius:9px;background:rgba(119,117,255,.15);color:var(--violet-2);font-weight:800;font-size:13px;margin-bottom:34px}.setup-card h3{font-size:19px;letter-spacing:-.02em;margin-bottom:15px}.setup-card>p{color:#d9daf0}.copy-row{display:flex;align-items:center;gap:10px;border:1px solid #343957;border-radius:12px;background:#0c0e20;padding:7px 7px 7px 13px}.copy-row code{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#d9daf0;font-size:12px}.copy-row button,.small-button{cursor:pointer;border:1px solid #42476b;color:var(--text);background:#242844;border-radius:9px;padding:9px 12px;font-weight:750;font-size:12px;white-space:nowrap}.copy-row button:hover,.small-button:hover{background:#303554}.inline-button{display:inline-flex;align-items:center;gap:6px}.hint{color:var(--muted)!important;font-size:12px;margin:13px 0 0}.warning{color:#f0d997!important}.setup-card pre{min-height:112px;overflow:auto;margin:0 0 13px;padding:13px;border:1px solid #303550;border-radius:11px;background:#0c0e20;color:#d9daf0;font-size:11px;line-height:1.55}.starter{min-height:112px;color:#d9daf0;font-size:15px;line-height:1.65}.trade-note{display:flex;gap:18px;margin-top:15px;padding:17px 20px;border:1px solid #343957;border-radius:14px;background:rgba(17,19,38,.72);color:var(--muted);font-size:13px}.trade-note strong{flex:0 0 auto;color:var(--text)}.trade-note code{color:#d9daf0}.copy-status{min-height:24px;color:var(--green);font-size:13px;margin:15px 0 0}.prompt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.prompt{text-align:left;cursor:pointer;color:var(--text);min-height:220px;padding:25px;border:1px solid var(--line);border-radius:18px;background:rgba(17,19,38,.72);transition:transform .2s,border-color .2s,background .2s}.prompt:hover{transform:translateY(-3px);border-color:#4c517c;background:var(--panel-2)}.prompt>span{display:block;color:var(--violet-2);font-size:12px;font-weight:800;letter-spacing:.12em;margin-bottom:42px}.prompt strong{display:block;font-size:18px;margin-bottom:10px}.prompt small{display:block;color:var(--muted);font-size:13px;line-height:1.6}.boundary{display:grid;grid-template-columns:1fr 1.2fr auto;align-items:end;gap:42px}.boundary h2{margin-bottom:0}.boundary>p{margin-bottom:2px}.boundary>a{color:var(--violet-2);font-weight:750;white-space:nowrap;margin-bottom:5px}.final-cta{margin-block:90px;padding:42px;border:1px solid #3a3f62;border-radius:24px;background:linear-gradient(120deg,rgba(119,117,255,.13),rgba(20,22,43,.9));display:flex;justify-content:space-between;align-items:center;gap:30px}.final-cta h2{font-size:38px;margin:0}.final-cta .kicker{margin-bottom:10px}footer{min-height:100px;padding-block:30px;border-top:1px solid rgba(41,45,74,.72);display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}footer p{margin:0}footer nav{gap:18px}footer a:hover{color:var(--text)}
-@media(max-width:900px){.hero{grid-template-columns:1fr;gap:50px;padding-top:52px}.terminal{transform:none;max-width:680px}.setup-grid,.prompt-grid{grid-template-columns:1fr 1fr}.setup-card.featured{grid-column:1/-1}.demo-grid .setup-card.featured{grid-column:auto}.boundary{grid-template-columns:1fr 1fr}.boundary>a{grid-column:1/-1}.final-cta{align-items:flex-start;flex-direction:column}}
-@media(max-width:620px){.shell{width:min(100% - 28px,1160px)}.nav{height:70px}.nav nav>a:not(.nav-cta){display:none}.hero{min-height:auto;padding-block:50px 80px}h1{font-size:48px}.lede{font-size:17px}.hero-actions{align-items:stretch;flex-direction:column;gap:10px}.button{width:100%}.trust{display:grid;grid-template-columns:1fr;gap:7px}.terminal{margin-inline:-2px}.message.user{margin-left:34px}.message.agent{margin-right:18px}.quote-grid{grid-template-columns:1fr}.section{padding-block:76px}.setup-grid,.prompt-grid{grid-template-columns:1fr}.setup-card.featured{grid-column:auto}.copy-row{align-items:stretch;flex-direction:column}.copy-row code{white-space:normal;overflow-wrap:anywhere}.copy-row button{width:100%}.trade-note{flex-direction:column}.prompt{min-height:190px}.boundary{grid-template-columns:1fr;gap:20px}.boundary>a{grid-column:auto}.final-cta{margin-block:65px;padding:29px}.final-cta h2{font-size:32px}footer{align-items:flex-start;flex-direction:column;gap:18px}footer nav{flex-wrap:wrap}}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important}}
+#limit-asset{border-left:1px solid var(--line-strong);font-size:12px;text-transform:uppercase}#limit-asset[aria-invalid="true"]{box-shadow:inset 0 0 0 2px var(--red)}
+:root{color-scheme:dark;--bg:#080a08;--surface:#0d100d;--line:#2a3029;--line-strong:#465044;--text:#f3f5f0;--muted:#929b8f;--acid:#c7ff4f;--red:#ff735d}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:"Arial Narrow","Helvetica Neue",Arial,sans-serif;line-height:1.45}body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.035;background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px);background-size:64px 64px}a{color:inherit;text-decoration:none}button,input,select{font:inherit}.frame{width:min(1180px,calc(100% - 48px));margin-inline:auto}.skip-link{position:fixed;left:16px;top:-100px;background:var(--acid);color:#080a08;padding:10px 14px;z-index:50}.skip-link:focus{top:16px}.topbar{height:78px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:800;letter-spacing:-.02em}.brand svg{width:27px;height:27px;fill:var(--text)}.brand svg circle{fill:var(--bg)}.brand b{color:var(--muted);font-size:11px;letter-spacing:.12em}.topbar nav{display:flex;align-items:center;gap:28px}.topbar nav a{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.topbar nav a:hover,.topbar nav a:focus-visible{color:var(--text)}.topbar .nav-action{color:var(--bg);background:var(--acid);padding:11px 15px}.hero{min-height:690px;padding:92px 0 105px;display:grid;grid-template-columns:1.05fr .95fr;gap:78px;align-items:center}.signal,.section-label,.command-head,.mandate-head,.table-head{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase}.signal{display:flex;align-items:center;gap:10px;color:var(--muted);margin:0 0 28px}.signal span,.status-dot{width:7px;height:7px;border-radius:50%;background:var(--acid);box-shadow:0 0 0 4px rgba(199,255,79,.08)}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(54px,6.5vw,88px);line-height:.91;letter-spacing:-.07em;margin:0 0 30px;font-weight:760}h1 em{color:var(--acid);font-style:normal}.lead{max-width:570px;color:#c9cec5;font-size:19px;line-height:1.55;margin-bottom:34px}.actions{display:flex;align-items:center;gap:22px}.button{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 19px;font-size:13px;font-weight:800;letter-spacing:.04em}.button.primary{background:var(--acid);color:#080a08}.button:hover{filter:brightness(1.06)}.text-button{padding-inline:0;color:var(--muted)}.text-button span{color:var(--acid);margin-left:9px}.microcopy{margin:25px 0 0;color:#6f786d;font-size:12px}.mandate{border:1px solid var(--line-strong);background:var(--surface);box-shadow:16px 16px 0 #030403}.mandate-head{height:52px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);color:var(--muted)}.mandate-head div{display:flex;align-items:center;gap:10px;color:var(--text)}.limit-row{padding:27px 24px 23px;display:flex;align-items:end;justify-content:space-between}.limit-row>span{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}.limit-row strong{font-size:48px;line-height:1;letter-spacing:-.05em}.limit-row small{color:var(--muted);font-size:13px;letter-spacing:.08em}.usage{padding:0 24px 25px}.usage>div,.usage>small{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}.usage b{color:var(--text)}.usage i{display:block;height:3px;background:#252b24;margin:10px 0 8px}.usage i span{display:block;width:24.8%;height:100%;background:var(--acid)}.permissions{display:grid;grid-template-columns:1fr 1fr;margin:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.permissions div{padding:16px 20px;display:flex;justify-content:space-between;border-right:1px solid var(--line);border-bottom:1px solid var(--line);font-size:11px}.permissions div:nth-child(2n){border-right:0}.permissions div:nth-last-child(-n+2){border-bottom:0}.permissions dt{color:var(--muted)}.permissions dd{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;letter-spacing:.08em}.permissions .on{color:var(--acid)}.permissions .off{color:var(--red)}.activity{padding:18px 20px 14px}.activity>div{display:grid;grid-template-columns:1.5fr .6fr .5fr;gap:10px;padding:9px 0;border-bottom:1px solid #20251f;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px}.activity>div:last-child{border-bottom:0}.activity .activity-head{color:#687065;letter-spacing:.1em}.activity b{color:var(--acid);font-weight:500;margin-right:5px}.activity i{font-style:normal;color:var(--muted);text-align:right}.ticker{min-height:72px;border-block:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr)}.ticker div{display:flex;align-items:center;justify-content:center;gap:14px;border-right:1px solid var(--line);font-size:10px;font-weight:800;letter-spacing:.1em}.ticker div:last-child{border-right:0}.ticker span{color:var(--acid);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.setup,.proof,.demo{padding-block:118px}.section-label{color:var(--acid);margin-bottom:30px}.setup-heading{display:grid;grid-template-columns:1.15fr .85fr;gap:80px;align-items:end;margin-bottom:55px}.setup-heading h2,.proof h2,.demo h2,.closing h2{font-size:clamp(43px,5.4vw,68px);line-height:.95;letter-spacing:-.06em;margin:0}.setup-heading p,.demo>div>p{max-width:520px;color:var(--muted);font-size:17px;margin:0}.configurator{display:grid;grid-template-columns:.9fr 1.1fr;border:1px solid var(--line-strong);background:var(--surface)}.config-controls{padding:30px;border-right:1px solid var(--line)}.field-group label,fieldset legend{display:block;margin-bottom:12px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em}.limit-control{display:grid;grid-template-columns:1fr 130px;border:1px solid var(--line-strong)}.limit-control input,.limit-control select{height:60px;border:0;background:#090b09;color:var(--text);padding:0 17px;outline:none}.limit-control input{font-size:25px;font-weight:800}.limit-control select{border-left:1px solid var(--line-strong);font-size:12px;font-weight:800}.limit-control input:focus,.limit-control select:focus{box-shadow:inset 0 0 0 2px var(--acid)}.field-group p{font-size:11px;color:#717a6f;margin:10px 0 25px}fieldset{border:0;padding:0;margin:0 0 24px;display:grid;grid-template-columns:1fr 1fr}fieldset legend{grid-column:1/-1}fieldset label input{position:absolute;opacity:0}fieldset label span{height:43px;border:1px solid var(--line-strong);display:grid;place-items:center;color:var(--muted);font-size:11px;text-transform:uppercase;cursor:pointer}fieldset label+label span{border-left:0}fieldset input:checked+span{background:var(--acid);color:#080a08;font-weight:800}.locked-row{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);font-size:11px}.locked-row span{color:var(--muted)}.locked-row b{color:var(--red);font-size:9px;letter-spacing:.08em}.command-panel{padding:30px;display:flex;flex-direction:column}.command-head{display:flex;justify-content:space-between;color:var(--muted);margin-bottom:17px}.command-panel pre{white-space:pre-wrap;overflow-wrap:anywhere;min-height:116px;padding:20px;margin:0;background:#050605;border:1px solid var(--line);color:#e3e8df;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace}.copy-command,.demo-config>button,.demo-config details button,.steps button{cursor:pointer;border:0;background:var(--acid);color:#080a08;min-height:42px;padding:0 15px;font-size:11px;font-weight:800;letter-spacing:.05em}.command-panel .copy-command{align-self:flex-start;margin-top:15px}.command-panel>p{color:var(--muted);font-size:11px;margin:auto 0 0;padding-top:24px}.steps{list-style:none;padding:0;margin:48px 0 0;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.steps li{min-height:268px;padding:26px 28px 25px 0;border-right:1px solid var(--line)}.steps li+li{padding-left:28px}.steps li:last-child{border-right:0}.steps>li>span{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--acid)}.steps h3{font-size:22px;letter-spacing:-.03em;margin:55px 0 12px}.steps p{min-height:62px;color:var(--muted);font-size:13px;line-height:1.6}.steps a,.steps button{display:inline-flex;margin-top:11px;color:var(--text);font-size:11px;font-weight:800;border-bottom:1px solid var(--line-strong)}.steps button{background:none;padding:0 0 4px;min-height:0}.secret-note{margin:22px 0 0;color:var(--muted);font-size:12px}.secret-note b{color:var(--text)}.copy-status{position:fixed;right:20px;bottom:20px;z-index:20;min-width:0;margin:0;background:var(--acid);color:#080a08;font-size:11px;font-weight:800}.copy-status:not(:empty){padding:10px 14px}.proof{border-top:1px solid var(--line)}.proof h2{max-width:850px;margin-bottom:58px}.control-table{border-top:1px solid var(--line-strong)}.control-table>div{display:grid;grid-template-columns:1.15fr 1fr .55fr;gap:25px;align-items:center;min-height:68px;border-bottom:1px solid var(--line);font-size:13px}.control-table span{color:var(--muted)}.control-table b{font:9px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em}.control-table b.green{color:var(--acid)}.control-table .table-head{min-height:43px;color:#697167}.demo{border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:95px}.demo>div>p{margin-top:24px}.demo-config{border:1px solid var(--line-strong);background:var(--surface);padding:24px}.demo-config code,.demo-config pre{display:block;padding:18px;background:#050605;border:1px solid var(--line);font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;white-space:pre-wrap}.demo-config>button{margin-top:12px}.demo-config details{margin-top:22px;border-top:1px solid var(--line);padding-top:17px}.demo-config summary{cursor:pointer;color:var(--muted);font-size:11px}.demo-config details pre{margin:15px 0 10px}.closing{margin-block:20px 110px;padding:70px;border:1px solid var(--line-strong);display:grid;grid-template-columns:.6fr 1.4fr auto;gap:50px;align-items:center}.closing>p{font:10px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--acid);margin:0}.closing h2{font-size:55px}footer{min-height:95px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;color:#6f776d;font-size:10px}footer p{margin:0}footer nav{display:flex;gap:23px}footer a:hover{color:var(--text)}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--acid);outline-offset:3px}
+@media(max-width:900px){.hero{grid-template-columns:1fr;gap:65px}.mandate{max-width:630px}.ticker{grid-template-columns:1fr 1fr}.ticker div:nth-child(2){border-right:0}.ticker div:nth-child(-n+2){border-bottom:1px solid var(--line)}.setup-heading,.demo{grid-template-columns:1fr;gap:35px}.configurator{grid-template-columns:1fr}.config-controls{border-right:0;border-bottom:1px solid var(--line)}.closing{grid-template-columns:1fr;align-items:start}.closing h2{font-size:48px}}
+@media(max-width:650px){.frame{width:min(100% - 28px,1180px)}.topbar{height:68px}.topbar nav>a:not(.nav-action){display:none}.hero{padding:67px 0 80px;min-height:auto}h1{font-size:52px}.lead{font-size:17px}.actions{align-items:stretch;flex-direction:column}.text-button{justify-content:flex-start}.mandate{box-shadow:8px 8px 0 #030403}.permissions{grid-template-columns:1fr}.permissions div{border-right:0}.permissions div:nth-last-child(-n+2){border-bottom:1px solid var(--line)}.permissions div:last-child{border-bottom:0}.ticker{grid-template-columns:1fr}.ticker div{min-height:52px;border-right:0;border-bottom:1px solid var(--line)!important}.ticker div:last-child{border-bottom:0!important}.setup,.proof,.demo{padding-block:82px}.setup-heading h2,.proof h2,.demo h2{font-size:44px}.config-controls,.command-panel{padding:20px}.limit-control{grid-template-columns:1fr 100px}.steps{grid-template-columns:1fr}.steps li,.steps li+li{min-height:auto;padding:24px 0;border-right:0;border-bottom:1px solid var(--line)}.steps li:last-child{border-bottom:0}.steps h3{margin-top:30px}.steps p{min-height:auto}.control-table>div{grid-template-columns:1fr;gap:7px;padding:16px 0}.control-table .table-head{display:none}.closing{padding:34px;margin-bottom:75px}.closing h2{font-size:43px}footer{align-items:flex-start;flex-direction:column;gap:16px;padding-block:25px}footer nav{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 `;
 
-export const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#6967ff"/><path d="M37 8c9 3 15 9 18 18L36 45 19 28C22 18 28 11 37 8Z" fill="#fff"/><circle cx="39" cy="23" r="4" fill="#6967ff"/><path d="m22 34-9 3 14 14 3-9" fill="#ffd36a"/></svg>`;
+export const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#080a08"/><path d="M37 8c9 3 15 9 18 18L36 45 19 28C22 18 28 11 37 8Z" fill="#f3f5f0"/><circle cx="39" cy="23" r="4" fill="#080a08"/><path d="m22 34-9 3 14 14 3-9" fill="#c7ff4f"/></svg>`;
 
 export const ROBOTS_TXT = `User-agent: *\nAllow: /\nSitemap: ${HOSTED_ORIGIN}/sitemap.xml\n`;
 

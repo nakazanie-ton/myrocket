@@ -1,6 +1,7 @@
 import { McpServer, type CallToolResult, type ToolAnnotations } from "@modelcontextprotocol/server";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { AgentTradingController, type AgentOrder } from "./agent-trading.js";
 import { assertWriteAllowed, loadConfig, type XrocketConfig } from "./config.js";
 import { XrocketClient, type FetchLike } from "./client.js";
 import { ApprovalReceiptError, UnknownWriteOutcomeError, XrocketHttpError } from "./errors.js";
@@ -13,6 +14,7 @@ const symbolSchema = z.string().min(1).max(64).describe("Exact current xRocket s
 const assetSchema = z.string().min(1).max(64).describe("Exact xRocket asset identifier; TON is currently TONCOIN");
 const decimalSchema = z
   .string()
+  .max(128)
   .regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/, "must be a plain non-negative decimal string")
   .refine((value) => /[1-9]/.test(value), "must be greater than zero")
   .describe("Exact positive decimal string; never use a JSON number");
@@ -45,8 +47,7 @@ const intervalSchema = z.enum([
 ]);
 const dateTimeSchema = z.string().datetime({ offset: true });
 
-const limitOrderSchema = z.object({
-  clientOrderId: orderClientIdSchema.optional(),
+const agentLimitOrderSchema = z.object({
   symbol: symbolSchema,
   side: sideSchema,
   type: z.literal("limit"),
@@ -54,9 +55,8 @@ const limitOrderSchema = z.object({
   price: decimalSchema,
   timeInForce: z.enum(["GTC", "IOC", "FOK"]),
 });
-const marketOrderSchema = z
+const agentMarketOrderSchema = z
   .object({
-    clientOrderId: orderClientIdSchema.optional(),
     symbol: symbolSchema,
     side: sideSchema,
     type: z.literal("market"),
@@ -67,31 +67,12 @@ const marketOrderSchema = z
   .refine((order) => (order.size === undefined) !== (order.funds === undefined), {
     message: "market order requires exactly one of size or funds",
   });
-const stopLimitOrderSchema = z.object({
-  clientOrderId: orderClientIdSchema.optional(),
-  symbol: symbolSchema,
-  side: sideSchema,
-  type: z.literal("stopLimit"),
-  size: decimalSchema,
-  price: decimalSchema,
-  stopPrice: decimalSchema,
-  timeInForce: z.enum(["GTC", "IOC", "FOK"]),
-});
-const stopMarketOrderSchema = z.object({
-  clientOrderId: orderClientIdSchema.optional(),
-  symbol: symbolSchema,
-  side: sideSchema,
-  type: z.literal("stopMarket"),
-  size: decimalSchema,
-  stopPrice: decimalSchema,
-  timeInForce: z.enum(["IOC", "FOK"]),
-});
-const orderSchema = z
-  .union([limitOrderSchema, marketOrderSchema, stopLimitOrderSchema, stopMarketOrderSchema])
+const agentOrderSchema = z
+  .union([agentLimitOrderSchema, agentMarketOrderSchema])
   .transform((order) => ({
     ...order,
-    clientOrderId: order.clientOrderId ?? `order-${randomUUID()}`,
-  }));
+    clientOrderId: `xrmcp-${randomUUID()}`,
+  })) as z.ZodType<AgentOrder>;
 
 const cancelIntentSchema = z
   .object({
@@ -215,17 +196,6 @@ function boundedErrorDetails(details: unknown): unknown {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function relevantSymbolAssets(symbolRules: unknown, symbol: string): string[] {
-  if (isRecord(symbolRules)) {
-    const baseAsset = symbolRules.baseAsset;
-    const quoteAsset = symbolRules.quoteAsset;
-    if (typeof baseAsset === "string" && typeof quoteAsset === "string") {
-      return [baseAsset, quoteAsset];
-    }
-  }
-  return symbol.split("-").filter((asset) => asset.length > 0);
 }
 
 function narrowBalances(data: unknown, assets: readonly string[]): Record<string, unknown> {
@@ -383,18 +353,24 @@ export interface CreateServerOptions {
   config?: XrocketConfig;
   fetch?: FetchLike;
   receipts?: ApprovalReceiptStore;
+  agentStatePath?: string;
+  now?: () => Date;
 }
 
 export function createXrocketServer(options: CreateServerOptions = {}): McpServer {
   const config = options.config ?? loadConfig();
   const client = new XrocketClient(config, options.fetch);
   const receipts = options.receipts ?? new ApprovalReceiptStore(config.approvalTtlMs);
+  const agentTrading = new AgentTradingController(config, client, {
+    ...(options.agentStatePath ? { statePath: options.agentStatePath } : {}),
+    ...(options.now ? { now: options.now } : {}),
+  });
   const server = new McpServer(
     { name: "xrocket-mcp", version: VERSION },
     {
       capabilities: { tools: {} },
       instructions:
-        "Use xrocket_market_snapshot for broad market questions and xrocket_account_overview for a whole-account read. If the user wants to trade but order tools are unavailable, ask them to sign in to xRocket and run xrocket-mcp trading-config for a local testnet-first trading profile; never ask them to paste the token into chat. Trading requires xrocket_order_prepare, a visible review of the estimate, fees, balances, rules, and exact intent, explicit user approval, then one xrocket_order_execute call with only the receipt. Never retry an unknown write outcome; reconcile it with private read tools.",
+        "Use xrocket_market_snapshot for market context and xrocket_account_overview for account state. If autonomous trading tools are unavailable, ask the user to sign in to xRocket and run xrocket-mcp trading-config locally; never ask them to paste the token into chat. xrocket_agent_trade places market or limit orders autonomously inside the configured daily value and order-count limits. xrocket_agent_cancel cancels orders without per-order approval. Transfers and withdrawals still require prepare, explicit user approval, and execute. Never retry an unknown write outcome.",
     },
   );
 
@@ -630,117 +606,41 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
   if (config.profile !== "full") return server;
 
   server.registerTool(
-    "xrocket_order_prepare",
+    "xrocket_agent_policy",
     {
-      title: "Prepare xRocket order",
-      description:
-        "Estimate an order and issue a short-lived receipt bound to the exact intent. This does not place an order.",
-      inputSchema: z.object({ order: orderSchema }),
+      title: "xRocket agent trading policy",
+      description: "Read the autonomous daily trading limit, usage, and order limits.",
+      inputSchema: z.object({}),
       outputSchema: resultSchema,
-      annotations: PREPARE,
+      annotations: READ,
     },
-    ({ order }) =>
-      run(async () => {
-        const [estimate, symbolRules, tradingBalances, tradeFees] = await Promise.all([
-          client.estimateOrder(order),
-          client.getSymbols(order.symbol),
-          client.getBalances("trading"),
-          client.getTradeFees([order.symbol]),
-        ]);
-        const boundIntent = intent(config.environment, order);
-        return {
-          environment: config.environment,
-          order,
-          estimate,
-          symbolRules,
-          tradingBalances: narrowBalances(
-            tradingBalances,
-            relevantSymbolAssets(symbolRules, order.symbol),
-          ),
-          tradeFees,
-          ...receipts.issue("order", boundIntent),
-          writeGate: gateStatus(config, "trading"),
-          execution: executionStatus(config, "trading"),
-          preview: { operation: "place order", exactIntent: order },
-          instruction: prepareInstruction(config, "trading", "xrocket_order_execute"),
-        };
-      }),
+    () => run(async () => ({ environment: config.environment, ...(await agentTrading.status()) })),
   );
 
   server.registerTool(
-    "xrocket_order_execute",
+    "xrocket_agent_trade",
     {
-      title: "Execute xRocket order",
-      description: "Place the exact previously prepared order once. Ambiguous outcomes are never retried.",
-      inputSchema: z.object({ approvalReceipt: z.string().min(1) }),
+      title: "Trade on xRocket",
+      description:
+        "Place one market or limit order immediately when it fits the configured autonomous daily value, daily order-count, and active-order limits. No per-order approval is required. Unknown outcomes are never retried.",
+      inputSchema: z.object({ order: agentOrderSchema }),
       outputSchema: resultSchema,
       annotations: WRITE,
     },
-    ({ approvalReceipt }) =>
-      run(async () => {
-        assertWriteAllowed(config, "trading");
-        const stored = receipts.consume("order", approvalReceipt);
-        const order = orderSchema.parse(receiptPayload(stored, config.environment));
-        return {
-          environment: config.environment,
-          clientOrderId: order.clientOrderId,
-          data: await client.placeOrder(order),
-        };
-      }),
+    ({ order }) => run(() => agentTrading.trade(order)),
   );
 
   server.registerTool(
-    "xrocket_order_cancel_prepare",
+    "xrocket_agent_cancel",
     {
-      title: "Prepare xRocket order cancellation",
-      description: "Read the target order and issue a short-lived receipt. This does not cancel it.",
+      title: "Cancel an xRocket order",
+      description:
+        "Cancel an order immediately inside the autonomous trading scope. Cancellation reduces exposure and does not require per-order approval. Unknown outcomes are never retried.",
       inputSchema: z.object({ cancellation: cancelIntentSchema }),
       outputSchema: resultSchema,
-      annotations: PREPARE,
-    },
-    ({ cancellation }) =>
-      run(async () => {
-        const currentOrder = await client.getOrders("one", cancellation);
-        const boundIntent = intent(config.environment, cancellation);
-        return {
-          environment: config.environment,
-          cancellation,
-          currentOrder,
-          ...receipts.issue("order-cancel", boundIntent),
-          writeGate: gateStatus(config, "trading"),
-          execution: executionStatus(config, "trading"),
-          preview: { operation: "cancel order", exactIntent: cancellation },
-          instruction: prepareInstruction(
-            config,
-            "trading",
-            "xrocket_order_cancel_execute",
-          ),
-        };
-      }),
-  );
-
-  server.registerTool(
-    "xrocket_order_cancel_execute",
-    {
-      title: "Execute xRocket order cancellation",
-      description: "Cancel the exact previously prepared order once. Ambiguous outcomes are never retried.",
-      inputSchema: z.object({ approvalReceipt: z.string().min(1) }),
-      outputSchema: resultSchema,
       annotations: WRITE,
     },
-    ({ approvalReceipt }) =>
-      run(async () => {
-        assertWriteAllowed(config, "trading");
-        const stored = receipts.consume("order-cancel", approvalReceipt);
-        const cancellation = cancelIntentSchema.parse(
-          receiptPayload(stored, config.environment),
-        );
-        return {
-          environment: config.environment,
-          identifier: cancellation.orderId ?? cancellation.clientOrderId,
-          data: await client.cancelOrder(cancellation),
-        };
-      }),
+    ({ cancellation }) => run(() => agentTrading.cancel(cancellation)),
   );
 
   server.registerTool(

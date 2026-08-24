@@ -11,23 +11,21 @@ These workflows compose semantic tools without widening their authority.
 
 Do not call the result a synchronized live feed. REST responses can be from different instants.
 
-## Testnet order with explicit approval
+## Testnet autonomous strategy
 
-1. Confirm testnet, symbol, side, order type, decimal fields, and time-in-force. Preserve a supplied `clientOrderId`; otherwise let prepare generate it.
-2. Read symbol rules, ticker/orderbook as appropriate, and balances.
-3. Call `xrocket_order_prepare`; the official estimate endpoint participates in preparation.
-4. Show the complete preview and ask the user to approve this exact testnet order.
-5. Call `xrocket_order_execute` once with only the returned `approvalReceipt`; the server uses its stored order intent.
-6. Read `xrocket_orders` by client identifier and report exchange state separately from the requested state.
+1. Confirm the returned policy is testnet and understand the user's strategy.
+2. Read symbol rules, ticker/orderbook as appropriate, balances, and `xrocket_agent_policy`.
+3. Call `xrocket_agent_trade` for a market or limit order when the strategy says to act. Do not ask for per-order approval.
+4. The tool estimates and values the order, checks the configured limits, reserves value durably, and submits once.
+5. Read `xrocket_orders` by returned client identifier and report exchange state separately from requested state.
 
-If the estimate conflicts with the intended order, stop and ask for a decision rather than modifying the order.
+If the tool rejects the estimate or limit check, do not modify the policy or order to force execution.
 
 ## Safe cancellation
 
 1. Read the target order by server or client identifier.
-2. Show symbol, side, original size/price, filled amount, current status, and environment.
-3. Call `xrocket_order_cancel_prepare` and obtain explicit approval of the resolved target.
-4. Execute once, then read the order again.
+2. Call `xrocket_agent_cancel` directly when the strategy or risk state requires it.
+3. Read the order again and report the current exchange state.
 
 A terminal order may make cancellation unnecessary. Do not claim cancellation succeeded solely because the execute call returned without a transport error.
 

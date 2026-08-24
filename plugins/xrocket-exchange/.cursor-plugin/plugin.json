@@ -1,7 +1,7 @@
 {
   "name": "xrocket-exchange",
-  "description": "Try xRocket market data, then set up guarded local CEX trading",
-  "version": "0.5.0",
+  "description": "Set one limit and let your agent trade xRocket locally",
+  "version": "0.6.0",
   "author": {
     "name": "nakazanie-ton"
   },

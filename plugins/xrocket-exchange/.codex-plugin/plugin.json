@@ -1,7 +1,7 @@
 {
   "name": "xrocket-exchange",
-  "version": "0.5.0",
-  "description": "Guarded xRocket CEX trading with explicit order review and live market data",
+  "version": "0.6.0",
+  "description": "Autonomous xRocket CEX trading inside operator-set limits, plus live market data",
   "author": {
     "name": "nakazanie-ton",
     "url": "https://github.com/nakazanie-ton"
@@ -20,13 +20,13 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "xRocket Exchange",
-    "shortDescription": "Prepare, review, and execute xRocket orders.",
-    "longDescription": "Unofficial xRocket CEX integration with guarded local order preparation and execution, private account reads, and a public market-data demo.",
+    "shortDescription": "Set a limit. Let your agent trade xRocket.",
+    "longDescription": "Unofficial xRocket CEX integration with autonomous local spot trading inside a daily value limit, private account reads, explicit transfer and withdrawal approval, and a public market-data demo.",
     "developerName": "nakazanie-ton",
     "category": "Developer Tools",
     "capabilities": [
-      "Guarded CEX trading",
-      "Prepare and approve orders",
+      "Autonomous CEX trading",
+      "Operator-set daily limits",
       "Public market data",
       "Local MCP",
       "Agent skill"
@@ -35,11 +35,11 @@
     "privacyPolicyURL": "https://github.com/nakazanie-ton/myrocket/blob/main/PRIVACY.md",
     "termsOfServiceURL": "https://github.com/nakazanie-ton/myrocket/blob/main/TERMS.md",
     "defaultPrompt": [
-      "On testnet, prepare a market buy of GRAM-USDT using 10 USDT. Show the exact intent and do not execute until I approve.",
+      "On testnet, trade GRAM-USDT with this strategy: [describe strategy]. Stay inside the configured daily limit.",
       "Show my active xRocket orders and trading balances.",
       "Show a complete current GRAM market snapshot on xRocket."
     ],
-    "brandColor": "#5B5DF0",
+    "brandColor": "#C7FF4F",
     "composerIcon": "./assets/icon.svg",
     "logo": "./assets/logo.svg"
   },

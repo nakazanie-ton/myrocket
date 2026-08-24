@@ -21,7 +21,7 @@ No numeric REST rate limit or official retry schedule was published in the audit
 
 ## WebSocket error-code reference
 
-Version 0.5.0 does not expose WebSocket tools, but these audited codes matter when reviewing upstream examples or planning future support:
+Version 0.6.0 does not expose WebSocket tools, but these audited codes matter when reviewing upstream examples or planning future support:
 
 | Code | Documented meaning |
 | ---: | --- |
@@ -57,6 +57,6 @@ Keep amounts, prices, sizes, funds, rates, balances, and fees as strings. Reject
 
 Use this structure:
 
-> xRocket write outcome is unknown. The request may have reached the exchange. I did not retry it. Reconcile in the selected environment using client identifier `<id>` before any new approval.
+> xRocket write outcome is unknown. The request may have reached the exchange. I did not retry it. For an order, its value remains reserved against the autonomous limit. Reconcile in the selected environment using client identifier `<id>`.
 
 Do not label the operation `failed` until an authoritative read proves it absent or rejected.

@@ -27,6 +27,12 @@ const assetSchema = z
   .min(1)
   .max(64)
   .describe("Exact xRocket asset identifier; TON is currently TONCOIN");
+const fiatSchema = z
+  .string()
+  .min(3)
+  .max(8)
+  .regex(/^[A-Z0-9]+$/, "use the uppercase fiat code documented by xRocket")
+  .describe("Fiat base currency, for example USD");
 const decimalSchema = z
   .string()
   .regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/, "must be a plain non-negative decimal string")
@@ -371,9 +377,9 @@ export function registerPublicXrocketTools(
     "xrocket_rates",
     {
       title: "xRocket rates",
-      description: "Get public conversion rates from one base asset to optional target assets.",
+      description: "Get public crypto-asset rates in one fiat base currency.",
       inputSchema: z.object({
-        base: assetSchema,
+        base: fiatSchema,
         assets: z.array(assetSchema).min(1).max(100).optional(),
       }),
       outputSchema: resultSchema,
@@ -407,7 +413,7 @@ export function registerPublicXrocketTools(
     {
       title: "Set up xRocket trading",
       description:
-        "Return xRocket sign-in links, local MCP trading setup, the prepare/approve/execute flow, and canonical API documentation.",
+        "Return xRocket sign-in links, the local autonomous trading setup, and canonical API documentation.",
       inputSchema: z.object({}),
       outputSchema: resultSchema,
       annotations: LOCAL_READ,
@@ -429,14 +435,15 @@ export function registerPublicXrocketTools(
             apiTokenMenu: "Menu > Settings > Exchange settings > API token",
             tokenHandling:
               "Sign in to xRocket and configure the broad account token only in the local MCP client's secret or environment settings. Never paste it into chat or send it to the hosted endpoint.",
-            testnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config`,
-            mainnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config --mainnet`,
+            testnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config --limit 100 --asset USD`,
+            mainnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config --limit 100 --asset USD --mainnet`,
             recommendedFirstPrompt:
-              "On testnet, prepare a market buy of GRAM-USDT using 10 USDT. Show the estimate, fee, balances, rules, and exact intent. Do not execute until I explicitly approve.",
-            orderFlow: [
-              "prepare: estimate the order and return the exact intent plus a short-lived receipt",
-              "approve: show the preview and obtain explicit user approval",
-              "execute: submit only the prepared receipt once; never retry an unknown outcome",
+              "Use xRocket on testnet. Trade GRAM-USDT with this strategy: [describe strategy]. Stay inside the configured daily trading limit. Do not transfer or withdraw funds.",
+            autonomousTrading: [
+              "set one daily value limit in USD or another asset; all spot markets are available by default",
+              "the agent can place and cancel market or limit orders without per-order approval inside that limit",
+              "transfers and withdrawals remain separate and require explicit approval",
+              "unknown order outcomes are reserved against the limit and never retried",
             ],
           },
           depositNote:
@@ -457,7 +464,7 @@ export function createHostedPublicXrocketServer(
     {
       capabilities: { tools: {} },
       instructions:
-        "This hosted endpoint exposes only public xRocket mainnet market data. Use xrocket_market_snapshot for broad market questions and the narrow public tools for exact details. If the user wants to trade, call xrocket_onboarding_links and guide them to the local trading profile; do not imply this hosted endpoint can place an order. The local flow is prepare, show the exact estimate and intent, obtain explicit approval, then execute the receipt once. This endpoint never accepts account tokens and cannot expose balances, orders, transfers, withdrawals, prepare, or execute tools. Ask the user to sign in to xRocket when credentials are needed, and never ask them to paste a token into chat.",
+        "This hosted endpoint exposes only public xRocket mainnet market data. Use xrocket_market_snapshot for broad market questions and the narrow public tools for exact details. If the user wants to trade, call xrocket_onboarding_links and guide them to the local autonomous trading profile; do not imply this hosted endpoint can place an order. Locally, the user sets one daily value limit and the agent may place and cancel orders inside it without per-order approval. Transfers and withdrawals remain separate explicit-approval operations. This endpoint never accepts account tokens and cannot expose balances or account writes. Ask the user to sign in to xRocket when credentials are needed, and never ask them to paste a token into chat.",
     },
   );
   const client = new XrocketClient(config, fetchImpl);

@@ -1,5 +1,9 @@
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import type { McpServer } from "@modelcontextprotocol/server";
+import { randomUUID } from "node:crypto";
+import { rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadConfig, type XrocketConfig } from "../src/config.js";
 import type { FetchLike } from "../src/client.js";
@@ -7,6 +11,13 @@ import { createXrocketServer } from "../src/server.js";
 import { VERSION } from "../src/version.js";
 
 const connected: Array<{ client: Client; server: McpServer }> = [];
+const statePaths: string[] = [];
+
+function agentStatePath(): string {
+  const statePath = path.join(tmpdir(), `xrocket-mcp-test-${randomUUID()}.json`);
+  statePaths.push(statePath);
+  return statePath;
+}
 
 async function connect(config: XrocketConfig, fetchImpl: FetchLike) {
   const server = createXrocketServer({ config, fetch: fetchImpl });
@@ -23,6 +34,11 @@ afterEach(async () => {
     const pair = connected.pop()!;
     await pair.client.close();
     await pair.server.close();
+  }
+  while (statePaths.length) {
+    const statePath = statePaths.pop()!;
+    await rm(statePath, { force: true });
+    await rm(`${statePath}.lock`, { force: true });
   }
 });
 
@@ -62,10 +78,9 @@ const expectedPrivate = [
   "xrocket_withdrawals",
 ];
 const expectedWrites = [
-  "xrocket_order_cancel_execute",
-  "xrocket_order_cancel_prepare",
-  "xrocket_order_execute",
-  "xrocket_order_prepare",
+  "xrocket_agent_cancel",
+  "xrocket_agent_policy",
+  "xrocket_agent_trade",
   "xrocket_transfer_execute",
   "xrocket_transfer_prepare",
   "xrocket_withdrawal_execute",
@@ -100,13 +115,9 @@ describe("MCP tool contract", () => {
       openWorldHint: true,
     });
     if (profile === "full") {
-      const prepare = tools.tools.find((tool) => tool.name === "xrocket_order_prepare")!;
-      expect(prepare.annotations).toMatchObject({
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: false,
-        openWorldHint: true,
-      });
+      const trade = tools.tools.find((tool) => tool.name === "xrocket_agent_trade")!;
+      expect(trade.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false });
+      expect(Object.keys((trade.inputSchema.properties ?? {}) as object)).toEqual(["order"]);
       const execute = tools.tools.find((tool) => tool.name === "xrocket_withdrawal_execute")!;
       expect(execute.annotations).toMatchObject({
         readOnlyHint: false,
@@ -268,8 +279,11 @@ describe("MCP tool contract", () => {
       tradingSetup: {
         hostedEndpointCanTrade: false,
         apiTokenMenu: "Menu > Settings > Exchange settings > API token",
-        testnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config`,
-        mainnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config --mainnet`,
+        testnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config --limit 100 --asset USD`,
+        mainnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config --limit 100 --asset USD --mainnet`,
+        autonomousTrading: expect.arrayContaining([
+          expect.stringContaining("without per-order approval"),
+        ]),
       },
     });
   });
@@ -302,13 +316,15 @@ describe("MCP tool contract", () => {
       XROCKET_PROFILE: "full",
       XROCKET_API_TOKEN: "test-token",
       XROCKET_ENVIRONMENT: "testnet",
+      XROCKET_ENABLE_TRADING: "true",
+      XROCKET_TRADING_LIMIT: "10 USD",
+      XROCKET_AGENT_STATE_PATH: agentStatePath(),
     });
     const { client } = await connect(config, neverFetch);
     const rejected = await client.callTool({
-      name: "xrocket_order_prepare",
+      name: "xrocket_agent_trade",
       arguments: {
         order: {
-          clientOrderId: "invalid-both",
           symbol: "TON-USDT",
           side: "buy",
           type: "market",
@@ -319,88 +335,6 @@ describe("MCP tool contract", () => {
       },
     });
     expect(rejected.isError).toBe(true);
-  });
-
-  it("stops preparation when a successful balance response has an unknown shape", async () => {
-    const fetchMock = vi.fn<FetchLike>(async (input) => {
-      const path = new URL(String(input)).pathname;
-      if (path === "/api/v1/orders/estimate") return json({ estimate: "ok" });
-      if (path === "/api/v1/symbols/GRAM-USDT") {
-        return json({ baseAsset: "GRAM", quoteAsset: "USDT" });
-      }
-      if (path === "/api/v1/accounts/trading/balances") return json({ data: [] });
-      if (path === "/api/v1/trade-fees") return json([]);
-      throw new Error(`unexpected ${path}`);
-    });
-    const { client } = await connect(
-      loadConfig({
-        XROCKET_PROFILE: "full",
-        XROCKET_API_TOKEN: "test-token",
-        XROCKET_ENVIRONMENT: "testnet",
-      }),
-      fetchMock,
-    );
-    const result = await client.callTool({
-      name: "xrocket_order_prepare",
-      arguments: {
-        order: {
-          clientOrderId: "shape-drift",
-          symbol: "GRAM-USDT",
-          side: "buy",
-          type: "market",
-          funds: "1",
-          timeInForce: "IOC",
-        },
-      },
-    });
-
-    expect(result.isError).toBe(true);
-    expect(contentJson(result)).toMatchObject({
-      code: "TOOL_ERROR",
-      message: "Unexpected xRocket balance response shape; preparation stopped",
-    });
-  });
-
-  it("stops preparation when a balance row omits its asset identifier", async () => {
-    const fetchMock = vi.fn<FetchLike>(async (input) => {
-      const path = new URL(String(input)).pathname;
-      if (path === "/api/v1/orders/estimate") return json({ estimate: "ok" });
-      if (path === "/api/v1/symbols/GRAM-USDT") {
-        return json({ baseAsset: "GRAM", quoteAsset: "USDT" });
-      }
-      if (path === "/api/v1/accounts/trading/balances") {
-        return json({ balances: [{ available: "100" }] });
-      }
-      if (path === "/api/v1/trade-fees") return json([]);
-      throw new Error(`unexpected ${path}`);
-    });
-    const { client } = await connect(
-      loadConfig({
-        XROCKET_PROFILE: "full",
-        XROCKET_API_TOKEN: "test-token",
-        XROCKET_ENVIRONMENT: "testnet",
-      }),
-      fetchMock,
-    );
-    const result = await client.callTool({
-      name: "xrocket_order_prepare",
-      arguments: {
-        order: {
-          clientOrderId: "row-shape-drift",
-          symbol: "GRAM-USDT",
-          side: "buy",
-          type: "market",
-          funds: "1",
-          timeInForce: "IOC",
-        },
-      },
-    });
-
-    expect(result.isError).toBe(true);
-    expect(contentJson(result)).toMatchObject({
-      code: "TOOL_ERROR",
-      message: "Unexpected xRocket balance row shape; preparation stopped",
-    });
   });
 
   it("forwards repeated assets for transfer and withdrawal history", async () => {
@@ -426,19 +360,23 @@ describe("MCP tool contract", () => {
     expect(urls[1]!.searchParams.getAll("assets")).toEqual(["BTC", "USDT"]);
   });
 
-  it("prepares, gates, executes once, and binds an order receipt to exact decimal strings", async () => {
+  it("places orders autonomously inside one USD daily limit and blocks excess volume", async () => {
     const fetchMock = vi.fn<FetchLike>(async (input, init) => {
       const url = new URL(String(input));
-      if (url.pathname === "/api/v1/orders/estimate") return json({ fee: "0.01" });
+      if (url.pathname === "/api/v1/orders/estimate") {
+        const body = JSON.parse(String(init?.body)) as { symbol: string; funds?: string; size?: string };
+        return json({ symbol: body.symbol, funds: body.funds ?? body.size ?? "0" });
+      }
       if (url.pathname === "/api/v1/symbols/TON-USDT") {
-        return json({ baseAsset: "TONCOIN", quoteAsset: "USDT", minOrderSize: "0.1" });
+        return json({ symbol: "TON-USDT", quoteAsset: "USDT", enableTrading: true });
       }
-      if (url.pathname === "/api/v1/accounts/trading/balances") {
-        return json({ balances: [{ asset: "USDT" }, { asset: "BTC" }] });
+      if (url.pathname === "/api/v1/orders/active") return json({ orders: [] });
+      if (url.pathname === "/api/v1/orders/history") {
+        return json({ orders: [], currentPage: 1, pageSize: 100, totalNum: 0, totalPage: 0 });
       }
-      if (url.pathname === "/api/v1/trade-fees") return json([{ symbol: "TON-USDT" }]);
+      if (url.pathname === "/api/v1/rates") return json({ USDT: { rate: "1" } });
       if (url.pathname === "/api/v1/orders" && init?.method === "POST") {
-        return json({ orderId: "42", status: "active" });
+        return json({ id: "42", status: "working" });
       }
       throw new Error(`unexpected ${init?.method} ${url.pathname}`);
     });
@@ -446,111 +384,233 @@ describe("MCP tool contract", () => {
       XROCKET_PROFILE: "full",
       XROCKET_API_TOKEN: "test-token",
       XROCKET_ENVIRONMENT: "testnet",
+      XROCKET_ENABLE_TRADING: "true",
+      XROCKET_TRADING_LIMIT: "10 USD",
+      XROCKET_AGENT_STATE_PATH: agentStatePath(),
     });
     const { client } = await connect(config, fetchMock);
-    const order = {
-      clientOrderId: "agent-order-1",
-      symbol: "TON-USDT",
-      side: "buy",
-      type: "limit",
-      size: "1.00",
-      price: "2.50",
-      timeInForce: "GTC",
-    };
-    const prepared = await client.callTool({
-      name: "xrocket_order_prepare",
-      arguments: { order },
-    });
-    const receipt = contentJson(prepared).approvalReceipt as string;
-    expect(contentJson(prepared).execution).toMatchObject({
-      ready: false,
-      blocker: "trading execution is disabled",
-      nextStep: expect.stringContaining("XROCKET_ENABLE_TRADING=true"),
-    });
-    expect(
-      (contentJson(prepared).execution as { nextStep: string }).nextStep,
-    ).toContain("re-run prepare");
-    expect(contentJson(prepared).instruction).toContain("do not attempt xrocket_order_execute");
-    expect(contentJson(prepared).tradingBalances).toEqual({
-      requestedAssets: ["TONCOIN", "USDT"],
-      balances: [{ asset: "USDT" }],
-    });
-
-    const gated = await client.callTool({
-      name: "xrocket_order_execute",
-      arguments: { approvalReceipt: receipt, order },
-    });
-    expect(gated.isError).toBe(true);
-    expect(contentJson(gated).message).toContain("XROCKET_ENABLE_TRADING");
-    expect(fetchMock).toHaveBeenCalledTimes(4);
-
-    config.enableTrading = true;
     const executed = await client.callTool({
-      name: "xrocket_order_execute",
-      arguments: { approvalReceipt: receipt, order: { ...order, size: "999" } },
+      name: "xrocket_agent_trade",
+      arguments: {
+        order: {
+          symbol: "TON-USDT",
+          side: "buy",
+          type: "market",
+          funds: "6.00",
+          timeInForce: "IOC",
+        },
+      },
     });
     expect(executed.isError).not.toBe(true);
-    expect(contentJson(executed)).toMatchObject({ clientOrderId: "agent-order-1" });
-    expect(fetchMock).toHaveBeenCalledTimes(5);
+    expect(contentJson(executed)).toMatchObject({
+      policy: { dailyLimit: "10 USD", usedAfterOrderUsd: "6", remainingUsd: "4" },
+    });
+    expect(String(contentJson(executed).clientOrderId)).toMatch(/^xrmcp-[0-9a-f-]{36}$/);
     const orderRequest = fetchMock.mock.calls.find(
       ([input, init]) => new URL(String(input)).pathname === "/api/v1/orders" && init?.method === "POST",
     );
-    expect(JSON.parse(String(orderRequest?.[1]?.body))).toEqual(order);
-
-    const replay = await client.callTool({
-      name: "xrocket_order_execute",
-      arguments: { approvalReceipt: receipt },
+    expect(JSON.parse(String(orderRequest?.[1]?.body))).toMatchObject({
+      symbol: "TON-USDT",
+      funds: "6.00",
+      clientOrderId: expect.stringMatching(/^xrmcp-/),
     });
-    expect(replay.isError).toBe(true);
-    expect(contentJson(replay).message).toContain("already been consumed");
-    expect(fetchMock).toHaveBeenCalledTimes(5);
+
+    const overLimit = await client.callTool({
+      name: "xrocket_agent_trade",
+      arguments: {
+        order: {
+          symbol: "TON-USDT",
+          side: "buy",
+          type: "market",
+          funds: "5",
+          timeInForce: "IOC",
+        },
+      },
+    });
+    expect(overLimit.isError).toBe(true);
+    expect(contentJson(overLimit).message).toContain("Daily autonomous trading limit exceeded");
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST" && init.body).length).toBe(3);
   });
 
-  it("generates bounded client identifiers when prepare callers omit them", async () => {
-    const bodies: unknown[] = [];
+  it("values any spot quote asset against a limit expressed in another asset", async () => {
     const fetchMock = vi.fn<FetchLike>(async (input, init) => {
-      const path = new URL(String(input)).pathname;
-      if (init?.body) bodies.push(JSON.parse(String(init.body)) as unknown);
-      if (path === "/api/v1/orders/estimate") return json({ estimate: "ok" });
-      if (path === "/api/v1/symbols/GRAM-USDT") return json({ baseAsset: "GRAM", quoteAsset: "USDT" });
-      if (path === "/api/v1/accounts/trading/balances") return json({ balances: [] });
-      if (path === "/api/v1/trade-fees") return json({ fees: [] });
-      throw new Error(`unexpected ${path}`);
+      const url = new URL(String(input));
+      if (url.pathname === "/api/v1/orders/estimate") {
+        return json({ symbol: "GRAM-BTC", funds: "0.0001" });
+      }
+      if (url.pathname === "/api/v1/symbols/GRAM-BTC") {
+        return json({ symbol: "GRAM-BTC", quoteAsset: "BTC", enableTrading: true });
+      }
+      if (url.pathname === "/api/v1/orders/active") return json({ orders: [] });
+      if (url.pathname === "/api/v1/orders/history") {
+        return json({ orders: [], currentPage: 1, pageSize: 100, totalNum: 0, totalPage: 0 });
+      }
+      if (url.pathname === "/api/v1/rates") {
+        expect(url.searchParams.getAll("assets")).toEqual(["BTC", "TONCOIN"]);
+        return json({ BTC: { rate: "50000" }, TONCOIN: { rate: "3" } });
+      }
+      if (url.pathname === "/api/v1/orders" && init?.method === "POST") {
+        return json({ id: "cross-rate-order", status: "working" });
+      }
+      throw new Error(`unexpected ${init?.method} ${url.pathname}`);
     });
     const { client } = await connect(
       loadConfig({
         XROCKET_PROFILE: "full",
         XROCKET_API_TOKEN: "test-token",
         XROCKET_ENVIRONMENT: "testnet",
+        XROCKET_ENABLE_TRADING: "true",
+        XROCKET_TRADING_LIMIT: "2 TONCOIN",
+        XROCKET_AGENT_STATE_PATH: agentStatePath(),
       }),
       fetchMock,
     );
     const result = await client.callTool({
-      name: "xrocket_order_prepare",
+      name: "xrocket_agent_trade",
       arguments: {
         order: {
-          symbol: "GRAM-USDT",
+          symbol: "GRAM-BTC",
           side: "buy",
           type: "market",
-          funds: "1",
+          funds: "0.0001",
           timeInForce: "IOC",
         },
       },
     });
     expect(result.isError).not.toBe(true);
-    const prepared = contentJson(result).order as { clientOrderId: string };
-    expect(prepared.clientOrderId).toMatch(/^order-[0-9a-f-]{36}$/);
-    expect(prepared.clientOrderId.length).toBeLessThanOrEqual(64);
-    expect(bodies[0]).toMatchObject({ clientOrderId: prepared.clientOrderId });
+    expect(contentJson(result)).toMatchObject({
+      policy: {
+        dailyLimit: "2 TONCOIN",
+        orderValueUsd: "5",
+        remainingUsd: "1",
+      },
+    });
   });
 
-  it("consumes a receipt before an ambiguous order write and tells the agent not to retry", async () => {
+  it("recovers today's autonomous usage from xRocket before accepting another process", async () => {
+    const now = new Date().toISOString();
+    const fetchMock = vi.fn<FetchLike>(async (input, init) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/api/v1/orders/estimate") {
+        return json({ symbol: "GRAM-USDT", funds: "4" });
+      }
+      if (url.pathname === "/api/v1/symbols/GRAM-USDT") {
+        return json({ symbol: "GRAM-USDT", quoteAsset: "USDT", enableTrading: true });
+      }
+      if (url.pathname === "/api/v1/orders/active") return json({ orders: [] });
+      if (url.pathname === "/api/v1/orders/history") {
+        return json({
+          orders: [{
+            id: "remote-order",
+            clientOrderId: "xrmcp-from-another-process",
+            symbol: "TON-USDT",
+            status: "completed",
+            createdAt: now,
+            quoteAsset: "USDT",
+            funds: "0",
+            dealFunds: "7",
+          }],
+          currentPage: 1,
+          pageSize: 100,
+          totalNum: 1,
+          totalPage: 1,
+        });
+      }
+      if (url.pathname === "/api/v1/rates") return json({ USDT: { rate: "1" } });
+      if (url.pathname === "/api/v1/orders" && init?.method === "POST") {
+        throw new Error("policy should block before placement");
+      }
+      throw new Error(`unexpected ${init?.method} ${url.pathname}`);
+    });
+    const { client } = await connect(
+      loadConfig({
+        XROCKET_PROFILE: "full",
+        XROCKET_API_TOKEN: "test-token",
+        XROCKET_ENVIRONMENT: "testnet",
+        XROCKET_ENABLE_TRADING: "true",
+        XROCKET_TRADING_LIMIT: "10 USD",
+        XROCKET_AGENT_STATE_PATH: agentStatePath(),
+      }),
+      fetchMock,
+    );
+    const result = await client.callTool({
+      name: "xrocket_agent_trade",
+      arguments: {
+        order: {
+          symbol: "GRAM-USDT",
+          side: "buy",
+          type: "market",
+          funds: "4",
+          timeInForce: "IOC",
+        },
+      },
+    });
+    expect(result.isError).toBe(true);
+    expect(contentJson(result).message).toContain("Daily autonomous trading limit exceeded");
+    expect(fetchMock.mock.calls.some(([input, init]) =>
+      new URL(String(input)).pathname === "/api/v1/orders" && init?.method === "POST",
+    )).toBe(false);
+  });
+
+  it("keeps the order-count guard out of onboarding but still enforces it", async () => {
+    let placed = 0;
+    const fetchMock = vi.fn<FetchLike>(async (input, init) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/api/v1/orders/estimate") {
+        return json({ symbol: "TON-USDT", funds: "1" });
+      }
+      if (url.pathname === "/api/v1/symbols/TON-USDT") {
+        return json({ symbol: "TON-USDT", quoteAsset: "USDT", enableTrading: true });
+      }
+      if (url.pathname === "/api/v1/orders/active") return json({ orders: [] });
+      if (url.pathname === "/api/v1/orders/history") {
+        return json({ orders: [], currentPage: 1, pageSize: 100, totalNum: 0, totalPage: 0 });
+      }
+      if (url.pathname === "/api/v1/rates") return json({ USDT: { rate: "1" } });
+      if (url.pathname === "/api/v1/orders" && init?.method === "POST") {
+        placed += 1;
+        return json({ id: `order-${placed}`, status: "working" });
+      }
+      throw new Error(`unexpected ${init?.method} ${url.pathname}`);
+    });
+    const { client } = await connect(
+      loadConfig({
+        XROCKET_PROFILE: "full",
+        XROCKET_API_TOKEN: "test-token",
+        XROCKET_ENVIRONMENT: "testnet",
+        XROCKET_ENABLE_TRADING: "true",
+        XROCKET_TRADING_LIMIT: "100 USD",
+        XROCKET_MAX_DAILY_ORDERS: "1",
+        XROCKET_AGENT_STATE_PATH: agentStatePath(),
+      }),
+      fetchMock,
+    );
+    const order = {
+      symbol: "TON-USDT",
+      side: "buy",
+      type: "market",
+      funds: "1",
+      timeInForce: "IOC",
+    } as const;
+    expect((await client.callTool({ name: "xrocket_agent_trade", arguments: { order } })).isError)
+      .not.toBe(true);
+    const blocked = await client.callTool({ name: "xrocket_agent_trade", arguments: { order } });
+    expect(blocked.isError).toBe(true);
+    expect(contentJson(blocked).message).toContain("Daily autonomous order limit reached: 1");
+    expect(placed).toBe(1);
+  });
+
+  it("reserves unknown order value durably and never retries the write", async () => {
     const fetchMock = vi.fn<FetchLike>(async (input) => {
       const path = new URL(String(input)).pathname;
-      if (path === "/api/v1/orders/estimate") return json({ estimate: "ok" });
-      if (path === "/api/v1/symbols/TON-USDT") return json({ symbol: "TON-USDT" });
-      if (path === "/api/v1/accounts/trading/balances") return json([]);
-      if (path === "/api/v1/trade-fees") return json([]);
+      if (path === "/api/v1/orders/estimate") return json({ symbol: "TON-USDT", funds: "7" });
+      if (path === "/api/v1/symbols/TON-USDT") return json({ symbol: "TON-USDT", quoteAsset: "USDT" });
+      if (path === "/api/v1/orders/active") return json({ orders: [] });
+      if (path === "/api/v1/orders/history") {
+        return json({ orders: [], currentPage: 1, pageSize: 100, totalNum: 0, totalPage: 0 });
+      }
+      if (path === "/api/v1/rates") return json({ USDT: { rate: "1" } });
+      if (path === "/api/v1/order") return json({ message: "not found" }, 404);
       if (path === "/api/v1/orders") throw new TypeError("socket reset");
       throw new Error(`unexpected ${path}`);
     });
@@ -559,42 +619,38 @@ describe("MCP tool contract", () => {
       XROCKET_API_TOKEN: "test-token",
       XROCKET_ENVIRONMENT: "testnet",
       XROCKET_ENABLE_TRADING: "true",
+      XROCKET_TRADING_LIMIT: "10 USD",
+      XROCKET_AGENT_STATE_PATH: agentStatePath(),
     });
     const { client } = await connect(config, fetchMock);
-    const order = {
-      clientOrderId: "ambiguous-order",
-      symbol: "TON-USDT",
-      side: "buy",
-      type: "market",
-      funds: "5.00",
-      timeInForce: "IOC",
-    };
-    const prepared = await client.callTool({ name: "xrocket_order_prepare", arguments: { order } });
-    const receipt = contentJson(prepared).approvalReceipt as string;
     const result = await client.callTool({
-      name: "xrocket_order_execute",
-      arguments: { approvalReceipt: receipt },
+      name: "xrocket_agent_trade",
+      arguments: {
+        order: { symbol: "TON-USDT", side: "buy", type: "market", funds: "7", timeInForce: "IOC" },
+      },
     });
     expect(result.isError).toBe(true);
     expect(contentJson(result)).toMatchObject({
       code: "WRITE_OUTCOME_UNKNOWN",
-      clientId: "ambiguous-order",
+      clientId: expect.stringMatching(/^xrmcp-/),
       doNotRetry: true,
     });
-    const replay = await client.callTool({
-      name: "xrocket_order_execute",
-      arguments: { approvalReceipt: receipt },
+    const blocked = await client.callTool({
+      name: "xrocket_agent_trade",
+      arguments: {
+        order: { symbol: "TON-USDT", side: "buy", type: "market", funds: "7", timeInForce: "IOC" },
+      },
     });
-    expect(contentJson(replay).code).toBe("APPROVAL_RECEIPT_ERROR");
-    expect(fetchMock).toHaveBeenCalledTimes(5);
+    expect(contentJson(blocked).message).toContain("Daily autonomous trading limit exceeded");
+    expect(fetchMock.mock.calls.filter(([input]) => new URL(String(input)).pathname === "/api/v1/orders")).toHaveLength(1);
   });
 
-  it("prepares and executes cancellation using only the stored receipt intent", async () => {
+  it("cancels an order directly without approval", async () => {
     const fetchMock = vi.fn<FetchLike>(async (input, init) => {
       const url = new URL(String(input));
       if (url.pathname !== "/api/v1/order") throw new Error(`unexpected ${url.pathname}`);
-      if (init?.method === "GET") return json({ orderId: "42", status: "active" });
-      if (init?.method === "DELETE") return json({ orderId: "42", status: "canceled" });
+      if (init?.method === "GET") return json({ id: "42", symbol: "TON-USDT", status: "working" });
+      if (init?.method === "DELETE") return json({ cancelledOrderIds: ["42"] });
       throw new Error(`unexpected method ${init?.method}`);
     });
     const config = loadConfig({
@@ -602,26 +658,18 @@ describe("MCP tool contract", () => {
       XROCKET_API_TOKEN: "test-token",
       XROCKET_ENVIRONMENT: "testnet",
       XROCKET_ENABLE_TRADING: "true",
+      XROCKET_TRADING_LIMIT: "10 USD",
+      XROCKET_AGENT_STATE_PATH: agentStatePath(),
     });
     const { client } = await connect(config, fetchMock);
-    const prepared = await client.callTool({
-      name: "xrocket_order_cancel_prepare",
-      arguments: { cancellation: { orderId: "42", clientOrderId: "agent-order-42" } },
-    });
     const executed = await client.callTool({
-      name: "xrocket_order_cancel_execute",
-      arguments: { approvalReceipt: contentJson(prepared).approvalReceipt },
+      name: "xrocket_agent_cancel",
+      arguments: { cancellation: { orderId: "42" } },
     });
     expect(executed.isError).not.toBe(true);
-    expect(contentJson(executed).identifier).toBe("42");
+    expect(contentJson(executed)).toMatchObject({ order: { id: "42", symbol: "TON-USDT" } });
     const deleteCall = fetchMock.mock.calls.find(([, init]) => init?.method === "DELETE")!;
     expect(new URL(String(deleteCall[0])).searchParams.get("orderId")).toBe("42");
-    expect(new URL(String(deleteCall[0])).searchParams.get("clientOrderId")).toBe(
-      "agent-order-42",
-    );
-    expect(Object.keys((await client.listTools()).tools.find(
-      (tool) => tool.name === "xrocket_order_cancel_execute",
-    )!.inputSchema.properties ?? {})).toEqual(["approvalReceipt"]);
   });
 
   it("uses separate transfer and withdrawal gates and preserves decimal strings in write bodies", async () => {

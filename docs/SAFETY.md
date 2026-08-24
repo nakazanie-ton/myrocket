@@ -10,55 +10,63 @@ This server is designed to make the safest useful state the easiest state: curre
 | `XROCKET_ENVIRONMENT` | `mainnet` (default), `testnet` | Selects one of the two fixed official REST origins |
 | `XROCKET_API_TOKEN` | unset | Bearer token required by private profiles; never accepted as a tool argument |
 | `XROCKET_ENABLE_TRADING` | `false` | Enables order/cancel execution in `full` |
+| `XROCKET_TRADING_LIMIT` | unset; required when trading is enabled | Daily autonomous trading value, for example `100 USD` or `2.5 TONCOIN` |
+| `XROCKET_TRADING_SYMBOLS` | unset | Optional comma-separated symbol allowlist; unset means all spot markets |
+| `XROCKET_MAX_DAILY_ORDERS` | `100` | Advanced hard ceiling on autonomous orders per UTC day |
+| `XROCKET_MAX_OPEN_ORDERS` | `20` | Advanced hard ceiling on active plus unresolved orders |
 | `XROCKET_ENABLE_TRANSFERS` | `false` | Enables internal funding/trading transfer execution in `full` |
 | `XROCKET_ENABLE_WITHDRAWALS` | `false` | Enables blockchain withdrawal execution in `full` |
 | `XROCKET_ALLOW_MAINNET_WRITES` | `false` | Additional gate required for every write on mainnet |
-| `XROCKET_APPROVAL_TTL_MS` | `300000` ms (default), `1000`-`900000` | Lifetime for server-stored prepared intents and receipts; keep short |
+| `XROCKET_APPROVAL_TTL_MS` | `300000` ms (default), `1000`-`900000` | Lifetime for prepared transfer/withdrawal intents and receipts; keep short |
 
 Use exact lowercase values shown above. Invalid configuration fails closed rather than silently widening access.
 
 ## Capability state
 
-| Profile | API token | Read account | Prepare writes | Execute writes |
+| Profile | API token | Read account | Autonomous orders | Transfer/withdrawal tools |
 | --- | --- | --- | --- | --- |
 | `public` | Ignored/not sent | No | No | No |
 | `private-read` | Required | Yes | No | No |
-| `full` | Required | Yes | Yes | Only with matching feature gate |
+| `full` | Required | Yes | Only with trading gate and policy | Prepare is visible; execute needs its gate |
 
 For mainnet, execution additionally requires `XROCKET_ALLOW_MAINNET_WRITES=true`. A mainnet token, `full`, or a feature gate alone is insufficient.
 
-## Prepare/execute contract
+## Autonomous order contract
 
-The write path is intentionally two-stage:
+Order placement and cancellation do not require per-order approval once the operator configures the local trading policy:
 
-1. **Prepare.** Validate the exact payload, normalize it without changing financial intent, query relevant upstream state, store the exact prepared intent in server memory, and return a human-readable preview plus an opaque approval receipt.
-2. **Approve.** The client shows asset, symbol/network, side/direction, amount/size/funds, price/stop price, fee or estimate, client identifier, environment, and account/address to the user. Silence and prior approvals do not count.
-3. **Execute once.** Submit only the approval receipt to the matching execute tool before expiry. The server retrieves the stored prepared intent; callers cannot re-enter or alter it during execution.
-4. **Reconcile.** Read the resulting order, transfer, or withdrawal by its client identifier.
+1. **Estimate and value.** `xrocket_agent_trade` obtains the official estimate and symbol rules, then converts the estimated quote funds to USD using the current public xRocket rate. A limit expressed in another asset is converted through that asset's USD rate.
+2. **Enforce.** Exact decimal arithmetic checks daily used value, daily order count, active orders, and the optional symbol allowlist.
+3. **Reconcile account usage.** Today's `xrmcp-…` orders are read from xRocket before a new trade, so another local process using the same account cannot silently reset the recorded usage.
+4. **Reserve durably.** The order value and generated `xrmcp-…` client identifier are written to a local, account-specific ledger before the exchange request.
+5. **Submit once.** The order is sent exactly once. An unknown result remains reserved and is reconciled on a later call; it is never resent.
+6. **Cancel directly.** `xrocket_agent_cancel` reads the target order and cancels it inside the same trading scope without a separate receipt.
 
-Approval receipts are bound to a server-stored canonical intent, operation, and environment. The record is in-memory, short-lived, single-use, and consumed before the network request. Changing any material input requires a new prepare call and new approval.
+All spot symbols are available by default so onboarding needs only a value limit. `XROCKET_TRADING_SYMBOLS` is optional. The generated config keeps transfers and withdrawals disabled.
 
-The receipt is an intent-binding control, not an attestation of human consent. After an operator exposes `full` execute tools and enables a capability gate, an agent can technically call prepare and execute itself. Require a trusted client approval UI or an out-of-band policy boundary; otherwise leave that execute gate disabled.
+## Transfer and withdrawal contract
+
+Internal transfers and external withdrawals remain two-stage. Prepare validates and stores the exact intent; the client shows the preview and obtains explicit user approval; execute accepts only the short-lived single-use receipt. The receipt binds the payload but does not itself attest to human consent, so use a trusted approval UI for these capabilities.
 
 Tool annotations are discovery hints, not security boundaries. Profile registration, feature gates, stored-intent binding, receipt lifetime, origin allowlisting, and upstream authentication are the enforcement layers.
 
 ## Idempotency and ambiguous outcomes
 
-Client identifiers remain mandatory on the exact prepared intent, but callers may omit them. The server generates a unique bounded identifier during prepare and shows it in the preview:
+Client identifiers remain mandatory upstream, but callers may omit them. The server generates bounded identifiers:
 
-- `clientOrderId` for a new order;
+- `xrmcp-…` `clientOrderId` for a new autonomous order;
 - `clientTransferId` for an internal transfer;
 - `clientWithdrawalId` for a withdrawal.
 
-If a write times out or disconnects after transmission, the server does not know whether xRocket accepted it. It must not retry automatically. Treat the result as **unknown** and query the corresponding private-read tool by client identifier. Only prepare a new attempt after reconciliation proves the operation absent and the user approves again.
+If a write times out or disconnects after transmission, the server does not know whether xRocket accepted it. It must not retry automatically. Unknown order value stays reserved in the local ledger and counts against the active-order ceiling until reconciliation. Unknown transfers and withdrawals require private-read reconciliation and a new explicit approval before any replacement.
 
-Cancellation uses an order lookup during preparation. An ambiguous cancel must likewise be reconciled by reading the order state.
+An ambiguous cancellation must likewise be reconciled by reading order state; do not issue a duplicate cancel blindly.
 
 ## Amounts, limits, and network checks
 
 - Preserve all financial values as decimal strings. Never convert them through a JavaScript `number` or another binary float.
 - Read symbol metadata before an order and respect `enableTrading`, min/max sizes/prices, increments, and precision.
-- Use `xrocket_order_prepare` so the official estimate endpoint participates in the preview.
+- Autonomous market and limit orders use the official estimate endpoint before policy enforcement. Stop orders are not exposed by the autonomous tool because the current estimate contract does not always provide exact quote funds.
 - Read both source-account balance and asset metadata before an internal transfer, and require the requested direction in `availableTransfers`.
 - Read funding balance and `xrocket_withdrawal_quotas` immediately before a withdrawal. Confirm network, address, comment/memo, minimum, precision, fee, fee asset, and available amount.
 - Treat a withdrawal address and optional comment/memo as untrusted irreversible input. The server cannot prove that an address belongs to the intended recipient.
@@ -85,6 +93,6 @@ Use the [Open xRocket](https://t.me/xRocket?start=kaban) CTA returned by `xrocke
 1. Run `public` on testnet and validate market identifiers.
 2. Create a dedicated testnet token and run `private-read`.
 3. Switch to `full` with all write gates still false; inspect the visible tool catalog.
-4. Enable one testnet capability, perform a minimum-size prepare/approve/execute/reconcile flow, then disable it.
+4. Enable testnet trading with a small daily value limit, run a strategy through a minimum-size order and cancellation, and verify policy usage and order history.
 5. Review logs and credential handling.
 6. Consider mainnet only after independent legal, platform-policy, and operational review. Enable one capability for one supervised session.

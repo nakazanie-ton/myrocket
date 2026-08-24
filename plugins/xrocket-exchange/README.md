@@ -1,22 +1,22 @@
 # xRocket Exchange MCP
 
-Prepare, review, and execute xRocket CEX orders through an MCP-capable AI client. The local server fetches the exchange estimate, fee, market rules, relevant balances, and exact intent before a separately approved execution.
+Set one daily value limit and let an MCP-capable AI agent place and cancel xRocket spot orders autonomously inside it. Transfers and withdrawals remain separate explicit-approval operations.
 
 The hosted endpoint remains a public market-data demo and onboarding path; it never receives account credentials and cannot trade. This package is not affiliated with or endorsed by xRocket. [Set up trading](https://xrocket-mcp-production.up.railway.app/#trade) or [open xRocket](https://t.me/xRocket?start=kaban).
 
 ## Trading quick start
 
 1. Sign in to xRocket and open **Menu → Settings → Exchange settings → API token**.
-2. Generate a testnet-first, order-only MCP configuration:
+2. Generate a testnet-first MCP configuration with a daily limit:
 
    ```bash
-   npx -y xrocket-mcp@0.5.0 trading-config
+   npx -y xrocket-mcp@0.6.0 trading-config --limit 100 --asset USD
    ```
 
 3. Paste the printed JSON into your local MCP client. Replace `SET_YOUR_XROCKET_API_TOKEN_LOCALLY` only in the client's local secret or environment settings.
-4. Ask the client to prepare an order and show the estimate, fee, balances, rules, and exact intent without executing it. Explicitly approve only after reviewing that preview.
+4. Give the client a strategy. It can place and cancel market or limit orders on any available spot pair until the configured daily value or built-in order-count limits are reached.
 
-Use `npx -y xrocket-mcp@0.5.0 trading-config --mainnet` only after testnet validation. It enables the separate mainnet order gate; transfers and withdrawals stay disabled.
+Use `npx -y xrocket-mcp@0.6.0 trading-config --limit 100 --asset USD --mainnet` only after testnet validation. Transfers and withdrawals stay disabled.
 
 The upstream token has broad account access rather than documented granular scopes. Never put it in chat, the hosted endpoint, a committed file, an issue, or a log.
 
@@ -33,8 +33,8 @@ It exposes only the 10 public tools and cannot read account tokens or enable fin
 ## Local quick start
 
 ```bash
-npx -y xrocket-mcp@0.5.0 doctor
-npx -y xrocket-mcp@0.5.0 config
+npx -y xrocket-mcp@0.6.0 doctor
+npx -y xrocket-mcp@0.6.0 config
 ```
 
 Node.js 20 or newer is required. Public market reads work without configuration:
@@ -58,7 +58,7 @@ MCP client example:
   "mcpServers": {
     "xrocket": {
       "command": "npx",
-      "args": ["-y", "xrocket-mcp@0.5.0"],
+      "args": ["-y", "xrocket-mcp@0.6.0"],
       "env": {
         "XROCKET_ENVIRONMENT": "mainnet",
         "XROCKET_ENABLE_TRADING": "false",
@@ -77,20 +77,20 @@ For source development, run `npm ci`, `npm test`, and `npm run build` in this di
 
 - `public`: 10 unauthenticated tools, including the composed `xrocket_market_snapshot`.
 - `private-read`: public tools plus balances, whole-account overview, orders, transfers, withdrawals, and quotas; inferred when `XROCKET_API_TOKEN` is present.
-- `full`: all tools, but each execute family remains disabled unless its own gate is `true`.
+- `full`: all tools, including autonomous trading plus explicit transfer/withdrawal workflows; every capability remains disabled unless its own gate is `true`.
 
 Write gates are `XROCKET_ENABLE_TRADING`, `XROCKET_ENABLE_TRANSFERS`, and `XROCKET_ENABLE_WITHDRAWALS`; all default to `false`. Mainnet writes also require `XROCKET_ALLOW_MAINNET_WRITES=true`.
 
-Every financial write stores the exact prepared intent in server memory and returns a short-lived, request-bound, single-use approval receipt. Missing client identifiers are generated during prepare and shown in the preview. Execute accepts only that receipt. Writes are not automatically retried after an ambiguous network outcome; reconcile by client identifier first.
+`xrocket_agent_trade` estimates and values each order before submitting it once. The local durable ledger enforces the configured daily value limit across restarts, while today's `xrmcp-…` exchange history recovers usage created by another local process. Daily order-count and active-order guards remain built in. All spot symbols are allowed by default; an optional symbol allowlist is available for advanced setups. Ambiguous order outcomes stay reserved against the limit and are not retried.
 
-The receipt binds the payload but does not prove human consent. If your MCP client has no trusted approval UI or out-of-band operator policy, keep all execute gates disabled.
+Transfers and withdrawals still store an exact prepared intent and accept only its short-lived, single-use approval receipt. The normal trading config keeps both gates disabled.
 
 ## Boundaries
 
 - The Exchange API has no deposit-address endpoint; onboarding is a UI guide only.
 - Exchange transfers are internal `funding` ↔ `trading`, not user-to-user payments.
 - xRocket Pay is a separate product and is not included.
-- WebSocket channels are audited but 0.5.0 uses bounded REST snapshots.
+- WebSocket channels are audited but 0.6.0 uses bounded REST snapshots.
 - Keep financial values as decimal strings and use `TONCOIN` where the current API requires it.
 
 Full documentation, coverage, security policy, privacy notice, and terms live in the [project repository](https://github.com/nakazanie-ton/myrocket).

@@ -3,6 +3,7 @@ import {
   doctorText,
   helpText,
   parseCliCommand,
+  parseTradingConfigOptions,
   renderMcpConfig,
   renderTradingMcpConfig,
   runDoctor,
@@ -29,8 +30,18 @@ describe("CLI commands", () => {
     );
     expect(() => parseCliCommand(["wat"])).toThrow("Unknown command");
     expect(() => parseCliCommand(["trading-config", "--testnet"])).toThrow(
-      "Unknown command",
+      "Unknown trading-config option",
     );
+    expect(
+      parseTradingConfigOptions([
+        "trading-config",
+        "--mainnet",
+        "--limit",
+        "2.5",
+        "--asset",
+        "toncoin",
+      ]),
+    ).toEqual({ environment: "mainnet", limit: "2.5", limitAsset: "TONCOIN" });
   });
 
   it("prints a pinned safe mainnet read-only MCP configuration", () => {
@@ -58,6 +69,7 @@ describe("CLI commands", () => {
       XROCKET_ENVIRONMENT: "testnet",
       XROCKET_API_TOKEN: XROCKET_API_TOKEN_PLACEHOLDER,
       XROCKET_ENABLE_TRADING: "true",
+      XROCKET_TRADING_LIMIT: "100 USD",
       XROCKET_ENABLE_TRANSFERS: "false",
       XROCKET_ENABLE_WITHDRAWALS: "false",
       XROCKET_ALLOW_MAINNET_WRITES: "false",
@@ -70,6 +82,10 @@ describe("CLI commands", () => {
       profile: "full",
       environment: "testnet",
       enableTrading: true,
+      tradingPolicy: {
+        dailyLimit: "100",
+        limitAsset: "USD",
+      },
       enableTransfers: false,
       enableWithdrawals: false,
       allowMainnetWrites: false,
@@ -88,7 +104,7 @@ describe("CLI commands", () => {
       XROCKET_ENABLE_WITHDRAWALS: "false",
       XROCKET_ALLOW_MAINNET_WRITES: "true",
     });
-    expect(helpText()).toContain("trading-config --mainnet");
+    expect(helpText()).toContain("[--mainnet]");
     expect(helpText()).toContain("Testnet is the default");
   });
 

@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.nakazanie-ton/xrocket",
   "title": "xRocket Exchange MCP",
-  "description": "Guarded xRocket CEX trading and live market data for AI clients over MCP",
-  "version": "0.5.0",
+  "description": "Autonomous xRocket CEX trading inside operator-set limits, plus live market data over MCP",
+  "version": "0.6.0",
   "websiteUrl": "https://xrocket-mcp-production.up.railway.app/",
   "repository": {
     "url": "https://github.com/nakazanie-ton/myrocket",
@@ -20,7 +20,7 @@
     {
       "registryType": "npm",
       "identifier": "xrocket-mcp",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
@@ -53,13 +53,19 @@
         },
         {
           "name": "XROCKET_ENABLE_TRADING",
-          "description": "Allow guarded order and cancel execution in full profile",
+          "description": "Allow autonomous order placement and cancellation inside the configured policy",
           "choices": [
             "false",
             "true"
           ],
           "default": "false",
           "format": "boolean"
+        },
+        {
+          "name": "XROCKET_TRADING_LIMIT",
+          "description": "Required daily autonomous trading value when trading is enabled; for example 100 USD or 2.5 TONCOIN",
+          "isRequired": false,
+          "placeholder": "100 USD"
         },
         {
           "name": "XROCKET_ENABLE_TRANSFERS",
@@ -93,7 +99,7 @@
         },
         {
           "name": "XROCKET_APPROVAL_TTL_MS",
-          "description": "Optional lifetime in milliseconds for prepared approvals",
+          "description": "Optional lifetime in milliseconds for prepared transfer and withdrawal approvals",
           "format": "number",
           "isRequired": false,
           "placeholder": "300000"
