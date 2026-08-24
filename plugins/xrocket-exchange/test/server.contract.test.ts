@@ -107,12 +107,11 @@ describe("MCP tool contract", () => {
     }
   });
 
-  it("returns the disclosed kaban onboarding links without making a request", async () => {
+  it("returns the configured onboarding links without making a request", async () => {
     const { client } = await connect(loadConfig({}), neverFetch);
     const result = await client.callTool({ name: "xrocket_onboarding_links", arguments: {} });
     expect(result.isError).not.toBe(true);
     expect(contentJson(result)).toMatchObject({
-      disclosure: "The Telegram onboarding links include referral code kaban.",
       mainnet: "https://t.me/xRocket?start=kaban",
       testnet: "https://t.me/xrocket_testnet_bot?start=kaban",
     });
@@ -416,7 +415,13 @@ describe("MCP tool contract", () => {
           ],
         });
       }
-      if (path.includes("/api/v1/assets/")) return json({ asset: "USDT", precision: 6 });
+      if (path.includes("/api/v1/assets/")) {
+        return json({
+          asset: "USDT",
+          precision: 6,
+          availableTransfers: ["fundingToTrading", "tradingToFunding"],
+        });
+      }
       if (path.endsWith("/withdrawal-quotas")) return json({ withdrawFee: "0.10" });
       if (path.endsWith("/transfers")) return json({ transferId: "t1" });
       if (path.endsWith("/withdrawals")) return json({ withdrawalId: "w1" });
@@ -476,6 +481,96 @@ describe("MCP tool contract", () => {
 
     expect(bodies).toContainEqual(transfer);
     expect(bodies).toContainEqual(withdrawal);
+  });
+
+  it.each([
+    [
+      { asset: "USDT", precision: 6, availableTransfers: ["tradingToFunding"] },
+      "xRocket asset does not allow fundingToTrading; preparation stopped",
+    ],
+    [
+      { asset: "USDT", precision: 6 },
+      "Unexpected xRocket asset transfer metadata; preparation stopped",
+    ],
+  ])("stops transfer preparation when asset direction metadata is unusable", async (
+    assetMetadata,
+    expectedMessage,
+  ) => {
+    const fetchMock = vi.fn<FetchLike>(async (input) => {
+      const path = new URL(String(input)).pathname;
+      if (path.endsWith("/balances")) {
+        return json({ balances: [{ asset: "USDT", available: "100.00" }] });
+      }
+      if (path.includes("/api/v1/assets/")) {
+        return json(assetMetadata);
+      }
+      throw new Error(`unexpected ${path}`);
+    });
+    const { client } = await connect(
+      loadConfig({ XROCKET_PROFILE: "full", XROCKET_API_TOKEN: "test-token" }),
+      fetchMock,
+    );
+
+    const result = await client.callTool({
+      name: "xrocket_transfer_prepare",
+      arguments: {
+        transfer: {
+          clientTransferId: "unsupported-direction",
+          asset: "USDT",
+          amount: "10.00",
+          from: "funding",
+          to: "trading",
+        },
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(contentJson(result)).toMatchObject({
+      code: "TOOL_ERROR",
+      message: expectedMessage,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("accepts the documented trading-to-funding transfer direction", async () => {
+    const fetchMock = vi.fn<FetchLike>(async (input) => {
+      const path = new URL(String(input)).pathname;
+      if (path.endsWith("/balances")) {
+        return json({ balances: [{ asset: "USDT", available: "100.00" }] });
+      }
+      if (path.includes("/api/v1/assets/")) {
+        return json({
+          asset: "USDT",
+          precision: 6,
+          availableTransfers: ["tradingToFunding"],
+        });
+      }
+      throw new Error(`unexpected ${path}`);
+    });
+    const { client } = await connect(
+      loadConfig({ XROCKET_PROFILE: "full", XROCKET_API_TOKEN: "test-token" }),
+      fetchMock,
+    );
+
+    const result = await client.callTool({
+      name: "xrocket_transfer_prepare",
+      arguments: {
+        transfer: {
+          clientTransferId: "reverse-direction",
+          asset: "USDT",
+          amount: "10.00",
+          from: "trading",
+          to: "funding",
+        },
+      },
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(contentJson(result).transfer).toMatchObject({
+      from: "trading",
+      to: "funding",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("redacts withdrawal destinations and memos from upstream error details", async () => {

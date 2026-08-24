@@ -29788,6 +29788,18 @@ function narrowBalances(data, assets) {
     )
   };
 }
+function assertTransferDirectionAvailable(assetMetadata, from, to) {
+  const availableTransfers = isRecord(assetMetadata) ? assetMetadata.availableTransfers : void 0;
+  if (!Array.isArray(availableTransfers) || availableTransfers.some(
+    (direction) => direction !== "fundingToTrading" && direction !== "tradingToFunding"
+  )) {
+    throw new Error("Unexpected xRocket asset transfer metadata; preparation stopped");
+  }
+  const requiredDirection = from === "funding" && to === "trading" ? "fundingToTrading" : "tradingToFunding";
+  if (!availableTransfers.includes(requiredDirection)) {
+    throw new Error(`xRocket asset does not allow ${requiredDirection}; preparation stopped`);
+  }
+}
 async function run(action) {
   try {
     return ok(await action());
@@ -29826,7 +29838,7 @@ function createXrocketServer(options = {}) {
   const client = new XrocketClient(config2, options.fetch);
   const receipts = options.receipts ?? new ApprovalReceiptStore(config2.approvalTtlMs);
   const server = new McpServer(
-    { name: "xrocket-mcp", version: "0.1.0" },
+    { name: "xrocket-mcp", version: "0.1.1" },
     { capabilities: { tools: {} } }
   );
   server.registerTool(
@@ -29941,14 +29953,13 @@ function createXrocketServer(options = {}) {
     "xrocket_onboarding_links",
     {
       title: "Open xRocket",
-      description: "Return disclosed referral-coded onboarding links. API and documentation URLs are never modified.",
+      description: "Return xRocket onboarding links and canonical API documentation.",
       inputSchema: external_exports.object({}),
       outputSchema: resultSchema,
       annotations: LOCAL_READ
     },
     () => run(() => ({
       environment: config2.environment,
-      disclosure: "The Telegram onboarding links include referral code kaban.",
       primary: config2.environment === "mainnet" ? "https://t.me/xRocket?start=kaban" : "https://t.me/xrocket_testnet_bot?start=kaban",
       mainnet: "https://t.me/xRocket?start=kaban",
       testnet: "https://t.me/xrocket_testnet_bot?start=kaban",
@@ -30213,6 +30224,7 @@ function createXrocketServer(options = {}) {
         client.getBalances(transfer.from),
         client.getAssets(transfer.asset)
       ]);
+      assertTransferDirectionAvailable(assetMetadata, transfer.from, transfer.to);
       const boundIntent = intent(config2.environment, transfer);
       return {
         environment: config2.environment,

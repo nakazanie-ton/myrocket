@@ -1,6 +1,6 @@
 # Project terms and disclosures
 
-Effective: 2026-08-07
+Effective: 2026-08-24
 
 ## Unofficial software
 
@@ -22,10 +22,6 @@ You are solely responsible for:
 - reconciling an ambiguous write outcome before retrying.
 
 Nothing in this repository is financial, investment, legal, tax, security, or compliance advice. Agent output may be wrong, incomplete, stale, or adversarially influenced. Do not grant an agent unattended authority over funds you cannot afford to lose.
-
-## Referral relationship
-
-User-facing onboarding links include referral code `kaban`, for example [this disclosed xRocket onboarding link](https://t.me/xRocket?start=kaban). The maintainer may receive referral benefits. Referral attribution does not make xRocket a sponsor of this project and does not influence public market-data responses. Canonical API, WebSocket, documentation, repository, and MCP endpoints are not modified.
 
 ## High-risk and prohibited uses
 

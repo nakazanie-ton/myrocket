@@ -6,15 +6,15 @@ Use the narrowest semantic tool that answers the request. Tool schemas are autho
 
 | Tool | Use for | Official REST coverage |
 | --- | --- | --- |
-| `xrocket_market_symbols` | List markets or inspect one symbol's status, precision, increments, min/max price and size | `GET /api/v1/symbols`, `GET /api/v1/symbols/{symbol}` |
+| `xrocket_market_symbols` | List markets or inspect one symbol's status, base/quote increments, precision, and min/max price and size | `GET /api/v1/symbols`, `GET /api/v1/symbols/{symbol}` |
 | `xrocket_market_tickers` | One or more 24-hour ticker snapshots | `GET /api/v1/ticker/{tickerType}` |
 | `xrocket_market_candles` | Bounded historical candle interval | `GET /api/v1/candles` |
 | `xrocket_market_orderbook` | Bounded orderbook snapshot at documented depth/precision | `GET /api/v1/orderbook` |
 | `xrocket_market_trades` | Recent public trades | `GET /api/v1/trades` |
-| `xrocket_asset_info` | List assets or inspect one asset | `GET /api/v1/assets`, `GET /api/v1/assets/{asset}` |
+| `xrocket_asset_info` | List assets or inspect one asset, including available internal-transfer directions | `GET /api/v1/assets`, `GET /api/v1/assets/{asset}` |
 | `xrocket_rates` | Convert one base asset to selected assets using exchange rates | `GET /api/v1/rates` |
 | `xrocket_trade_fees` | Current trade-fee response | `GET /api/v1/trade-fees` |
-| `xrocket_onboarding_links` | Disclosed UI onboarding/deposit guidance and canonical documentation | Local metadata; no deposit API exists |
+| `xrocket_onboarding_links` | UI onboarding/deposit guidance and canonical documentation | Local metadata; no deposit API exists |
 
 ## Private read tools
 
@@ -34,7 +34,7 @@ Private reads require `XROCKET_API_TOKEN` and profile `private-read` or `full`.
 | --- | --- | --- | --- |
 | `xrocket_order_prepare` | `xrocket_order_execute` | `XROCKET_ENABLE_TRADING` | Estimate then create order |
 | `xrocket_order_cancel_prepare` | `xrocket_order_cancel_execute` | `XROCKET_ENABLE_TRADING` | Read then cancel order |
-| `xrocket_transfer_prepare` | `xrocket_transfer_execute` | `XROCKET_ENABLE_TRANSFERS` | Read balances then internal transfer |
+| `xrocket_transfer_prepare` | `xrocket_transfer_execute` | `XROCKET_ENABLE_TRANSFERS` | Read balances and require an allowed asset direction, then internal transfer |
 | `xrocket_withdrawal_prepare` | `xrocket_withdrawal_execute` | `XROCKET_ENABLE_WITHDRAWALS` | Read balance/quota then create withdrawal |
 
 All require `full`. Mainnet execution also requires `XROCKET_ALLOW_MAINNET_WRITES=true`. A prepare response is not proof of execution.
@@ -62,4 +62,4 @@ The withdrawal schema lists `TON`, `BSC`, `ETH`, `BTC`, `TRX`, and `SOL`. Treat 
 
 ## Non-tools
 
-`GET /health` is intentionally not exposed as an agent semantic tool. The audited seven WebSocket channels are not exposed in 0.1.0; use bounded REST snapshots. xRocket Pay endpoints are a separate product and are unavailable.
+`GET /health` is intentionally not exposed as an agent semantic tool. The audited seven WebSocket channels are not exposed in 0.1.1; use bounded REST snapshots. xRocket Pay endpoints are a separate product and are unavailable.

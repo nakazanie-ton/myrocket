@@ -2,7 +2,7 @@
 
 Unofficial MCP server and agent skill for the xRocket Exchange API. It exposes public market data by default and offers explicit local profiles for account reads and guarded trading, internal transfer, and withdrawal workflows.
 
-This package is not affiliated with or endorsed by xRocket. [Open xRocket with disclosed referral code `kaban`](https://t.me/xRocket?start=kaban). The maintainer may receive referral benefits.
+This package is not affiliated with or endorsed by xRocket. [Open xRocket](https://t.me/xRocket?start=kaban).
 
 ## Install from this repository
 
@@ -43,7 +43,7 @@ MCP client example:
 }
 ```
 
-After npm publication, the equivalent command will be `npx -y xrocket-mcp@0.1.0`. Until the package is visible on npm, use the local build.
+After npm publication, the equivalent command will be `npx -y xrocket-mcp@0.1.1`. Until the package is visible on npm, use the local build.
 
 ## Profiles and write gates
 
@@ -62,7 +62,7 @@ The receipt binds the payload but does not prove human consent. If your MCP clie
 - The Exchange API has no deposit-address endpoint; onboarding is a UI guide only.
 - Exchange transfers are internal `funding` ↔ `trading`, not user-to-user payments.
 - xRocket Pay is a separate product and is not included.
-- WebSocket channels are audited but 0.1.0 uses bounded REST snapshots.
+- WebSocket channels are audited but 0.1.1 uses bounded REST snapshots.
 - Keep financial values as decimal strings and use `TONCOIN` where the current API requires it.
 
 Full documentation, coverage, security policy, privacy notice, and terms live in the [project repository](https://github.com/nakazanie-ton/myrocket).

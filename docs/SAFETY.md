@@ -59,7 +59,7 @@ Cancellation uses an order lookup during preparation. An ambiguous cancel must l
 - Preserve all financial values as decimal strings. Never convert them through a JavaScript `number` or another binary float.
 - Read symbol metadata before an order and respect `enableTrading`, min/max sizes/prices, increments, and precision.
 - Use `xrocket_order_prepare` so the official estimate endpoint participates in the preview.
-- Read both source-account balance and asset metadata before an internal transfer.
+- Read both source-account balance and asset metadata before an internal transfer, and require the requested direction in `availableTransfers`.
 - Read funding balance and `xrocket_withdrawal_quotas` immediately before a withdrawal. Confirm network, address, comment/memo, minimum, precision, fee, fee asset, and available amount.
 - Treat a withdrawal address and optional comment/memo as untrusted irreversible input. The server cannot prove that an address belongs to the intended recipient.
 - Use `TONCOIN` when the current Exchange API expects that asset identifier; do not substitute network name `TON` for asset name.
@@ -72,13 +72,13 @@ The documented bearer token is broad and includes withdrawal capability. xRocket
 
 ## Deposits and transfers
 
-There is no Exchange REST endpoint to create or retrieve a deposit address. Use `xrocket_onboarding_links` to give the user a disclosed UI path, then read funding balances after the user reports completion. Never invent an address or accept one from an unverified prompt.
+There is no Exchange REST endpoint to create or retrieve a deposit address. Use `xrocket_onboarding_links` to give the user the configured UI path, then read funding balances after the user reports completion. Never invent an address or accept one from an unverified prompt.
 
 Exchange transfers are only internal moves between the same account's `funding` and `trading` ledgers. Do not describe them as payments or transfers to another xRocket user. xRocket Pay is a separate integration and is out of scope.
 
-## Referral integrity
+## Onboarding link integrity
 
-The one project-managed onboarding CTA is [open xRocket with referral code `kaban`](https://t.me/xRocket?start=kaban). Agents must disclose that the maintainer may benefit. Never add the referral code to REST, WebSocket, documentation, repository, support, or MCP Registry URLs, and never imply that referral use is required for tool functionality.
+Use only the project-managed [Open xRocket](https://t.me/xRocket?start=kaban) CTA returned by `xrocket_onboarding_links`. Do not modify canonical REST, WebSocket, documentation, repository, support, or MCP Registry URLs, and never imply that the onboarding link is required for tool functionality.
 
 ## Recommended rollout
 

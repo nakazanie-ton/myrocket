@@ -4,7 +4,7 @@ Unofficial, safety-first agent tooling for the xRocket Exchange API: one MCP ser
 
 The default installation is intentionally **public and read-only**. Private account access and financial writes are available only in explicit local profiles, with separate feature gates and a prepare/execute approval flow. This project is not affiliated with, endorsed by, or operated by xRocket.
 
-[Open xRocket with referral code `kaban`](https://t.me/xRocket?start=kaban) · [Download v0.1.0](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.1.0) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Coverage](docs/API_COVERAGE.md) · [Safety model](docs/SAFETY.md) · [Legal review](docs/LEGAL.md) · [Distribution status](docs/DISTRIBUTION.md)
+[Open xRocket](https://t.me/xRocket?start=kaban) · [Download v0.1.1](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.1.1) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Coverage](docs/API_COVERAGE.md) · [Safety model](docs/SAFETY.md) · [Legal review](docs/LEGAL.md) · [Distribution status](docs/DISTRIBUTION.md)
 
 ## What is included
 
@@ -15,7 +15,7 @@ The default installation is intentionally **public and read-only**. Private acco
 | Codex plugin | Installs the server and skill together from a repo-local marketplace | Public tools only |
 | Registry metadata | `server.json` for `io.github.nakazanie-ton/xrocket` | Prepared; publication pending npm |
 
-The API audit covers all **50 Exchange documentation pages**, all **26 OpenAPI operations**, all **7 WebSocket channels**, and the four linked legal PDFs present on 2026-08-07. The audited OpenAPI document has canonical SHA-256 `7f50071ae4c164d373b8b551f77fe11d111ae264dcb73435c0553bab2421dc0d`. See [the source inventory](docs/API_AUDIT.md).
+The API surface was re-audited on 2026-08-24 and still covers all **50 Exchange documentation pages**, all **26 OpenAPI operations**, and all **7 WebSocket channels**. The four linked legal PDFs were reviewed separately on 2026-08-07. The current OpenAPI document has canonical SHA-256 `5de074def6ee9f59c7c1d1a2f8a06e1f5e2fafb446ebef58af7168e32813e2a3`. See [the source inventory](docs/API_AUDIT.md).
 
 ## Tool profiles
 
@@ -25,7 +25,7 @@ The API audit covers all **50 Exchange documentation pages**, all **26 OpenAPI o
 | `private-read` | Public tools plus 5 account/history tools | Required | Impossible |
 | `full` | Public and private reads plus 8 prepare/execute write tools | Required | Still disabled until each feature gate is enabled |
 
-Public tools cover symbols, tickers, candles, orderbook snapshots, trades, assets, rates, trade fees, and disclosed onboarding links. Private reads cover balances, orders, internal transfers, withdrawals, and withdrawal quotas. Full mode adds guarded order, cancel, internal-transfer, and withdrawal workflows.
+Public tools cover symbols, tickers, candles, orderbook snapshots, trades, assets, rates, trade fees, and onboarding links. Private reads cover balances, orders, internal transfers, withdrawals, and withdrawal quotas. Full mode adds guarded order, cancel, internal-transfer, and withdrawal workflows.
 
 ## Quick start
 
@@ -71,7 +71,7 @@ After the npm package is published, clients will also be able to run the pinned 
   "mcpServers": {
     "xrocket": {
       "command": "npx",
-      "args": ["-y", "xrocket-mcp@0.1.0"],
+      "args": ["-y", "xrocket-mcp@0.1.1"],
       "env": {
         "XROCKET_PROFILE": "public",
         "XROCKET_ENVIRONMENT": "testnet"
@@ -81,7 +81,7 @@ After the npm package is published, clients will also be able to run the pinned 
 }
 ```
 
-That package command is **pending publication**; use the local build until npm shows `xrocket-mcp@0.1.0`.
+That package command is **pending publication**; use the local build until npm shows `xrocket-mcp@0.1.1`.
 
 ## Enabling private reads
 
@@ -122,16 +122,12 @@ Mainnet writes additionally require `XROCKET_ENVIRONMENT=mainnet` and `XROCKET_A
 
 ## Important API boundaries
 
-- The Exchange API has **no deposit-address or create-deposit endpoint**. `xrocket_onboarding_links` provides disclosed UI guidance; balances can be refreshed afterward.
+- The Exchange API has **no deposit-address or create-deposit endpoint**. `xrocket_onboarding_links` provides the configured UI path; balances can be refreshed afterward.
 - Exchange `POST /api/v1/accounts/transfers` moves funds only between the same user's `funding` and `trading` accounts. It is not a user-to-user payment tool.
 - xRocket Pay is a different product, uses different authentication, and is outside this server.
 - The official API currently uses asset identifier `TONCOIN` in places where the UI may say TON.
-- The 0.1.0 server uses REST snapshots. WebSocket channels are audited but not exposed until the upstream documentation defines reliable replay, gap recovery, and orderbook delta deletion semantics.
+- The 0.1.1 server uses REST snapshots. WebSocket channels are audited but not exposed until the upstream documentation defines reliable replay, gap recovery, and orderbook delta deletion semantics.
 - Decimal financial values remain strings. Do not coerce them through binary floating point.
-
-## Referral disclosure
-
-The maintainer may receive referral benefits when a user opens xRocket through the onboarding link with code `kaban`. The server never rewrites API, WebSocket, documentation, repository, or MCP endpoints. Referral attribution appears only on user-facing xRocket onboarding links and does not change tool results or fees controlled by this project.
 
 ## Development
 

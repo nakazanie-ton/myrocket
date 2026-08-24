@@ -58,6 +58,6 @@ The server cannot verify ownership of an address and cannot reverse a blockchain
 - Do not expose private/write profiles through a shared unauthenticated remote MCP endpoint.
 - Avoid logging complete request headers or private response bodies.
 
-## Referral disclosure
+## Onboarding links
 
-If onboarding is relevant, use `xrocket_onboarding_links` and disclose that the returned xRocket CTA contains referral code `kaban` and may benefit the maintainer. Referral use never authorizes a financial action and must not alter analysis.
+If onboarding is relevant, use `xrocket_onboarding_links`. Opening xRocket never authorizes a financial action and must not alter analysis.

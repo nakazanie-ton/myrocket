@@ -4,21 +4,31 @@ import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 const inheritedEnvironment = Object.fromEntries(
   Object.entries(process.env).filter((entry) => typeof entry[1] === "string"),
 );
-const transport = new StdioClientTransport({
-  command: process.execPath,
-  args: ["dist/cli.js"],
-  env: {
-    ...inheritedEnvironment,
-    XROCKET_PROFILE: "public",
-    XROCKET_ENVIRONMENT: "testnet",
-    XROCKET_ENABLE_TRADING: "false",
-    XROCKET_ENABLE_TRANSFERS: "false",
-    XROCKET_ENABLE_WITHDRAWALS: "false",
-    XROCKET_ALLOW_MAINNET_WRITES: "false",
-  },
-  stderr: "pipe",
-});
-const client = new Client({ name: "xrocket-stdio-smoke", version: "0.1.0" });
+const dockerImage = process.env.XROCKET_SMOKE_DOCKER_IMAGE;
+const transport = new StdioClientTransport(
+  dockerImage
+    ? {
+        command: "docker",
+        args: ["run", "--rm", "-i", dockerImage],
+        env: inheritedEnvironment,
+        stderr: "pipe",
+      }
+    : {
+        command: process.execPath,
+        args: ["dist/cli.js"],
+        env: {
+          ...inheritedEnvironment,
+          XROCKET_PROFILE: "public",
+          XROCKET_ENVIRONMENT: "testnet",
+          XROCKET_ENABLE_TRADING: "false",
+          XROCKET_ENABLE_TRANSFERS: "false",
+          XROCKET_ENABLE_WITHDRAWALS: "false",
+          XROCKET_ALLOW_MAINNET_WRITES: "false",
+        },
+        stderr: "pipe",
+      },
+);
+const client = new Client({ name: "xrocket-stdio-smoke", version: "0.1.1" });
 
 try {
   await client.connect(transport);
@@ -29,7 +39,7 @@ try {
   const onboarding = await client.callTool({ name: "xrocket_onboarding_links", arguments: {} });
   const content = onboarding.content?.[0];
   if (content?.type !== "text" || !content.text.includes("start=kaban")) {
-    throw new Error("onboarding smoke response did not include the disclosed referral link");
+    throw new Error("onboarding smoke response did not include the configured xRocket link");
   }
 } finally {
   await client.close();

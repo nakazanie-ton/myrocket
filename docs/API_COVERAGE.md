@@ -9,8 +9,8 @@ This matrix accounts for every operation in the audited xRocket Exchange OpenAPI
 | 1 | `GET /api/v1/accounts/trading/balances` | Bearer | `xrocket_account_balances` | `private-read` | `account=trading` |
 | 2 | `GET /api/v1/trade-fees` | None in OpenAPI | `xrocket_trade_fees` | `public` | Public according to the audited schema |
 | 3 | `GET /api/v1/assets` | None | `xrocket_asset_info` | `public` | List mode |
-| 4 | `GET /api/v1/assets/{asset}` | None | `xrocket_asset_info` | `public` | Single-asset mode; note `TONCOIN` identifier |
-| 5 | `GET /api/v1/symbols` | None | `xrocket_market_symbols` | `public` | Includes increments, precisions, limits, and trading status |
+| 4 | `GET /api/v1/assets/{asset}` | None | `xrocket_asset_info` | `public` | Single-asset mode; includes `availableTransfers`; note `TONCOIN` identifier |
+| 5 | `GET /api/v1/symbols` | None | `xrocket_market_symbols` | `public` | Includes base/quote increments, precisions, limits, and trading status |
 | 6 | `GET /api/v1/symbols/{symbol}` | None | `xrocket_market_symbols` | `public` | Single-symbol mode |
 | 7 | `GET /api/v1/ticker/{tickerType}` | None | `xrocket_market_tickers` | `public` | Audited `tickerType` is `24h`; optional repeated symbols |
 | 8 | `GET /api/v1/candles` | None | `xrocket_market_candles` | `public` | Symbol, interval, `startAt`, `endAt` |
@@ -22,7 +22,7 @@ This matrix accounts for every operation in the audited xRocket Exchange OpenAPI
 | 14 | `GET /api/v1/order` | Bearer | `xrocket_orders` | `private-read` | `view=one`; order or client identifier |
 | 15 | `DELETE /api/v1/order` | Bearer | `xrocket_order_cancel_prepare` → `xrocket_order_cancel_execute` | `full` | Trading gate; request-bound, single-use approval |
 | 16 | `POST /api/v1/orders` | Bearer | `xrocket_order_prepare` → `xrocket_order_execute` | `full` | Trading gate; no automatic write retry |
-| 17 | `POST /api/v1/accounts/transfers` | Bearer | `xrocket_transfer_prepare` → `xrocket_transfer_execute` | `full` | Transfer gate; internal `funding` ↔ `trading` only |
+| 17 | `POST /api/v1/accounts/transfers` | Bearer | `xrocket_transfer_prepare` → `xrocket_transfer_execute` | `full` | Transfer gate; direction must be present in the asset's `availableTransfers`; internal `funding` ↔ `trading` only |
 | 18 | `GET /api/v1/accounts/transfers` | Bearer | `xrocket_transfers` | `private-read` | History/filter/pagination mode |
 | 19 | `GET /api/v1/accounts/transfer` | Bearer | `xrocket_transfers` | `private-read` | Single transfer by server or client identifier |
 | 20 | `POST /api/v1/orders/estimate` | Bearer | `xrocket_order_prepare` | `full` | Used during preparation; not an execution |
@@ -33,7 +33,7 @@ This matrix accounts for every operation in the audited xRocket Exchange OpenAPI
 | 25 | `GET /api/v1/accounts/funding/withdrawals` | Bearer | `xrocket_withdrawals` | `private-read` | History/filter/pagination mode |
 | 26 | `GET /api/v1/accounts/funding/withdrawal` | Bearer | `xrocket_withdrawals` | `private-read` | Single withdrawal by server or client identifier |
 
-`xrocket_onboarding_links` has no REST counterpart. It returns the disclosed [xRocket onboarding link with referral code `kaban`](https://t.me/xRocket?start=kaban), canonical documentation links, and the explicit fact that the Exchange API cannot create a deposit address.
+`xrocket_onboarding_links` has no REST counterpart. It returns the configured [xRocket onboarding link](https://t.me/xRocket?start=kaban), canonical documentation links, and the explicit fact that the Exchange API cannot create a deposit address.
 
 ## MCP catalog by profile
 
@@ -56,7 +56,7 @@ All public and private-read tools plus:
 
 The execute tools appear only in `full`, but refuse work until the corresponding environment gate is `true`. Mainnet execution has one additional gate.
 
-## WebSocket — all 7 channels audited, not exposed in 0.1.0
+## WebSocket — all 7 channels audited, not exposed in 0.1.1
 
 | Channel | Auth | REST fallback | Why no long-lived tool yet |
 | --- | --- | --- | --- |

@@ -28,7 +28,7 @@ jobs:
           EXPECTED_EXCHANGE_PAGES: "50"
           EXPECTED_OPENAPI_PATHS: "23"
           EXPECTED_OPENAPI_OPERATIONS: "26"
-          EXPECTED_OPENAPI_SHA256: "7f50071ae4c164d373b8b551f77fe11d111ae264dcb73435c0553bab2421dc0d"
+          EXPECTED_OPENAPI_SHA256: "5de074def6ee9f59c7c1d1a2f8a06e1f5e2fafb446ebef58af7168e32813e2a3"
         run: |
           python3 - <<'PY'
           import hashlib

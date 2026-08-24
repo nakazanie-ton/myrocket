@@ -41,6 +41,13 @@ jobs:
       - name: Smoke-test bundled stdio server
         run: npm run smoke:stdio
 
+      - name: Build and smoke-test container
+        working-directory: .
+        run: |
+          docker build --tag xrocket-mcp:ci .
+          cd plugins/xrocket-exchange
+          XROCKET_SMOKE_DOCKER_IMAGE=xrocket-mcp:ci npm run smoke:stdio
+
       - name: Inspect npm package
         run: npm pack --dry-run
 

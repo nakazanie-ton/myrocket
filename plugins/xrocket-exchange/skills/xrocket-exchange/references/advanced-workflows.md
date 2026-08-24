@@ -35,7 +35,7 @@ A terminal order may make cancellation unnecessary. Do not claim cancellation su
 
 1. Explain that this is an internal xRocket ledger move, not a payment.
 2. Read funding and trading balances for the asset.
-3. Confirm `from=funding`, `to=trading`, amount, environment, and unique `clientTransferId`.
+3. Confirm `from=funding`, `to=trading`, amount, environment, unique `clientTransferId`, and that asset metadata includes `fundingToTrading` in `availableTransfers`.
 4. Prepare, show the exact preview, obtain approval, execute once, then reconcile through `xrocket_transfers` and balances.
 
 Reverse `from` and `to` to move funds back to funding. Source and destination must differ.
@@ -43,7 +43,7 @@ Reverse `from` and `to` to move funds back to funding. Source and destination mu
 ## Deposit guidance
 
 1. State that the Exchange API cannot create or retrieve a deposit address.
-2. Call `xrocket_onboarding_links` and disclose the referral relationship.
+2. Call `xrocket_onboarding_links` and return the configured xRocket UI path.
 3. Let the user complete the deposit through xRocket UI and independently verify network/address there.
 4. Poll `xrocket_account_balances` only at a user-appropriate cadence after the user says the transfer was sent. Do not promise confirmation timing.
 

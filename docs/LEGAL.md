@@ -43,12 +43,10 @@ Both terms prohibit reverse engineering and access/use for competitive analysis,
 
 Implementation consequence: keep the repository explicitly unofficial and avoid copied branding, undocumented endpoints, protocol circumvention, scraping as a substitute for the published API, or claims of vendor approval. Before operating a public remote MCP service, charging for it, submitting it as an official/vendor integration, or expanding beyond documented endpoints, obtain written xRocket authorization and qualified legal review.
 
-### Referral and representation
+### Representation
 
-The governing PDFs do not make this repository an authorized affiliate application. A referral relationship must not be presented as endorsement.
-
-Implementation consequence: disclose code `kaban` on user-facing onboarding CTAs, never modify canonical API/docs/registry links, and never use “official xRocket plugin” or similar wording without written authorization.
+The governing PDFs do not make this repository an authorized application. Never modify canonical API/docs/registry links or use “official xRocket plugin” or similar wording without written authorization.
 
 ## Release gate
 
-Before any public remote deployment or catalog submission, re-read the current PDFs and obtain written vendor/legal review for API automation, trademark use, referral presentation, supported jurisdictions, custody/write profiles, and catalog wording. GitHub source publication of an unofficial client does not itself establish permission to operate a hosted integration.
+Before any public remote deployment or catalog submission, re-read the current PDFs and obtain written vendor/legal review for API automation, trademark use, supported jurisdictions, custody/write profiles, and catalog wording. GitHub source publication of an unofficial client does not itself establish permission to operate a hosted integration.

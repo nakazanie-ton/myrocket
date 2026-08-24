@@ -32,7 +32,7 @@ Use semantic xRocket MCP tools. Keep public analysis fast and keep every private
 
 Never jump directly to an execute tool.
 
-1. Read current symbol/asset rules, relevant balances, and—when applicable—withdrawal quota.
+1. Read current symbol/asset rules, relevant balances, and—when applicable—withdrawal quota. For an internal transfer, require the requested direction in the asset's `availableTransfers`.
 2. Require a unique client identifier for every new order, internal transfer, or withdrawal. Cancellation may instead identify the existing order by `orderId`.
 3. Call the matching `*_prepare` tool and inspect its exact preview.
 4. Present environment, operation, asset/symbol/network, direction/side, decimal amount/size/funds, price/stop price, fee/estimate, destination/account, and client identifier. Ask for explicit approval of that preview.
@@ -43,15 +43,15 @@ Mainnet requires a separate explicit user decision and `XROCKET_ALLOW_MAINNET_WR
 
 ## Deposits and onboarding
 
-The audited Exchange API has no deposit-address endpoint. Do not invent or accept an unverified address. Use `xrocket_onboarding_links` for UI instructions, disclose that its CTAs contain referral code `kaban` and may benefit the maintainer, then refresh funding balances after the user completes the deposit.
+The audited Exchange API has no deposit-address endpoint. Do not invent or accept an unverified address. Use `xrocket_onboarding_links` for UI instructions, then refresh funding balances after the user completes the deposit.
 
-Never append the referral code to API, WebSocket, documentation, repository, support, or MCP URLs. The project-managed production and testnet bot CTAs returned by the tool both use the `start=kaban` payload; do not invent other referral URL forms.
+Never modify API, WebSocket, documentation, repository, support, or MCP URLs. Use the project-managed production and testnet bot CTAs returned by the tool; do not invent other onboarding URL forms.
 
 ## Hard boundaries
 
 - Do not treat Exchange internal transfers as user-to-user payments. xRocket Pay is a separate product and is not available through these tools.
 - Do not coerce financial decimal strings through binary floating point.
-- Do not claim orderbook delta reconstruction, replay, or private event completeness; 0.1.0 exposes REST snapshots.
+- Do not claim orderbook delta reconstruction, replay, or private event completeness; 0.1.1 exposes REST snapshots.
 - Do not copy unsupported offer/deal behavior from tutorials into API calls.
 - Do not use `TON` as an asset identifier where current Exchange metadata requires `TONCOIN`; network `TON` and asset `TONCOIN` are different fields.
 - Do not deploy private/write profiles behind a public unauthenticated MCP endpoint.

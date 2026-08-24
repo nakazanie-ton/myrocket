@@ -1,6 +1,6 @@
 # xRocket Exchange API audit
 
-Audit snapshot: **2026-08-07**
+Audit snapshot: **2026-08-24**
 
 This project reviewed every Exchange page returned by the official [documentation sitemap](https://docs.xrocket.exchange/sitemap.xml), the embedded [Swagger UI document](https://exchange.api.xrocket.exchange/api/docs/), and all Exchange WebSocket pages. xRocket Pay pages were reviewed only to establish that Pay is a separate product; they are not part of this server.
 
@@ -15,9 +15,13 @@ This project reviewed every Exchange page returned by the official [documentatio
 | WebSocket pages | 8: one overview plus 7 channels |
 | OpenAPI paths | 23 |
 | OpenAPI operations | 26 |
-| Canonical OpenAPI SHA-256 | `7f50071ae4c164d373b8b551f77fe11d111ae264dcb73435c0553bab2421dc0d` |
+| Canonical OpenAPI SHA-256 | `5de074def6ee9f59c7c1d1a2f8a06e1f5e2fafb446ebef58af7168e32813e2a3` |
 
 The digest is SHA-256 over `swaggerDoc` serialized as UTF-8 JSON with keys sorted and compact separators. The scheduled drift workflow recalculates it and checks that the Exchange sitemap still contains 50 pages.
+
+The 2026-08-24 re-audit found a changed OpenAPI digest but the same page, path, and operation counts. The current operation paths, input parameters, request-body variants, enums, authentication boundaries, and wrapper coverage below were revalidated; no MCP input or transport change was required.
+
+The embedded OpenAPI currently requires response fields that the generated operation pages do not render: asset `availableTransfers`, symbol `quoteIncrement`, and order `baseAsset`/`quoteAsset`. The server already forwards response objects without dropping fields. Transfer preparation now also treats `availableTransfers` as an execution constraint and fails closed before issuing a receipt when the requested direction is absent or malformed. Because the previous full OpenAPI document was not retained, no broader historical field-by-field diff is claimed.
 
 Official network origins found in the documentation bundle:
 
@@ -99,6 +103,9 @@ The server uses a fixed allowlist of those REST origins. It does not accept a us
 - Orders support `limit`, `market`, `stopLimit`, and `stopMarket`; side is `buy` or `sell`; time-in-force is constrained by order type.
 - An order lookup/cancel accepts `orderId` or `clientOrderId`; `orderId` wins if both are sent.
 - Transfers move assets between `funding` and `trading` for the same account.
+- Asset metadata includes required `availableTransfers` directions. Transfer preparation checks the requested `fundingToTrading` or `tradingToFunding` direction and stops before issuing a receipt when the route is unavailable or malformed.
+- Symbol metadata includes required `quoteIncrement`; symbol reads and order preparation return it with the other current trading constraints.
+- Order responses include required `baseAsset` and `quoteAsset` fields for all four order types; responses are forwarded without dropping those identifiers.
 - Withdrawals support the documented networks `TON`, `BSC`, `ETH`, `BTC`, `TRX`, and `SOL`; the quota endpoint supplies current minimum, precision, fee, fee asset, and available amount.
 - The FAQ currently tells API consumers to use `TONCOIN` where a user may expect `TON` as the asset identifier.
 - WebSocket clients must ping inside the documented 60-second idle window; the guide recommends 30 seconds.
@@ -125,4 +132,4 @@ The guide set also links four governing PDFs totaling 49 pages. They are not cou
 
 ## WebSocket implementation decision
 
-Version 0.1.0 intentionally exposes REST snapshots, not long-lived WebSocket tools. REST provides bounded equivalents for symbols/tickers, candles, orderbooks, trades, balances, and active orders. A future WebSocket implementation must first define deterministic reconnect, replay, snapshot/delta, and sequence-gap behavior and add regression tests for those contracts.
+Version 0.1.1 intentionally exposes REST snapshots, not long-lived WebSocket tools. REST provides bounded equivalents for symbols/tickers, candles, orderbooks, trades, balances, and active orders. A future WebSocket implementation must first define deterministic reconnect, replay, snapshot/delta, and sequence-gap behavior and add regression tests for those contracts.

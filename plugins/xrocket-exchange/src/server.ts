@@ -229,6 +229,30 @@ function narrowBalances(data: unknown, assets: readonly string[]): Record<string
   };
 }
 
+function assertTransferDirectionAvailable(
+  assetMetadata: unknown,
+  from: "funding" | "trading",
+  to: "funding" | "trading",
+): void {
+  const availableTransfers = isRecord(assetMetadata)
+    ? assetMetadata.availableTransfers
+    : undefined;
+  if (
+    !Array.isArray(availableTransfers) ||
+    availableTransfers.some(
+      (direction) =>
+        direction !== "fundingToTrading" && direction !== "tradingToFunding",
+    )
+  ) {
+    throw new Error("Unexpected xRocket asset transfer metadata; preparation stopped");
+  }
+  const requiredDirection =
+    from === "funding" && to === "trading" ? "fundingToTrading" : "tradingToFunding";
+  if (!availableTransfers.includes(requiredDirection)) {
+    throw new Error(`xRocket asset does not allow ${requiredDirection}; preparation stopped`);
+  }
+}
+
 async function run(action: () => Promise<unknown> | unknown): Promise<CallToolResult> {
   try {
     return ok(await action());
@@ -284,7 +308,7 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
   const client = new XrocketClient(config, options.fetch);
   const receipts = options.receipts ?? new ApprovalReceiptStore(config.approvalTtlMs);
   const server = new McpServer(
-    { name: "xrocket-mcp", version: "0.1.0" },
+    { name: "xrocket-mcp", version: "0.1.1" },
     { capabilities: { tools: {} } },
   );
 
@@ -413,8 +437,7 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
     "xrocket_onboarding_links",
     {
       title: "Open xRocket",
-      description:
-        "Return disclosed referral-coded onboarding links. API and documentation URLs are never modified.",
+      description: "Return xRocket onboarding links and canonical API documentation.",
       inputSchema: z.object({}),
       outputSchema: resultSchema,
       annotations: LOCAL_READ,
@@ -422,7 +445,6 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
     () =>
       run(() => ({
         environment: config.environment,
-        disclosure: "The Telegram onboarding links include referral code kaban.",
         primary:
           config.environment === "mainnet"
             ? "https://t.me/xRocket?start=kaban"
@@ -739,6 +761,7 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
           client.getBalances(transfer.from),
           client.getAssets(transfer.asset),
         ]);
+        assertTransferDirectionAvailable(assetMetadata, transfer.from, transfer.to);
         const boundIntent = intent(config.environment, transfer);
         return {
           environment: config.environment,
