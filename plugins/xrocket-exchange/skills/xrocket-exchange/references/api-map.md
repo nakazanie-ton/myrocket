@@ -64,4 +64,4 @@ The withdrawal schema lists `TON`, `BSC`, `ETH`, `BTC`, `TRX`, and `SOL`. Treat 
 
 ## Non-tools
 
-`GET /health` is used by the `xrocket-mcp doctor` CLI rather than exposed as an agent semantic tool. The audited seven WebSocket channels are not exposed in 0.3.0; use bounded REST snapshots. xRocket Pay endpoints are a separate product and are unavailable.
+`GET /health` is used by the `xrocket-mcp doctor` CLI rather than exposed as an agent semantic tool. The audited seven WebSocket channels are not exposed in 0.4.0; use bounded REST snapshots. xRocket Pay endpoints are a separate product and are unavailable.

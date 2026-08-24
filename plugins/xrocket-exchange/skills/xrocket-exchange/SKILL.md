@@ -51,7 +51,7 @@ Never modify API, WebSocket, documentation, repository, support, or MCP URLs. Us
 
 - Do not treat Exchange internal transfers as user-to-user payments. xRocket Pay is a separate product and is not available through these tools.
 - Do not coerce financial decimal strings through binary floating point.
-- Do not claim orderbook delta reconstruction, replay, or private event completeness; 0.3.0 exposes REST snapshots.
+- Do not claim orderbook delta reconstruction, replay, or private event completeness; 0.4.0 exposes REST snapshots.
 - Do not copy unsupported offer/deal behavior from tutorials into API calls.
 - Do not use `TON` as an asset identifier where current Exchange metadata requires `TONCOIN`; network `TON` and asset `TONCOIN` are different fields.
 - Do not deploy private/write profiles behind a public unauthenticated MCP endpoint.

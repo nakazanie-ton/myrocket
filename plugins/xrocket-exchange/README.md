@@ -6,7 +6,7 @@ This package is not affiliated with or endorsed by xRocket. [Open xRocket](https
 
 ## Hosted quick start
 
-Use the public mainnet endpoint without installing anything or supplying credentials:
+Use the [connection page](https://xrocket-mcp-production.up.railway.app/) or copy the public mainnet endpoint without installing anything or supplying credentials:
 
 ```text
 https://xrocket-mcp-production.up.railway.app/mcp
@@ -17,8 +17,8 @@ It exposes only the 10 public tools and cannot read account tokens or enable fin
 ## Local quick start
 
 ```bash
-npx -y xrocket-mcp@0.3.0 doctor
-npx -y xrocket-mcp@0.3.0 config
+npx -y xrocket-mcp@0.4.0 doctor
+npx -y xrocket-mcp@0.4.0 config
 ```
 
 Node.js 20 or newer is required. Public market reads work without configuration:
@@ -42,7 +42,7 @@ MCP client example:
   "mcpServers": {
     "xrocket": {
       "command": "npx",
-      "args": ["-y", "xrocket-mcp@0.3.0"],
+      "args": ["-y", "xrocket-mcp@0.4.0"],
       "env": {
         "XROCKET_ENVIRONMENT": "mainnet",
         "XROCKET_ENABLE_TRADING": "false",
@@ -74,7 +74,7 @@ The receipt binds the payload but does not prove human consent. If your MCP clie
 - The Exchange API has no deposit-address endpoint; onboarding is a UI guide only.
 - Exchange transfers are internal `funding` ↔ `trading`, not user-to-user payments.
 - xRocket Pay is a separate product and is not included.
-- WebSocket channels are audited but 0.3.0 uses bounded REST snapshots.
+- WebSocket channels are audited but 0.4.0 uses bounded REST snapshots.
 - Keep financial values as decimal strings and use `TONCOIN` where the current API requires it.
 
 Full documentation, coverage, security policy, privacy notice, and terms live in the [project repository](https://github.com/nakazanie-ton/myrocket).

@@ -5,8 +5,11 @@ import type { FetchLike } from "../src/client.js";
 import {
   loadHostedHttpOptions,
   startHostedHttpServer,
+  type HostedHttpOptions,
   type HostedHttpServer,
 } from "../src/http.js";
+import type { FunnelSnapshot } from "../src/funnel-metrics.js";
+import { HOSTED_MCP_URL, XROCKET_MAINNET_URL } from "../src/links.js";
 import { hostedPublicConfig } from "../src/public-server.js";
 
 const servers: HostedHttpServer[] = [];
@@ -32,6 +35,7 @@ afterEach(async () => {
 async function start(
   allowedOrigins = "client.example",
   fetchImpl?: FetchLike,
+  overrides: Partial<HostedHttpOptions> = {},
 ): Promise<HostedHttpServer> {
   const server = await startHostedHttpServer(
     {
@@ -41,6 +45,7 @@ async function start(
         XROCKET_HTTP_ALLOWED_ORIGINS: allowedOrigins,
       }),
       ...(fetchImpl ? { fetch: fetchImpl } : {}),
+      ...overrides,
     },
   );
   servers.push(server);
@@ -139,6 +144,95 @@ describe("hosted Streamable HTTP server", () => {
         arguments: {},
       }),
     ).rejects.toThrow("Tool xrocket_account_overview not found");
+  });
+
+  it("serves a secure zero-install landing page and fixed Open xRocket redirect", async () => {
+    const server = await start();
+    const landing = await rawRequest(server.port, { method: "GET", path: "/" });
+    expect(landing.status).toBe(200);
+    expect(landing.headers["content-type"]).toContain("text/html");
+    expect(landing.headers["content-security-policy"]).toContain("default-src 'none'");
+    expect(landing.headers["referrer-policy"]).toBe("no-referrer");
+    expect(landing.headers["set-cookie"]).toBeUndefined();
+    expect(landing.body).toContain(HOSTED_MCP_URL);
+    expect(landing.body).toContain('href="/open"');
+    expect(landing.body).not.toMatch(/referral|affiliate|commission/i);
+    expect(landing.body).not.toContain("start=kaban");
+
+    const script = await rawRequest(server.port, { method: "GET", path: "/landing.js" });
+    expect(script.status).toBe(200);
+    expect(script.body).toContain("navigator.clipboard.writeText");
+    expect(script.body).not.toContain("fetch(");
+
+    const head = await rawRequest(server.port, { method: "HEAD", path: "/" });
+    expect(head.status).toBe(200);
+    expect(head.body).toBe("");
+
+    const open = await rawRequest(server.port, {
+      method: "GET",
+      path: "/open?next=https://evil.example",
+    });
+    expect(open.status).toBe(302);
+    expect(open.headers.location).toBe(XROCKET_MAINNET_URL);
+    expect(open.headers["referrer-policy"]).toBe("no-referrer");
+
+    const rejected = await rawRequest(server.port, { method: "POST", path: "/open" });
+    expect(rejected.status).toBe(405);
+  });
+
+  it("rejects an untrusted Host before serving landing routes", async () => {
+    const server = await start();
+    const response = await rawRequest(server.port, {
+      method: "GET",
+      path: "/",
+      headers: { Host: "evil.example" },
+    });
+    expect(response.status).toBe(403);
+  });
+
+  it("emits only aggregate funnel counts for successful activity", async () => {
+    const snapshots: FunnelSnapshot[] = [];
+    const server = await start("client.example", undefined, {
+      onFunnelSnapshot: (snapshot) => snapshots.push(snapshot),
+    });
+    await rawRequest(server.port, { method: "GET", path: "/" });
+    await rawRequest(server.port, { method: "GET", path: "/open" });
+    const failedInitialize = await rawRequest(server.port, {
+      method: "POST",
+      path: "/mcp",
+      headers: {
+        Host: "127.0.0.1",
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
+        "MCP-Protocol-Version": "2026-07-28",
+      },
+      body: JSON.stringify({ jsonrpc: "2.0", method: "initialize", params: {}, id: 99 }),
+    });
+    expect(failedInitialize.body).toContain("error");
+
+    const client = new Client({ name: "xrocket-metrics-test", version: "1.0.0" });
+    await client.connect(
+      new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${server.port}/mcp`)),
+    );
+    const invalidToolCall = await client.callTool({
+      name: "xrocket_market_symbols",
+      arguments: { symbol: "" },
+    });
+    expect(invalidToolCall.isError).toBe(true);
+    await client.callTool({ name: "xrocket_onboarding_links", arguments: {} });
+    await client.close();
+    await server.close();
+
+    expect(snapshots).toHaveLength(1);
+    expect(snapshots[0]).toMatchObject({
+      landing_views: 1,
+      open_clicks: 1,
+      mcp_initializations: 1,
+      public_tool_calls: 1,
+      onboarding_tool_calls: 1,
+    });
+    expect(JSON.stringify(snapshots[0])).not.toContain("xrocket-metrics-test");
+    expect(JSON.stringify(snapshots[0])).not.toContain("arguments");
   });
 
   it("rejects unknown hosts and origins before MCP dispatch", async () => {

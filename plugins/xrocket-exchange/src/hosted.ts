@@ -5,6 +5,8 @@ async function main(): Promise<void> {
   const handle = await startHostedHttpServer({
     ...options,
     onerror: (error) => process.stderr.write(`[xrocket-mcp:http] ${error.message}\n`),
+    onFunnelSnapshot: (snapshot) =>
+      process.stdout.write(`[xrocket-mcp:funnel] ${JSON.stringify(snapshot)}\n`),
   });
   process.stdout.write(
     `[xrocket-mcp:http] Listening on ${options.host}:${handle.port}; profile=public environment=mainnet\n`,

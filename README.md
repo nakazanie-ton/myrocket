@@ -4,7 +4,7 @@ Unofficial, safety-first agent tooling for the xRocket Exchange API: one MCP ser
 
 The default installation is intentionally **public and read-only**. Private account access and financial writes are available only in explicit local profiles, with separate feature gates and a prepare/execute approval flow. This project is not affiliated with, endorsed by, or operated by xRocket.
 
-[Connect hosted MCP](https://xrocket-mcp-production.up.railway.app/mcp) · [Open xRocket](https://t.me/xRocket?start=kaban) · [Download v0.3.0](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.3.0) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Coverage](docs/API_COVERAGE.md) · [Safety model](docs/SAFETY.md) · [Legal review](docs/LEGAL.md) · [Distribution status](docs/DISTRIBUTION.md)
+[Connect in under a minute](https://xrocket-mcp-production.up.railway.app/) · [Open xRocket](https://t.me/xRocket?start=kaban) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Coverage](docs/API_COVERAGE.md) · [Safety model](docs/SAFETY.md) · [Legal review](docs/LEGAL.md) · [Distribution status](docs/DISTRIBUTION.md)
 
 ## What is included
 
@@ -26,11 +26,11 @@ The API surface was re-audited on 2026-08-24 and still covers all **50 Exchange 
 | `private-read` | Public tools plus 6 account/history tools | Required | Impossible |
 | `full` | Public and private reads plus 8 prepare/execute write tools | Required | Still disabled until each feature gate is enabled |
 
-For normal questions, `xrocket_market_snapshot` resolves a symbol or base asset and returns rules, ticker, best bid/ask, recent trades, and fees in one call. Private mode adds `xrocket_account_overview` for funding balances, trading balances, and active orders without inventing portfolio valuation. Narrow tools remain available for detailed queries. Full mode adds guarded order, cancel, internal-transfer, and withdrawal workflows.
+For normal questions, `xrocket_market_snapshot` resolves a symbol or base asset and returns rules, ticker, best bid/ask, recent trades, fees, and an Open xRocket next action in one call. Private mode adds `xrocket_account_overview` for funding balances, trading balances, and active orders without inventing portfolio valuation. Narrow tools remain available for detailed queries. Full mode adds guarded order, cancel, internal-transfer, and withdrawal workflows.
 
 ## Quick start — no installation
 
-Add this URL to any MCP client that supports Streamable HTTP:
+Open the [zero-install connection page](https://xrocket-mcp-production.up.railway.app/) or add this URL to any MCP client that supports Streamable HTTP:
 
 ```text
 https://xrocket-mcp-production.up.railway.app/mcp
@@ -57,8 +57,8 @@ For balances, order history, or guarded financial actions, use the local package
 Requirements: Node.js 20 or newer. No clone or configuration is needed for public market data:
 
 ```bash
-npx -y xrocket-mcp@0.3.0 doctor
-npx -y xrocket-mcp@0.3.0 config
+npx -y xrocket-mcp@0.4.0 doctor
+npx -y xrocket-mcp@0.4.0 config
 ```
 
 The second command prints this copy-paste MCP client configuration:
@@ -68,7 +68,7 @@ The second command prints this copy-paste MCP client configuration:
   "mcpServers": {
     "xrocket": {
       "command": "npx",
-      "args": ["-y", "xrocket-mcp@0.3.0"],
+      "args": ["-y", "xrocket-mcp@0.4.0"],
       "env": {
         "XROCKET_ENVIRONMENT": "mainnet",
         "XROCKET_ENABLE_TRADING": "false",
@@ -100,7 +100,7 @@ npm test
 npm run build
 ```
 
-The published package is [`xrocket-mcp@0.3.0`](https://www.npmjs.com/package/xrocket-mcp/v/0.3.0).
+The current package is [`xrocket-mcp@0.4.0`](https://www.npmjs.com/package/xrocket-mcp/v/0.4.0).
 
 ## Enabling private reads
 
@@ -144,7 +144,7 @@ Mainnet writes additionally require `XROCKET_ENVIRONMENT=mainnet` and `XROCKET_A
 - Exchange `POST /api/v1/accounts/transfers` moves funds only between the same user's `funding` and `trading` accounts. It is not a user-to-user payment tool.
 - xRocket Pay is a different product, uses different authentication, and is outside this server.
 - The official API currently uses asset identifier `TONCOIN` in places where the UI may say TON.
-- The 0.3.0 server uses REST snapshots. WebSocket channels are audited but not exposed until the upstream documentation defines reliable replay, gap recovery, and orderbook delta deletion semantics.
+- The 0.4.0 server uses REST snapshots. WebSocket channels are audited but not exposed until the upstream documentation defines reliable replay, gap recovery, and orderbook delta deletion semantics.
 - Decimal financial values remain strings. Do not coerce them through binary floating point.
 
 ## Development

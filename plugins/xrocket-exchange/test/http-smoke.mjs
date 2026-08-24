@@ -25,7 +25,20 @@ if (
   throw new Error(`unsafe or unexpected hosted health response: ${JSON.stringify(healthBody)}`);
 }
 
-const client = new Client({ name: "xrocket-http-smoke", version: "0.3.0" });
+const landingUrl = new URL("/", endpoint);
+const landing = await fetch(landingUrl);
+if (!landing.ok || !(await landing.text()).includes("Connect MCP")) {
+  throw new Error(`hosted landing-page smoke failed with HTTP ${landing.status}`);
+}
+if (!landing.headers.get("content-security-policy")?.includes("default-src 'none'")) {
+  throw new Error("hosted landing page is missing its restrictive content security policy");
+}
+const open = await fetch(new URL("/open", endpoint), { redirect: "manual" });
+if (open.status !== 302 || !open.headers.get("location")?.includes("t.me/xRocket")) {
+  throw new Error("hosted Open xRocket action does not redirect to the configured destination");
+}
+
+const client = new Client({ name: "xrocket-http-smoke", version: "0.4.0" });
 try {
   await client.connect(new StreamableHTTPClientTransport(endpoint));
   const tools = await client.listTools();

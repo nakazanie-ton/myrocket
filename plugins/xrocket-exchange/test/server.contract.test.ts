@@ -152,6 +152,7 @@ describe("MCP tool contract", () => {
     expect(result.isError).not.toBe(true);
     const text = (result.content?.[0] as { type: string; text: string }).text;
     expect(text).toContain("# GRAM-USDT on xRocket (mainnet)");
+    expect(text).toContain("[Open xRocket](https://t.me/xRocket?start=kaban)");
     const fallback = JSON.parse(
       (result.content?.[1] as { type: string; text: string }).text,
     ) as { summary: { symbol: string } };
@@ -164,6 +165,12 @@ describe("MCP tool contract", () => {
           bestAsk: "0.0033",
           makerFee: "0.001",
           takerFee: "0.002",
+        },
+        actions: {
+          openXrocket: {
+            label: "Open xRocket",
+            url: "https://t.me/xRocket?start=kaban",
+          },
         },
       },
     });

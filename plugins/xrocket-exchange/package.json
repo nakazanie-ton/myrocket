@@ -1,11 +1,11 @@
 {
   "name": "xrocket-mcp",
-  "version": "0.3.0",
-  "description": "Unofficial safety-first MCP server for the xRocket Exchange API",
+  "version": "0.4.0",
+  "description": "Live public xRocket market data for AI clients over MCP",
   "type": "module",
   "license": "MIT",
   "author": "nakazanie-ton",
-  "homepage": "https://github.com/nakazanie-ton/myrocket#readme",
+  "homepage": "https://xrocket-mcp-production.up.railway.app/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nakazanie-ton/myrocket.git"

@@ -2,7 +2,20 @@ import { createServer, type IncomingMessage, type Server as NodeHttpServer } fro
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node";
 import { createMcpHandler } from "@modelcontextprotocol/server";
 import type { FetchLike } from "./client.js";
-import { createHostedPublicXrocketServer, hostedPublicConfig } from "./public-server.js";
+import { createFunnelMetrics, type FunnelSnapshot } from "./funnel-metrics.js";
+import {
+  FAVICON_SVG,
+  LANDING_PAGE,
+  LANDING_SCRIPT,
+  LANDING_STYLES,
+  ROBOTS_TXT,
+  SITEMAP_XML,
+} from "./landing.js";
+import { XROCKET_MAINNET_URL } from "./links.js";
+import {
+  createHostedPublicXrocketServer,
+  hostedPublicConfig,
+} from "./public-server.js";
 import { VERSION } from "./version.js";
 
 const LOCAL_HOSTNAMES = ["localhost", "127.0.0.1", "[::1]"] as const;
@@ -20,6 +33,7 @@ export interface HostedHttpOptions {
   trustProxy: boolean;
   fetch?: FetchLike;
   onerror?: (error: Error) => void;
+  onFunnelSnapshot?: (snapshot: FunnelSnapshot) => void;
 }
 
 export interface HostedHttpServer {
@@ -140,6 +154,28 @@ function jsonResponse(
   response.end(JSON.stringify(value));
 }
 
+function staticResponse(
+  request: IncomingMessage,
+  response: import("node:http").ServerResponse,
+  contentType: string,
+  body: string,
+  cacheControl = "public, max-age=300",
+): void {
+  response.writeHead(200, {
+    "Cache-Control": cacheControl,
+    "Content-Length": Buffer.byteLength(body),
+    "Content-Security-Policy":
+      "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+    "Content-Type": contentType,
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Permissions-Policy": "camera=(), geolocation=(), microphone=(), payment=(), usb=()",
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+  });
+  response.end(request.method === "HEAD" ? undefined : body);
+}
+
 function errorResponse(
   response: import("node:http").ServerResponse,
   status: number,
@@ -192,6 +228,24 @@ async function readJsonBody(request: IncomingMessage): Promise<unknown> {
   return parsed;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function recordMcpInitialization(
+  metrics: ReturnType<typeof createFunnelMetrics>,
+  body: unknown,
+  statusCode: number,
+): void {
+  if (
+    statusCode < 400 &&
+    isRecord(body) &&
+    body.method === "notifications/initialized"
+  ) {
+    metrics.record("mcp_initializations");
+  }
+}
+
 function closeNodeServer(server: NodeHttpServer): Promise<void> {
   return new Promise((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()));
@@ -203,8 +257,15 @@ export async function startHostedHttpServer(
   options: HostedHttpOptions,
 ): Promise<HostedHttpServer> {
   const config = hostedPublicConfig();
+  const metrics = createFunnelMetrics({ sink: options.onFunnelSnapshot ?? (() => undefined) });
   const handler = createMcpHandler(
-    () => createHostedPublicXrocketServer(options.fetch),
+    () =>
+      createHostedPublicXrocketServer(options.fetch, (toolName) => {
+        metrics.record("public_tool_calls");
+        if (toolName === "xrocket_onboarding_links") {
+          metrics.record("onboarding_tool_calls");
+        }
+      }),
     {
       legacy: "stateless",
       ...(options.onerror ? { onerror: options.onerror } : {}),
@@ -237,6 +298,53 @@ export async function startHostedHttpServer(
           environment: config.environment,
           transport: "streamable-http",
         });
+        return;
+      }
+      if (
+        path === "/" ||
+        path === "/landing.css" ||
+        path === "/landing.js" ||
+        path === "/favicon.svg" ||
+        path === "/robots.txt" ||
+        path === "/sitemap.xml" ||
+        path === "/open"
+      ) {
+        if (!validateHost(request, response)) return;
+        if (path === "/open") {
+          if (request.method !== "GET") {
+            response.setHeader("Allow", "GET");
+            jsonResponse(response, 405, { error: "method_not_allowed" });
+            return;
+          }
+          metrics.record("open_clicks");
+          response.writeHead(302, {
+            "Cache-Control": "no-store",
+            Location: XROCKET_MAINNET_URL,
+            "Referrer-Policy": "no-referrer",
+            "X-Content-Type-Options": "nosniff",
+          });
+          response.end();
+          return;
+        }
+        if (request.method !== "GET" && request.method !== "HEAD") {
+          response.setHeader("Allow", "GET, HEAD");
+          jsonResponse(response, 405, { error: "method_not_allowed" });
+          return;
+        }
+        if (path === "/") {
+          if (request.method === "GET") metrics.record("landing_views");
+          staticResponse(request, response, "text/html; charset=utf-8", LANDING_PAGE);
+        } else if (path === "/landing.css") {
+          staticResponse(request, response, "text/css; charset=utf-8", LANDING_STYLES);
+        } else if (path === "/landing.js") {
+          staticResponse(request, response, "text/javascript; charset=utf-8", LANDING_SCRIPT);
+        } else if (path === "/favicon.svg") {
+          staticResponse(request, response, "image/svg+xml; charset=utf-8", FAVICON_SVG, "public, max-age=86400");
+        } else if (path === "/robots.txt") {
+          staticResponse(request, response, "text/plain; charset=utf-8", ROBOTS_TXT);
+        } else {
+          staticResponse(request, response, "application/xml; charset=utf-8", SITEMAP_XML);
+        }
         return;
       }
       if (path !== "/mcp") {
@@ -306,6 +414,7 @@ export async function startHostedHttpServer(
         if (request.method === "POST") {
           const parsedBody = await readJsonBody(request);
           await nodeHandler(mcpRequest, response, parsedBody);
+          recordMcpInitialization(metrics, parsedBody, response.statusCode);
         } else {
           await nodeHandler(mcpRequest, response);
         }
@@ -337,23 +446,30 @@ export async function startHostedHttpServer(
   server.keepAliveTimeout = 5_000;
   server.maxRequestsPerSocket = 100;
 
-  await new Promise<void>((resolve, reject) => {
-    const onError = (error: Error) => {
-      server.off("listening", onListening);
-      reject(error);
-    };
-    const onListening = () => {
-      server.off("error", onError);
-      resolve();
-    };
-    server.once("error", onError);
-    server.once("listening", onListening);
-    server.listen(options.port, options.host);
-  });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const onError = (error: Error) => {
+        server.off("listening", onListening);
+        reject(error);
+      };
+      const onListening = () => {
+        server.off("error", onError);
+        resolve();
+      };
+      server.once("error", onError);
+      server.once("listening", onListening);
+      server.listen(options.port, options.host);
+    });
+  } catch (error) {
+    metrics.close();
+    await handler.close();
+    throw error;
+  }
   const address = server.address();
   if (!address || typeof address === "string") {
     await handler.close();
     await closeNodeServer(server);
+    metrics.close();
     throw new Error("Hosted HTTP server did not expose a TCP port");
   }
 
@@ -362,8 +478,12 @@ export async function startHostedHttpServer(
     close: async () => {
       if (closing) return;
       closing = true;
-      await handler.close();
-      await closeNodeServer(server);
+      try {
+        await handler.close();
+        await closeNodeServer(server);
+      } finally {
+        metrics.close();
+      }
     },
   };
 }

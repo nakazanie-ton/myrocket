@@ -41,7 +41,7 @@ const transport = new StdioClientTransport(
         stderr: "pipe",
       },
 );
-const client = new Client({ name: "xrocket-stdio-smoke", version: "0.3.0" });
+const client = new Client({ name: "xrocket-stdio-smoke", version: "0.4.0" });
 
 try {
   await client.connect(transport);

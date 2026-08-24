@@ -2,9 +2,9 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.nakazanie-ton/xrocket",
   "title": "xRocket Exchange MCP",
-  "description": "Unofficial xRocket market data and opt-in local account and financial workflow tools",
-  "version": "0.3.0",
-  "websiteUrl": "https://github.com/nakazanie-ton/myrocket",
+  "description": "Live public xRocket prices, spreads, order books, trades, candles, fees, and market snapshots for AI clients",
+  "version": "0.4.0",
+  "websiteUrl": "https://xrocket-mcp-production.up.railway.app/",
   "repository": {
     "url": "https://github.com/nakazanie-ton/myrocket",
     "source": "github",
@@ -20,7 +20,7 @@
     {
       "registryType": "npm",
       "identifier": "xrocket-mcp",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

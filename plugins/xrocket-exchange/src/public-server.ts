@@ -4,6 +4,11 @@ import { API_BASE_URLS, type XrocketConfig } from "./config.js";
 import { XrocketClient, type FetchLike } from "./client.js";
 import { XrocketHttpError } from "./errors.js";
 import {
+  XROCKET_API_DOCS_URL,
+  XROCKET_MAINNET_URL,
+  XROCKET_TESTNET_URL,
+} from "./links.js";
+import {
   buildMarketSnapshot,
   marketSnapshotText,
   resolveMarket,
@@ -50,6 +55,20 @@ const READ: ToolAnnotations = {
 };
 const LOCAL_READ: ToolAnnotations = { ...READ, openWorldHint: false };
 
+export const PUBLIC_TOOL_NAMES = [
+  "xrocket_asset_info",
+  "xrocket_market_candles",
+  "xrocket_market_orderbook",
+  "xrocket_market_snapshot",
+  "xrocket_market_symbols",
+  "xrocket_market_tickers",
+  "xrocket_market_trades",
+  "xrocket_onboarding_links",
+  "xrocket_rates",
+  "xrocket_trade_fees",
+] as const;
+export type PublicToolName = (typeof PUBLIC_TOOL_NAMES)[number];
+
 function jsonText(value: unknown): string {
   return JSON.stringify(value);
 }
@@ -86,9 +105,21 @@ function errorPayload(error: unknown): Record<string, unknown> {
   };
 }
 
-async function run(action: () => Promise<unknown> | unknown): Promise<CallToolResult> {
+function markSuccess(onSuccess: (() => void) | undefined): void {
+  try {
+    onSuccess?.();
+  } catch {
+    // Aggregate metrics must never affect a tool result.
+  }
+}
+
+async function run(
+  action: () => Promise<unknown> | unknown,
+  onSuccess?: () => void,
+): Promise<CallToolResult> {
   try {
     const value = await action();
+    markSuccess(onSuccess);
     return {
       content: [{ type: "text", text: jsonText(value) }],
       structuredContent: { result: value },
@@ -105,9 +136,11 @@ async function run(action: () => Promise<unknown> | unknown): Promise<CallToolRe
 
 async function runWithText(
   action: () => Promise<{ value: unknown; text: string }>,
+  onSuccess?: () => void,
 ): Promise<CallToolResult> {
   try {
     const result = await action();
+    markSuccess(onSuccess);
     return {
       content: [
         { type: "text", text: result.text },
@@ -143,7 +176,9 @@ export function registerPublicXrocketTools(
   server: McpServer,
   client: XrocketClient,
   environment: XrocketConfig["environment"],
+  onToolSuccess?: (toolName: PublicToolName) => void,
 ): void {
+  const success = (toolName: PublicToolName) => () => onToolSuccess?.(toolName);
   server.registerTool(
     "xrocket_market_snapshot",
     {
@@ -168,6 +203,12 @@ export function registerPublicXrocketTools(
           retrievedAt: z.string(),
           summary: z.record(z.string(), z.unknown()),
           constraints: z.object({ decimalValues: z.string(), consistency: z.string() }),
+          actions: z.object({
+            openXrocket: z.object({
+              label: z.literal("Open xRocket"),
+              url: z.string().url(),
+            }),
+          }),
           details: z.object({
             symbolRules: z.unknown(),
             ticker: z.unknown(),
@@ -198,9 +239,11 @@ export function registerPublicXrocketTools(
           orderbook,
           trades,
           fees,
+          openXrocketUrl:
+            environment === "mainnet" ? XROCKET_MAINNET_URL : XROCKET_TESTNET_URL,
         });
         return { value: snapshot, text: marketSnapshotText(snapshot) };
-      }),
+      }, success("xrocket_market_snapshot")),
   );
 
   server.registerTool(
@@ -212,7 +255,11 @@ export function registerPublicXrocketTools(
       outputSchema: resultSchema,
       annotations: READ,
     },
-    ({ symbol }) => run(async () => ({ environment, data: await client.getSymbols(symbol) })),
+    ({ symbol }) =>
+      run(
+        async () => ({ environment, data: await client.getSymbols(symbol) }),
+        success("xrocket_market_symbols"),
+      ),
   );
 
   server.registerTool(
@@ -225,7 +272,10 @@ export function registerPublicXrocketTools(
       annotations: READ,
     },
     ({ symbols }) =>
-      run(async () => ({ environment, data: await client.getTickers("24h", symbols) })),
+      run(
+        async () => ({ environment, data: await client.getTickers("24h", symbols) }),
+        success("xrocket_market_tickers"),
+      ),
   );
 
   server.registerTool(
@@ -242,7 +292,11 @@ export function registerPublicXrocketTools(
       outputSchema: resultSchema,
       annotations: READ,
     },
-    (args) => run(async () => ({ environment, data: await client.getCandles(args) })),
+    (args) =>
+      run(
+        async () => ({ environment, data: await client.getCandles(args) }),
+        success("xrocket_market_candles"),
+      ),
   );
 
   server.registerTool(
@@ -268,7 +322,11 @@ export function registerPublicXrocketTools(
       outputSchema: resultSchema,
       annotations: READ,
     },
-    (args) => run(async () => ({ environment, data: await client.getOrderbook(args) })),
+    (args) =>
+      run(
+        async () => ({ environment, data: await client.getOrderbook(args) }),
+        success("xrocket_market_orderbook"),
+      ),
   );
 
   server.registerTool(
@@ -280,7 +338,11 @@ export function registerPublicXrocketTools(
       outputSchema: resultSchema,
       annotations: READ,
     },
-    ({ symbol }) => run(async () => ({ environment, data: await client.getTrades(symbol) })),
+    ({ symbol }) =>
+      run(
+        async () => ({ environment, data: await client.getTrades(symbol) }),
+        success("xrocket_market_trades"),
+      ),
   );
 
   server.registerTool(
@@ -292,7 +354,11 @@ export function registerPublicXrocketTools(
       outputSchema: resultSchema,
       annotations: READ,
     },
-    ({ asset }) => run(async () => ({ environment, data: await client.getAssets(asset) })),
+    ({ asset }) =>
+      run(
+        async () => ({ environment, data: await client.getAssets(asset) }),
+        success("xrocket_asset_info"),
+      ),
   );
 
   server.registerTool(
@@ -308,7 +374,10 @@ export function registerPublicXrocketTools(
       annotations: READ,
     },
     ({ base, assets }) =>
-      run(async () => ({ environment, data: await client.getRates(base, assets) })),
+      run(
+        async () => ({ environment, data: await client.getRates(base, assets) }),
+        success("xrocket_rates"),
+      ),
   );
 
   server.registerTool(
@@ -321,7 +390,10 @@ export function registerPublicXrocketTools(
       annotations: READ,
     },
     ({ symbols }) =>
-      run(async () => ({ environment, data: await client.getTradeFees(symbols) })),
+      run(
+        async () => ({ environment, data: await client.getTradeFees(symbols) }),
+        success("xrocket_trade_fees"),
+      ),
   );
 
   server.registerTool(
@@ -334,32 +406,38 @@ export function registerPublicXrocketTools(
       annotations: LOCAL_READ,
     },
     () =>
-      run(() => ({
-        environment,
-        primary:
-          environment === "mainnet"
-            ? "https://t.me/xRocket?start=kaban"
-            : "https://t.me/xrocket_testnet_bot?start=kaban",
-        mainnet: "https://t.me/xRocket?start=kaban",
-        testnet: "https://t.me/xrocket_testnet_bot?start=kaban",
-        documentation: "https://docs.xrocket.exchange/api/exchange/exchange-api-overview",
-        depositNote:
-          "The Exchange REST API has no documented deposit-address endpoint. Open the bot with the onboarding link and use the deposit UI. Account balance verification is available only through a separately configured local private-read profile; the hosted endpoint never accepts account tokens.",
-      })),
+      run(
+        () => ({
+          environment,
+          primary:
+            environment === "mainnet"
+              ? XROCKET_MAINNET_URL
+              : XROCKET_TESTNET_URL,
+          mainnet: XROCKET_MAINNET_URL,
+          testnet: XROCKET_TESTNET_URL,
+          documentation: XROCKET_API_DOCS_URL,
+          depositNote:
+            "The Exchange REST API has no documented deposit-address endpoint. Open the bot with the onboarding link and use the deposit UI. Account balance verification is available only through a separately configured local private-read profile; the hosted endpoint never accepts account tokens.",
+        }),
+        success("xrocket_onboarding_links"),
+      ),
   );
 }
 
-export function createHostedPublicXrocketServer(fetchImpl?: FetchLike): McpServer {
+export function createHostedPublicXrocketServer(
+  fetchImpl?: FetchLike,
+  onToolSuccess?: (toolName: PublicToolName) => void,
+): McpServer {
   const config = hostedPublicConfig();
   const server = new McpServer(
     { name: "xrocket-mcp", version: VERSION },
     {
       capabilities: { tools: {} },
       instructions:
-        "This hosted endpoint exposes only public xRocket mainnet market data. Use xrocket_market_snapshot for broad market questions and the narrow public tools for exact details. It never accepts account tokens and cannot expose balances, orders, transfers, withdrawals, prepare, or execute tools. For private account access or financial workflows, install the local package and sign in locally; never paste a token into chat.",
+        "This hosted endpoint exposes only public xRocket mainnet market data. Use xrocket_market_snapshot for broad market questions and the narrow public tools for exact details. Market snapshots include an Open xRocket next action. It never accepts account tokens and cannot expose balances, orders, transfers, withdrawals, prepare, or execute tools. For private account access or financial workflows, install the local package and sign in locally; never paste a token into chat.",
     },
   );
   const client = new XrocketClient(config, fetchImpl);
-  registerPublicXrocketTools(server, client, config.environment);
+  registerPublicXrocketTools(server, client, config.environment, onToolSuccess);
   return server;
 }

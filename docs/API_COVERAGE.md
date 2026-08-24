@@ -56,7 +56,7 @@ All public and private-read tools plus:
 
 The execute tools appear only in `full`, but refuse work until the corresponding environment gate is `true`. Mainnet execution has one additional gate.
 
-## WebSocket — all 7 channels audited, not exposed in 0.3.0
+## WebSocket — all 7 channels audited, not exposed in 0.4.0
 
 | Channel | Auth | REST fallback | Why no long-lived tool yet |
 | --- | --- | --- | --- |

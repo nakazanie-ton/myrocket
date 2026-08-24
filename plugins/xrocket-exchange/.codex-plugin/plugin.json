@@ -1,7 +1,7 @@
 {
   "name": "xrocket-exchange",
-  "version": "0.3.0",
-  "description": "Unofficial safety-first xRocket Exchange MCP server and agent skill",
+  "version": "0.4.0",
+  "description": "Live xRocket market data plus explicit local account and financial workflows",
   "author": {
     "name": "nakazanie-ton",
     "url": "https://github.com/nakazanie-ton"

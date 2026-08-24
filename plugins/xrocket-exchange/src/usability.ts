@@ -113,6 +113,12 @@ export interface MarketSnapshot {
     decimalValues: string;
     consistency: string;
   };
+  actions: {
+    openXrocket: {
+      label: "Open xRocket";
+      url: string;
+    };
+  };
   details: Record<string, unknown>;
 }
 
@@ -124,6 +130,7 @@ export function buildMarketSnapshot(input: {
   orderbook: unknown;
   trades: unknown;
   fees: unknown;
+  openXrocketUrl: string;
 }): MarketSnapshot {
   const ticker = exactSymbolRecord(
     input.ticker,
@@ -177,6 +184,12 @@ export function buildMarketSnapshot(input: {
       decimalValues: "All financial decimal values are exact strings; do not coerce them to JSON numbers.",
       consistency: "REST components are retrieved concurrently and are not an atomic synchronized snapshot.",
     },
+    actions: {
+      openXrocket: {
+        label: "Open xRocket",
+        url: input.openXrocketUrl,
+      },
+    },
     details: {
       symbolRules: input.symbolRules,
       ticker: input.ticker,
@@ -199,6 +212,8 @@ export function marketSnapshotText(snapshot: MarketSnapshot): string {
     `- Maker / taker fee: ${String(summary.makerFee ?? "unavailable")} / ${String(summary.takerFee ?? "unavailable")}`,
     "",
     `Retrieved ${snapshot.retrievedAt}. ${snapshot.constraints.consistency}`,
+    "",
+    `[${snapshot.actions.openXrocket.label}](${snapshot.actions.openXrocket.url})`,
   ];
   return rows.join("\n");
 }
