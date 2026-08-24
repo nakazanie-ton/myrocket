@@ -9,7 +9,8 @@ Snapshot: **2026-08-24**. Statuses distinguish verified publication from pending
 - Release assets: `xrocket-mcp-0.2.0.tgz` and `xrocket-exchange-codex-plugin.zip`; both were downloaded and smoke-tested after publication. Their verified SHA-256 values are `8d6d031f8509ba7733f9f70a042da12a9f67fa7c567c562b54287995dd434a38` and `7136b17d4bdbc8e023765db008e168f1a6ae8dd80243468dc74bc023f3fce420`, respectively.
 - npm: [`xrocket-mcp@0.2.0`](https://www.npmjs.com/package/xrocket-mcp/v/0.2.0); a fresh-cache registry install, CLI doctor, and live stdio market-snapshot smoke test passed after publication.
 - Official MCP Registry: [`io.github.nakazanie-ton/xrocket@0.2.0`](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.nakazanie-ton%2Fxrocket); the public record matches the npm package, repository, version, transport, and mainnet read-only default.
-- Curated-list submission: [`punkpeye/awesome-mcp-servers#11670`](https://github.com/punkpeye/awesome-mcp-servers/pull/11670); the PR is open and its automated checks pass, but the maintainer workflow requires a Glama listing and score badge before merge.
+- Glama: [`nakazanie-ton/myrocket`](https://glama.ai/mcp/servers/nakazanie-ton/myrocket); the public listing and score badge resolve, with maintenance graded A while license and quality evaluation remain pending.
+- Curated-list submission: [`punkpeye/awesome-mcp-servers#11670`](https://github.com/punkpeye/awesome-mcp-servers/pull/11670); the PR now includes the Glama score badge, is labeled `has-glama`, and passes its automated submission check. Maintainer review and merge remain pending.
 
 ## Positioning
 
@@ -38,9 +39,9 @@ Discovery metadata should consistently use:
 | P1 | Claude community plugin marketplace | GitHub plugin repository | Not submitted | Follow current manual submission requirements and disclose financial capabilities |
 | P1 | Cursor marketplace | MCP/plugin listing | Not submitted | Submit the public read-only configuration |
 | P1 | Cline marketplace | Marketplace issue/listing | Not submitted | Prepare logo/README and expect additional crypto review |
-| P2 | Glama | Downstream MCP listing | **v0.2.0 submitted; pending review and public visibility** | After approval, claim the server, verify public/mainnet read-only introspection, and make a Glama release |
+| P2 | Glama | Downstream MCP listing | **Public listing verified** | Wait for license and quality evaluation; keep the listing aligned with future releases |
 | P2 | PulseMCP | Official Registry ingestion | **Pending downstream ingestion** | The live submission page ingests Official Registry entries daily; verify the listing after the next ingestion cycle |
-| P2 | `awesome-mcp-servers` | Curated-list pull request | **PR #11670 open; automated checks passed** | Complete the Glama listing, add its score badge to the PR entry, rerun checks, then await maintainer review |
+| P2 | `awesome-mcp-servers` | Curated-list pull request | **PR #11670 open; Glama badge added and checks passed** | Await maintainer review and merge |
 | P3 | mcp.so | Paid directory listing | Not submitted | Evaluate the current paid-listing terms after organic channels |
 | P3 | Windsurf | Manual MCP configuration | Usable manually; no verified self-service public directory found | Document client config; do not claim marketplace publication |
 | Blocked | OpenAI universal plugin directory — full profile | Public plugin submission | **Policy-ineligible** | Current guidelines prohibit executing investment trades, money transfers, and crypto transfers |
@@ -51,7 +52,7 @@ The full local Codex plugin and the OpenAI universal public directory are differ
 ## Recommended order
 
 1. Keep the verified GitHub source, license, security policy, documentation, topics, and `v0.2.0` release current.
-2. Register the repository marketplace in Codex and open a focused `awesome-mcp-servers` pull request. Both routes are live; the list PR still requires the owner-authenticated Glama listing and score badge.
+2. Keep the repository marketplace and public Glama listing current; await maintainer review of the validated `awesome-mcp-servers` pull request.
 3. Keep the verified npm package and Official MCP Registry record aligned with each release.
 4. Let PulseMCP and other downstream registries ingest the verified record, then make direct submissions only where needed.
 5. Submit the skill/plugin bundle to compatible client marketplaces with the public/default profile highlighted.
