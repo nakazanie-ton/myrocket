@@ -1,0 +1,18 @@
+{
+  "name": "xrocket-exchange",
+  "description": "Live public xRocket market data through a zero-install MCP endpoint",
+  "version": "0.4.0",
+  "author": {
+    "name": "nakazanie-ton"
+  },
+  "homepage": "https://xrocket-mcp-production.up.railway.app/",
+  "repository": "https://github.com/nakazanie-ton/myrocket",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "xrocket",
+    "market-data",
+    "crypto"
+  ],
+  "logo": "assets/icon.svg"
+}

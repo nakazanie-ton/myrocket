@@ -1,0 +1,16 @@
+{
+  "name": "xrocket-agents",
+  "owner": {
+    "name": "nakazanie-ton"
+  },
+  "metadata": {
+    "description": "Public xRocket market data for AI clients"
+  },
+  "plugins": [
+    {
+      "name": "xrocket-exchange",
+      "source": "plugins/xrocket-exchange",
+      "description": "Live xRocket prices, spreads, order books, trades, candles, fees, and market snapshots"
+    }
+  ]
+}
