@@ -3,7 +3,7 @@
   "name": "io.github.nakazanie-ton/xrocket",
   "title": "xRocket Exchange MCP",
   "description": "Unofficial xRocket market data and opt-in local account and financial workflow tools",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "websiteUrl": "https://github.com/nakazanie-ton/myrocket",
   "repository": {
     "url": "https://github.com/nakazanie-ton/myrocket",
@@ -14,7 +14,7 @@
     {
       "registryType": "npm",
       "identifier": "xrocket-mcp",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
@@ -37,7 +37,7 @@
             "testnet",
             "mainnet"
           ],
-          "default": "testnet"
+          "default": "mainnet"
         },
         {
           "name": "XROCKET_API_TOKEN",

@@ -69,7 +69,7 @@ jobs:
           config = json.loads(Path("plugins/xrocket-exchange/.mcp.json").read_text())
           env = config["mcpServers"]["xrocket"]["env"]
           assert env["XROCKET_PROFILE"] == "public"
-          assert env["XROCKET_ENVIRONMENT"] == "testnet"
+          assert env["XROCKET_ENVIRONMENT"] == "mainnet"
           assert env["XROCKET_ENABLE_TRADING"] == "false"
           assert env["XROCKET_ENABLE_TRANSFERS"] == "false"
           assert env["XROCKET_ENABLE_WITHDRAWALS"] == "false"

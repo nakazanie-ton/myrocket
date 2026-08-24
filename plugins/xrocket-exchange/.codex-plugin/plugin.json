@@ -1,6 +1,6 @@
 {
   "name": "xrocket-exchange",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Unofficial safety-first xRocket Exchange MCP server and agent skill",
   "author": {
     "name": "nakazanie-ton",
@@ -34,8 +34,8 @@
     "privacyPolicyURL": "https://github.com/nakazanie-ton/myrocket/blob/main/PRIVACY.md",
     "termsOfServiceURL": "https://github.com/nakazanie-ton/myrocket/blob/main/TERMS.md",
     "defaultPrompt": [
-      "Show the current GRAM-USDT market rules and ticker on xRocket.",
-      "Compare the xRocket orderbook and recent trades without placing an order.",
+      "Show a complete current GRAM market snapshot on xRocket.",
+      "Show my xRocket account overview without estimating portfolio value.",
       "Explain how to prepare a safe xRocket testnet order."
     ],
     "brandColor": "#5B5DF0",

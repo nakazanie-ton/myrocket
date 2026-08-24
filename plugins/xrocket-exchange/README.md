@@ -4,19 +4,18 @@ Unofficial MCP server and agent skill for the xRocket Exchange API. It exposes p
 
 This package is not affiliated with or endorsed by xRocket. [Open xRocket](https://t.me/xRocket?start=kaban).
 
-## Install from this repository
+## Quick start
 
 ```bash
-npm ci
-npm run build
-node dist/cli.js
+npx -y xrocket-mcp@0.2.0 doctor
+npx -y xrocket-mcp@0.2.0 config
 ```
 
-Node.js 20 or newer is required. The default environment is safe without configuration:
+Node.js 20 or newer is required. Public market reads work without configuration:
 
 ```text
 XROCKET_PROFILE=public
-XROCKET_ENVIRONMENT=testnet
+XROCKET_ENVIRONMENT=mainnet
 ```
 
 Install the all-in-one Codex plugin from the repository marketplace:
@@ -32,28 +31,31 @@ MCP client example:
 {
   "mcpServers": {
     "xrocket": {
-      "command": "node",
-      "args": ["/absolute/path/to/xrocket-exchange/dist/cli.js"],
+      "command": "npx",
+      "args": ["-y", "xrocket-mcp@0.2.0"],
       "env": {
-        "XROCKET_PROFILE": "public",
-        "XROCKET_ENVIRONMENT": "testnet"
+        "XROCKET_ENVIRONMENT": "mainnet",
+        "XROCKET_ENABLE_TRADING": "false",
+        "XROCKET_ENABLE_TRANSFERS": "false",
+        "XROCKET_ENABLE_WITHDRAWALS": "false",
+        "XROCKET_ALLOW_MAINNET_WRITES": "false"
       }
     }
   }
 }
 ```
 
-The verified npm equivalent is `npx -y xrocket-mcp@0.1.1`.
+For source development, run `npm ci`, `npm test`, and `npm run build` in this directory.
 
 ## Profiles and write gates
 
-- `public`: 9 unauthenticated market-data/onboarding tools.
-- `private-read`: public tools plus balances, orders, transfers, withdrawals, and quotas; requires `XROCKET_API_TOKEN`.
+- `public`: 10 unauthenticated tools, including the composed `xrocket_market_snapshot`.
+- `private-read`: public tools plus balances, whole-account overview, orders, transfers, withdrawals, and quotas; inferred when `XROCKET_API_TOKEN` is present.
 - `full`: all tools, but each execute family remains disabled unless its own gate is `true`.
 
 Write gates are `XROCKET_ENABLE_TRADING`, `XROCKET_ENABLE_TRANSFERS`, and `XROCKET_ENABLE_WITHDRAWALS`; all default to `false`. Mainnet writes also require `XROCKET_ALLOW_MAINNET_WRITES=true`.
 
-Every financial write stores the exact prepared intent in server memory and returns a short-lived, request-bound, single-use approval receipt. Execute accepts only that receipt. Writes are not automatically retried after an ambiguous network outcome; reconcile by client identifier first.
+Every financial write stores the exact prepared intent in server memory and returns a short-lived, request-bound, single-use approval receipt. Missing client identifiers are generated during prepare and shown in the preview. Execute accepts only that receipt. Writes are not automatically retried after an ambiguous network outcome; reconcile by client identifier first.
 
 The receipt binds the payload but does not prove human consent. If your MCP client has no trusted approval UI or out-of-band operator policy, keep all execute gates disabled.
 
@@ -62,7 +64,7 @@ The receipt binds the payload but does not prove human consent. If your MCP clie
 - The Exchange API has no deposit-address endpoint; onboarding is a UI guide only.
 - Exchange transfers are internal `funding` ↔ `trading`, not user-to-user payments.
 - xRocket Pay is a separate product and is not included.
-- WebSocket channels are audited but 0.1.1 uses bounded REST snapshots.
+- WebSocket channels are audited but 0.2.0 uses bounded REST snapshots.
 - Keep financial values as decimal strings and use `TONCOIN` where the current API requires it.
 
 Full documentation, coverage, security policy, privacy notice, and terms live in the [project repository](https://github.com/nakazanie-ton/myrocket).

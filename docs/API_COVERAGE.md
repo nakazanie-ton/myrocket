@@ -33,19 +33,19 @@ This matrix accounts for every operation in the audited xRocket Exchange OpenAPI
 | 25 | `GET /api/v1/accounts/funding/withdrawals` | Bearer | `xrocket_withdrawals` | `private-read` | History/filter/pagination mode |
 | 26 | `GET /api/v1/accounts/funding/withdrawal` | Bearer | `xrocket_withdrawals` | `private-read` | Single withdrawal by server or client identifier |
 
-`xrocket_onboarding_links` has no REST counterpart. It returns the configured [xRocket onboarding link](https://t.me/xRocket?start=kaban), canonical documentation links, and the explicit fact that the Exchange API cannot create a deposit address.
+`xrocket_market_snapshot` composes symbol discovery, exact symbol rules, ticker, orderbook, trades, and fees without adding an upstream operation. `xrocket_account_overview` composes both balance endpoints and active orders without calculating valuation. `xrocket_onboarding_links` has no REST counterpart and explains the API's deposit-address boundary.
 
 ## MCP catalog by profile
 
-### `public` — 9 tools
+### `public` — 10 tools
 
-`xrocket_market_symbols`, `xrocket_market_tickers`, `xrocket_market_candles`, `xrocket_market_orderbook`, `xrocket_market_trades`, `xrocket_asset_info`, `xrocket_rates`, `xrocket_trade_fees`, `xrocket_onboarding_links`.
+`xrocket_market_snapshot`, `xrocket_market_symbols`, `xrocket_market_tickers`, `xrocket_market_candles`, `xrocket_market_orderbook`, `xrocket_market_trades`, `xrocket_asset_info`, `xrocket_rates`, `xrocket_trade_fees`, `xrocket_onboarding_links`.
 
-### `private-read` — 14 tools total
+### `private-read` — 16 tools total
 
-All public tools plus `xrocket_account_balances`, `xrocket_orders`, `xrocket_transfers`, `xrocket_withdrawals`, and `xrocket_withdrawal_quotas`.
+All public tools plus `xrocket_account_overview`, `xrocket_account_balances`, `xrocket_orders`, `xrocket_transfers`, `xrocket_withdrawals`, and `xrocket_withdrawal_quotas`.
 
-### `full` — 22 tools total
+### `full` — 24 tools total
 
 All public and private-read tools plus:
 
@@ -56,7 +56,7 @@ All public and private-read tools plus:
 
 The execute tools appear only in `full`, but refuse work until the corresponding environment gate is `true`. Mainnet execution has one additional gate.
 
-## WebSocket — all 7 channels audited, not exposed in 0.1.1
+## WebSocket — all 7 channels audited, not exposed in 0.2.0
 
 | Channel | Auth | REST fallback | Why no long-lived tool yet |
 | --- | --- | --- | --- |

@@ -29193,14 +29193,19 @@ function ttlValue(value) {
   return parsed;
 }
 function loadConfig(env = process.env) {
-  const profile = enumValue(env.XROCKET_PROFILE, "public", PROFILE_VALUES, "XROCKET_PROFILE");
+  const apiToken = env.XROCKET_API_TOKEN?.trim();
+  const profile = enumValue(
+    env.XROCKET_PROFILE,
+    apiToken ? "private-read" : "public",
+    PROFILE_VALUES,
+    "XROCKET_PROFILE"
+  );
   const environment = enumValue(
     env.XROCKET_ENVIRONMENT,
-    "testnet",
+    "mainnet",
     ENVIRONMENT_VALUES,
     "XROCKET_ENVIRONMENT"
   );
-  const apiToken = env.XROCKET_API_TOKEN?.trim();
   if (profile !== "public" && !apiToken) {
     throw new Error(`XROCKET_API_TOKEN is required for profile ${profile}`);
   }
@@ -29469,6 +29474,9 @@ var XrocketClient = class {
     }
     return data;
   }
+  getHealth() {
+    return this.request("GET", "/health");
+  }
   getAssets(asset) {
     return asset ? this.request("GET", `/api/v1/assets/${encodeURIComponent(asset)}`) : this.request("GET", "/api/v1/assets");
   }
@@ -29548,6 +29556,112 @@ var XrocketClient = class {
   }
 };
 
+// src/version.ts
+var VERSION = "0.2.0";
+
+// src/cli-commands.ts
+function parseCliCommand(args) {
+  if (args.length === 0 || args.length === 1 && args[0] === "serve") return "serve";
+  if (args.length === 1 && args[0] === "doctor") return "doctor";
+  if (args.length === 1 && args[0] === "config") return "config";
+  if (args.length === 1 && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
+    return "help";
+  }
+  if (args.length === 1 && (args[0] === "--version" || args[0] === "-v")) return "version";
+  throw new Error(`Unknown command: ${args.join(" ")}. Run xrocket-mcp --help.`);
+}
+function helpText() {
+  return [
+    `xrocket-mcp ${VERSION}`,
+    "",
+    "Usage:",
+    "  xrocket-mcp              Start the MCP stdio server",
+    "  xrocket-mcp serve        Start the MCP stdio server",
+    "  xrocket-mcp doctor       Check configuration and public API connectivity",
+    "  xrocket-mcp config       Print a safe copy-paste MCP client configuration",
+    "  xrocket-mcp --version    Print the version",
+    "",
+    "Defaults: public mainnet reads; every financial write gate is disabled.",
+    "With XROCKET_PROFILE omitted, setting XROCKET_API_TOKEN locally enables private reads. Never paste a token into a prompt."
+  ].join("\n");
+}
+function renderMcpConfig() {
+  return JSON.stringify(
+    {
+      mcpServers: {
+        xrocket: {
+          command: "npx",
+          args: ["-y", `xrocket-mcp@${VERSION}`],
+          env: {
+            XROCKET_ENVIRONMENT: "mainnet",
+            XROCKET_ENABLE_TRADING: "false",
+            XROCKET_ENABLE_TRANSFERS: "false",
+            XROCKET_ENABLE_WITHDRAWALS: "false",
+            XROCKET_ALLOW_MAINNET_WRITES: "false"
+          }
+        }
+      }
+    },
+    null,
+    2
+  );
+}
+function countSymbols(value) {
+  if (Array.isArray(value)) return value.length;
+  if (value !== null && typeof value === "object" && "symbols" in value) {
+    const symbols = value.symbols;
+    return Array.isArray(symbols) ? symbols.length : void 0;
+  }
+  return void 0;
+}
+async function runDoctor(env = process.env, fetchImpl = fetch) {
+  const config2 = loadConfig(env);
+  const client = new XrocketClient(config2, fetchImpl);
+  const [health, symbols] = await Promise.all([client.getHealth(), client.getSymbols()]);
+  let credentialsVerified = null;
+  if (config2.profile !== "public") {
+    try {
+      await client.getBalances("trading");
+      credentialsVerified = true;
+    } catch (error51) {
+      if (error51 instanceof XrocketHttpError && (error51.status === 401 || error51.status === 403)) {
+        throw new Error(
+          "xRocket account access was rejected. Sign in to xRocket and configure a valid API token locally; never paste the token into chat."
+        );
+      }
+      throw error51;
+    }
+  }
+  const symbolCount = countSymbols(symbols);
+  return {
+    version: VERSION,
+    status: "ok",
+    profile: config2.profile,
+    environment: config2.environment,
+    apiBaseUrl: config2.apiBaseUrl,
+    tokenConfigured: Boolean(config2.apiToken),
+    credentialsVerified,
+    writesEnabled: config2.profile === "full" && (config2.enableTrading || config2.enableTransfers || config2.enableWithdrawals) && (config2.environment !== "mainnet" || config2.allowMainnetWrites),
+    health,
+    ...symbolCount === void 0 ? {} : { symbolCount }
+  };
+}
+function doctorText(report) {
+  return [
+    `xrocket-mcp ${report.version}: OK`,
+    `API: ${report.apiBaseUrl}`,
+    `Profile: ${report.profile}`,
+    `Environment: ${report.environment}`,
+    `Token configured: ${report.tokenConfigured ? "yes" : "no"}`,
+    `Account access: ${report.credentialsVerified === null ? "not requested" : "verified"}`,
+    `Financial writes enabled: ${report.writesEnabled ? "yes" : "no"}`,
+    `Markets discovered: ${report.symbolCount ?? "unknown"}`
+  ].join("\n");
+}
+
+// src/server.ts
+import { randomUUID as randomUUID2 } from "node:crypto";
+
 // src/receipts.ts
 import { createHash, randomUUID } from "node:crypto";
 function canonicalize(value) {
@@ -29602,6 +29716,148 @@ var ApprovalReceiptStore = class {
   }
 };
 
+// src/usability.ts
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function symbolRows(value) {
+  const rows = Array.isArray(value) ? value : isRecord(value) && Array.isArray(value.symbols) ? value.symbols : void 0;
+  if (!rows) throw new Error("Unexpected xRocket symbols response shape");
+  return rows.filter(
+    (row) => isRecord(row) && typeof row.symbol === "string"
+  );
+}
+function resolveMarket(value, query) {
+  const requested = query.trim().toUpperCase();
+  const rows = symbolRows(value);
+  const exact = rows.find((row) => row.symbol.toUpperCase() === requested);
+  if (exact) return exact;
+  const byBase = rows.filter(
+    (row) => typeof row.baseAsset === "string" && row.baseAsset.toUpperCase() === requested
+  );
+  if (byBase.length === 1) return byBase[0];
+  const usdt = byBase.filter(
+    (row) => typeof row.quoteAsset === "string" && row.quoteAsset.toUpperCase() === "USDT"
+  );
+  if (usdt.length === 1) return usdt[0];
+  if (byBase.length > 0) {
+    throw new Error(
+      `Market ${query} is ambiguous; use an exact symbol: ${byBase.map((row) => row.symbol).join(", ")}`
+    );
+  }
+  throw new Error(
+    `No xRocket market matches ${query}; use xrocket_market_symbols to discover symbols`
+  );
+}
+function exactSymbolRecord(value, key, symbol2, label) {
+  const records = isRecord(value) && Array.isArray(value[key]) ? value[key].filter(isRecord) : Array.isArray(value) ? value.filter(isRecord) : isRecord(value) ? [value] : [];
+  const exact = records.find(
+    (record2) => typeof record2.symbol === "string" && record2.symbol.toUpperCase() === symbol2.toUpperCase()
+  );
+  if (!exact) {
+    throw new Error(`Unexpected xRocket ${label} response: ${symbol2} row is missing`);
+  }
+  return exact;
+}
+function decimalParts(value) {
+  if (!/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value)) return void 0;
+  const [integer2, fraction = ""] = value.split(".");
+  return [integer2, fraction];
+}
+function compareDecimalStrings(left, right) {
+  const leftParts = decimalParts(left);
+  const rightParts = decimalParts(right);
+  if (!leftParts || !rightParts) throw new Error("Unexpected xRocket order-book price format");
+  if (leftParts[0].length !== rightParts[0].length) {
+    return leftParts[0].length < rightParts[0].length ? -1 : 1;
+  }
+  if (leftParts[0] !== rightParts[0]) return leftParts[0] < rightParts[0] ? -1 : 1;
+  const width = Math.max(leftParts[1].length, rightParts[1].length);
+  const leftFraction = leftParts[1].padEnd(width, "0");
+  const rightFraction = rightParts[1].padEnd(width, "0");
+  return leftFraction === rightFraction ? 0 : leftFraction < rightFraction ? -1 : 1;
+}
+function bestPrice(value, side) {
+  if (!isRecord(value) || !Array.isArray(value[side])) return void 0;
+  const prices = value[side].map((level) => Array.isArray(level) && typeof level[0] === "string" ? level[0] : void 0).filter((price) => price !== void 0);
+  if (prices.length === 0) return void 0;
+  return prices.reduce((best, price) => {
+    const comparison = compareDecimalStrings(price, best);
+    return side === "bids" ? comparison > 0 ? price : best : comparison < 0 ? price : best;
+  });
+}
+function stringField(record2, key) {
+  const value = record2?.[key];
+  return typeof value === "string" ? value : void 0;
+}
+function buildMarketSnapshot(input) {
+  const ticker = exactSymbolRecord(
+    input.ticker,
+    "tickers",
+    input.resolved.symbol,
+    "ticker"
+  );
+  const fee = exactSymbolRecord(input.fees, "fees", input.resolved.symbol, "trade-fee");
+  const standardFee = isRecord(fee?.standard) ? fee.standard : void 0;
+  const symbolRules = exactSymbolRecord(
+    input.symbolRules,
+    "symbols",
+    input.resolved.symbol,
+    "symbol-rules"
+  );
+  const bestBid = bestPrice(input.orderbook, "bids");
+  const bestAsk = bestPrice(input.orderbook, "asks");
+  const summary = {
+    symbol: input.resolved.symbol,
+    ...typeof input.resolved.baseAsset === "string" ? { baseAsset: input.resolved.baseAsset } : {},
+    ...typeof input.resolved.quoteAsset === "string" ? { quoteAsset: input.resolved.quoteAsset } : {},
+    ...typeof symbolRules.enableTrading === "boolean" ? { tradingEnabled: symbolRules.enableTrading } : {},
+    ...stringField(ticker, "last") ? { last: stringField(ticker, "last") } : {},
+    ...stringField(ticker, "open") ? { open: stringField(ticker, "open") } : {},
+    ...stringField(ticker, "high") ? { high: stringField(ticker, "high") } : {},
+    ...stringField(ticker, "low") ? { low: stringField(ticker, "low") } : {},
+    ...stringField(ticker, "changePrice") ? { changePrice: stringField(ticker, "changePrice") } : {},
+    ...stringField(ticker, "changeRate") ? { changeRate: stringField(ticker, "changeRate") } : {},
+    ...stringField(ticker, "baseVolume") ? { baseVolume: stringField(ticker, "baseVolume") } : {},
+    ...stringField(ticker, "quoteVolume") ? { quoteVolume: stringField(ticker, "quoteVolume") } : {},
+    ...bestBid ? { bestBid } : {},
+    ...bestAsk ? { bestAsk } : {},
+    ...stringField(standardFee, "maker") ? { makerFee: stringField(standardFee, "maker") } : {},
+    ...stringField(standardFee, "taker") ? { takerFee: stringField(standardFee, "taker") } : {}
+  };
+  return {
+    environment: input.environment,
+    retrievedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    summary,
+    constraints: {
+      decimalValues: "All financial decimal values are exact strings; do not coerce them to JSON numbers.",
+      consistency: "REST components are retrieved concurrently and are not an atomic synchronized snapshot."
+    },
+    details: {
+      symbolRules: input.symbolRules,
+      ticker: input.ticker,
+      orderbook: input.orderbook,
+      recentTrades: input.trades,
+      tradeFees: input.fees
+    }
+  };
+}
+function marketSnapshotText(snapshot) {
+  const summary = snapshot.summary;
+  const rows = [
+    `# ${String(summary.symbol)} on xRocket (${snapshot.environment})`,
+    "",
+    `- Last: ${String(summary.last ?? "unavailable")}`,
+    `- Best bid / ask: ${String(summary.bestBid ?? "unavailable")} / ${String(summary.bestAsk ?? "unavailable")}`,
+    `- 24h high / low: ${String(summary.high ?? "unavailable")} / ${String(summary.low ?? "unavailable")}`,
+    `- 24h change rate: ${String(summary.changeRate ?? "unavailable")}`,
+    `- Maker / taker fee: ${String(summary.makerFee ?? "unavailable")} / ${String(summary.takerFee ?? "unavailable")}`,
+    "",
+    `Retrieved ${snapshot.retrievedAt}. ${snapshot.constraints.consistency}`
+  ];
+  return rows.join("\n");
+}
+
 // src/server.ts
 var resultSchema = external_exports.object({ result: external_exports.unknown() });
 var symbolSchema = external_exports.string().min(1).max(64).describe("Exact current xRocket symbol, for example GRAM-USDT");
@@ -29628,7 +29884,7 @@ var intervalSchema = external_exports.enum([
 ]);
 var dateTimeSchema = external_exports.string().datetime({ offset: true });
 var limitOrderSchema = external_exports.object({
-  clientOrderId: orderClientIdSchema,
+  clientOrderId: orderClientIdSchema.optional(),
   symbol: symbolSchema,
   side: sideSchema,
   type: external_exports.literal("limit"),
@@ -29637,7 +29893,7 @@ var limitOrderSchema = external_exports.object({
   timeInForce: external_exports.enum(["GTC", "IOC", "FOK"])
 });
 var marketOrderSchema = external_exports.object({
-  clientOrderId: orderClientIdSchema,
+  clientOrderId: orderClientIdSchema.optional(),
   symbol: symbolSchema,
   side: sideSchema,
   type: external_exports.literal("market"),
@@ -29648,7 +29904,7 @@ var marketOrderSchema = external_exports.object({
   message: "market order requires exactly one of size or funds"
 });
 var stopLimitOrderSchema = external_exports.object({
-  clientOrderId: orderClientIdSchema,
+  clientOrderId: orderClientIdSchema.optional(),
   symbol: symbolSchema,
   side: sideSchema,
   type: external_exports.literal("stopLimit"),
@@ -29658,7 +29914,7 @@ var stopLimitOrderSchema = external_exports.object({
   timeInForce: external_exports.enum(["GTC", "IOC", "FOK"])
 });
 var stopMarketOrderSchema = external_exports.object({
-  clientOrderId: orderClientIdSchema,
+  clientOrderId: orderClientIdSchema.optional(),
   symbol: symbolSchema,
   side: sideSchema,
   type: external_exports.literal("stopMarket"),
@@ -29666,12 +29922,10 @@ var stopMarketOrderSchema = external_exports.object({
   stopPrice: decimalSchema,
   timeInForce: external_exports.enum(["IOC", "FOK"])
 });
-var orderSchema = external_exports.union([
-  limitOrderSchema,
-  marketOrderSchema,
-  stopLimitOrderSchema,
-  stopMarketOrderSchema
-]);
+var orderSchema = external_exports.union([limitOrderSchema, marketOrderSchema, stopLimitOrderSchema, stopMarketOrderSchema]).transform((order) => ({
+  ...order,
+  clientOrderId: order.clientOrderId ?? `order-${randomUUID2()}`
+}));
 var cancelIntentSchema = external_exports.object({
   orderId: external_exports.string().min(1).max(100).optional(),
   clientOrderId: orderClientIdSchema.optional()
@@ -29679,20 +29933,26 @@ var cancelIntentSchema = external_exports.object({
   message: "orderId or clientOrderId is required"
 });
 var transferSchema = external_exports.object({
-  clientTransferId: clientId64Schema,
+  clientTransferId: clientId64Schema.optional(),
   asset: assetSchema,
   amount: decimalSchema,
   from: external_exports.enum(["funding", "trading"]),
   to: external_exports.enum(["funding", "trading"])
-}).refine((value) => value.from !== value.to, { message: "from and to accounts must differ" });
+}).refine((value) => value.from !== value.to, { message: "from and to accounts must differ" }).transform((transfer) => ({
+  ...transfer,
+  clientTransferId: transfer.clientTransferId ?? `transfer-${randomUUID2()}`
+}));
 var withdrawalSchema = external_exports.object({
-  clientWithdrawalId: clientId50Schema,
+  clientWithdrawalId: clientId50Schema.optional(),
   network: networkSchema,
   asset: assetSchema,
   address: external_exports.string().min(1).max(256),
   amount: decimalSchema,
   comment: external_exports.string().max(256).optional()
-});
+}).transform((withdrawal) => ({
+  ...withdrawal,
+  clientWithdrawalId: withdrawal.clientWithdrawalId ?? `withdrawal-${randomUUID2()}`
+}));
 var READ = {
   readOnlyHint: true,
   destructiveHint: false,
@@ -29700,7 +29960,12 @@ var READ = {
   openWorldHint: true
 };
 var LOCAL_READ = { ...READ, openWorldHint: false };
-var PREPARE = { ...READ, idempotentHint: false };
+var PREPARE = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: true
+};
 var WRITE = {
   readOnlyHint: false,
   destructiveHint: true,
@@ -29713,6 +29978,15 @@ function jsonText(value) {
 function ok(value) {
   const structuredContent = { result: value };
   return { content: [{ type: "text", text: jsonText(value) }], structuredContent };
+}
+function okWithText(value, text) {
+  return {
+    content: [
+      { type: "text", text },
+      { type: "text", text: jsonText(value) }
+    ],
+    structuredContent: { result: value }
+  };
 }
 function errorPayload(error51) {
   if (error51 instanceof UnknownWriteOutcomeError) {
@@ -29758,11 +30032,11 @@ function boundedErrorDetails(details) {
     return "Unserializable upstream error details";
   }
 }
-function isRecord(value) {
+function isRecord2(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 function relevantSymbolAssets(symbolRules, symbol2) {
-  if (isRecord(symbolRules)) {
+  if (isRecord2(symbolRules)) {
     const baseAsset = symbolRules.baseAsset;
     const quoteAsset = symbolRules.quoteAsset;
     if (typeof baseAsset === "string" && typeof quoteAsset === "string") {
@@ -29774,22 +30048,22 @@ function relevantSymbolAssets(symbolRules, symbol2) {
 function narrowBalances(data, assets) {
   const requestedAssets = [...new Set(assets.map((asset) => asset.toUpperCase()))];
   const wanted = new Set(requestedAssets);
-  const balances = Array.isArray(data) ? data : isRecord(data) && Array.isArray(data.balances) ? data.balances : void 0;
+  const balances = Array.isArray(data) ? data : isRecord2(data) && Array.isArray(data.balances) ? data.balances : void 0;
   if (!balances) {
     throw new Error("Unexpected xRocket balance response shape; preparation stopped");
   }
-  if (balances.some((balance) => !isRecord(balance) || typeof balance.asset !== "string")) {
+  if (balances.some((balance) => !isRecord2(balance) || typeof balance.asset !== "string")) {
     throw new Error("Unexpected xRocket balance row shape; preparation stopped");
   }
   return {
     requestedAssets,
     balances: balances.filter(
-      (balance) => isRecord(balance) && typeof balance.asset === "string" && wanted.has(balance.asset.toUpperCase())
+      (balance) => isRecord2(balance) && typeof balance.asset === "string" && wanted.has(balance.asset.toUpperCase())
     )
   };
 }
 function assertTransferDirectionAvailable(assetMetadata, from, to) {
-  const availableTransfers = isRecord(assetMetadata) ? assetMetadata.availableTransfers : void 0;
+  const availableTransfers = isRecord2(assetMetadata) ? assetMetadata.availableTransfers : void 0;
   if (!Array.isArray(availableTransfers) || availableTransfers.some(
     (direction) => direction !== "fundingToTrading" && direction !== "tradingToFunding"
   )) {
@@ -29808,6 +30082,18 @@ async function run(action) {
     return {
       content: [{ type: "text", text: jsonText(payload) }],
       structuredContent: { result: payload },
+      isError: true
+    };
+  }
+}
+async function runWithText(action) {
+  try {
+    const result = await action();
+    return okWithText(result.value, result.text);
+  } catch (error51) {
+    const payload = errorPayload(error51);
+    return {
+      content: [{ type: "text", text: jsonText(payload) }],
       isError: true
     };
   }
@@ -29833,13 +30119,96 @@ function gateStatus(config2, capability) {
     executable: capabilityEnabled && (config2.environment !== "mainnet" || config2.allowMainnetWrites)
   };
 }
+function executionStatus(config2, capability) {
+  const gate = gateStatus(config2, capability);
+  if (gate.executable) {
+    return {
+      ready: true,
+      blocker: null,
+      nextStep: "Obtain explicit user approval of this exact preview, then call execute once."
+    };
+  }
+  const capabilityVariable = {
+    trading: "XROCKET_ENABLE_TRADING",
+    transfers: "XROCKET_ENABLE_TRANSFERS",
+    withdrawals: "XROCKET_ENABLE_WITHDRAWALS"
+  }[capability];
+  if (!gate.capabilityEnabled) {
+    return {
+      ready: false,
+      blocker: `${capability} execution is disabled`,
+      nextStep: `If the user requested this operation, restart the local server with ${capabilityVariable}=true, re-run prepare, review and approve the new preview, then execute once. The current receipt cannot survive a restart.`
+    };
+  }
+  return {
+    ready: false,
+    blocker: "mainnet execution is disabled",
+    nextStep: "Use testnet, or after an explicit mainnet decision restart with XROCKET_ALLOW_MAINNET_WRITES=true. Then re-run prepare, review and approve the new preview, and execute once; the current receipt cannot survive a restart."
+  };
+}
+function prepareInstruction(config2, capability, executeTool) {
+  const execution = executionStatus(config2, capability);
+  return execution.ready ? `Review this exact intent, obtain explicit user approval, then pass only the receipt to ${executeTool}.` : `Execution is currently blocked. Follow execution.nextStep; do not attempt ${executeTool} with this receipt after restarting.`;
+}
 function createXrocketServer(options = {}) {
   const config2 = options.config ?? loadConfig();
   const client = new XrocketClient(config2, options.fetch);
   const receipts = options.receipts ?? new ApprovalReceiptStore(config2.approvalTtlMs);
   const server = new McpServer(
-    { name: "xrocket-mcp", version: "0.1.1" },
-    { capabilities: { tools: {} } }
+    { name: "xrocket-mcp", version: VERSION },
+    {
+      capabilities: { tools: {} },
+      instructions: "Use xrocket_market_snapshot for broad market questions and xrocket_account_overview for a whole-account read. If account tools are unavailable, ask the user to sign in or configure XROCKET_API_TOKEN locally with XROCKET_PROFILE=private-read (or omit the profile); never ask them to paste the token into chat. Financial writes require prepare, explicit user approval of the returned exact intent, then execute with only the receipt. Never retry an unknown write outcome; reconcile it with private read tools."
+    }
+  );
+  server.registerTool(
+    "xrocket_market_snapshot",
+    {
+      title: "xRocket market snapshot",
+      description: "Resolve an exact symbol or base asset and return market rules, ticker, best bid/ask, recent trades, and fees in one read-only call. Exact symbols win; ambiguous assets are never guessed.",
+      inputSchema: external_exports.object({
+        market: external_exports.string().trim().min(1).max(64).describe("Exact symbol such as GRAM-USDT, or a base asset such as GRAM"),
+        depth: external_exports.union([external_exports.literal(5), external_exports.literal(10), external_exports.literal(20), external_exports.literal(50), external_exports.literal(100)]).default(20),
+        precision: decimalSchema.optional()
+      }),
+      outputSchema: external_exports.object({
+        result: external_exports.object({
+          environment: external_exports.string(),
+          retrievedAt: external_exports.string(),
+          summary: external_exports.record(external_exports.string(), external_exports.unknown()),
+          constraints: external_exports.object({ decimalValues: external_exports.string(), consistency: external_exports.string() }),
+          details: external_exports.object({
+            symbolRules: external_exports.unknown(),
+            ticker: external_exports.unknown(),
+            orderbook: external_exports.unknown(),
+            recentTrades: external_exports.unknown(),
+            tradeFees: external_exports.unknown()
+          })
+        })
+      }),
+      annotations: READ
+    },
+    ({ market, depth, precision }) => runWithText(async () => {
+      const symbols = await client.getSymbols();
+      const resolved = resolveMarket(symbols, market);
+      const [symbolRules, ticker, orderbook, trades, fees] = await Promise.all([
+        client.getSymbols(resolved.symbol),
+        client.getTickers("24h", [resolved.symbol]),
+        client.getOrderbook({ symbol: resolved.symbol, depth, precision }),
+        client.getTrades(resolved.symbol),
+        client.getTradeFees([resolved.symbol])
+      ]);
+      const snapshot = buildMarketSnapshot({
+        environment: config2.environment,
+        resolved,
+        symbolRules,
+        ticker,
+        orderbook,
+        trades,
+        fees
+      });
+      return { value: snapshot, text: marketSnapshotText(snapshot) };
+    })
   );
   server.registerTool(
     "xrocket_market_symbols",
@@ -29968,6 +30337,50 @@ function createXrocketServer(options = {}) {
     }))
   );
   if (config2.profile === "public") return server;
+  server.registerTool(
+    "xrocket_account_overview",
+    {
+      title: "xRocket account overview",
+      description: "Read funding balances, trading balances, and active orders together. Values are not converted or valued in another asset.",
+      inputSchema: external_exports.object({}),
+      outputSchema: external_exports.object({
+        result: external_exports.object({
+          environment: external_exports.string(),
+          retrievedAt: external_exports.string(),
+          fundingBalances: external_exports.unknown(),
+          tradingBalances: external_exports.unknown(),
+          activeOrders: external_exports.unknown(),
+          valuation: external_exports.literal("not calculated")
+        })
+      }),
+      annotations: READ
+    },
+    () => runWithText(async () => {
+      const [fundingBalances, tradingBalances, activeOrders] = await Promise.all([
+        client.getBalances("funding"),
+        client.getBalances("trading"),
+        client.getOrders("active", {})
+      ]);
+      const overview = {
+        environment: config2.environment,
+        retrievedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        fundingBalances,
+        tradingBalances,
+        activeOrders,
+        valuation: "not calculated"
+      };
+      return {
+        value: overview,
+        text: [
+          `# xRocket account overview (${config2.environment})`,
+          "",
+          "Funding balances, trading balances, and active orders are included in structured content.",
+          "No currency conversion or portfolio valuation was calculated.",
+          `Retrieved ${overview.retrievedAt}.`
+        ].join("\n")
+      };
+    })
+  );
   server.registerTool(
     "xrocket_account_balances",
     {
@@ -30142,7 +30555,9 @@ function createXrocketServer(options = {}) {
         tradeFees,
         ...receipts.issue("order", boundIntent),
         writeGate: gateStatus(config2, "trading"),
-        instruction: "Review this exact intent, then pass only the receipt to xrocket_order_execute."
+        execution: executionStatus(config2, "trading"),
+        preview: { operation: "place order", exactIntent: order },
+        instruction: prepareInstruction(config2, "trading", "xrocket_order_execute")
       };
     })
   );
@@ -30184,7 +30599,13 @@ function createXrocketServer(options = {}) {
         currentOrder,
         ...receipts.issue("order-cancel", boundIntent),
         writeGate: gateStatus(config2, "trading"),
-        instruction: "Review the target, then pass only the receipt to xrocket_order_cancel_execute."
+        execution: executionStatus(config2, "trading"),
+        preview: { operation: "cancel order", exactIntent: cancellation },
+        instruction: prepareInstruction(
+          config2,
+          "trading",
+          "xrocket_order_cancel_execute"
+        )
       };
     })
   );
@@ -30233,7 +30654,9 @@ function createXrocketServer(options = {}) {
         assetMetadata,
         ...receipts.issue("transfer", boundIntent),
         writeGate: gateStatus(config2, "transfers"),
-        instruction: "Review the intent, then pass only the receipt to xrocket_transfer_execute."
+        execution: executionStatus(config2, "transfers"),
+        preview: { operation: "internal transfer", exactIntent: transfer },
+        instruction: prepareInstruction(config2, "transfers", "xrocket_transfer_execute")
       };
     })
   );
@@ -30281,7 +30704,13 @@ function createXrocketServer(options = {}) {
         assetMetadata,
         ...receipts.issue("withdrawal", boundIntent),
         writeGate: gateStatus(config2, "withdrawals"),
-        instruction: "Verify network, destination, amount, fee and quota; then pass only the receipt to xrocket_withdrawal_execute."
+        execution: executionStatus(config2, "withdrawals"),
+        preview: { operation: "external withdrawal", exactIntent: withdrawal },
+        instruction: prepareInstruction(
+          config2,
+          "withdrawals",
+          "xrocket_withdrawal_execute"
+        )
       };
     })
   );
@@ -30311,21 +30740,35 @@ function createXrocketServer(options = {}) {
 }
 
 // src/cli.ts
-function main() {
+async function main() {
+  const command = parseCliCommand(process.argv.slice(2));
+  if (command === "help") return void process.stdout.write(`${helpText()}
+`);
+  if (command === "version") return void process.stdout.write(`${VERSION}
+`);
+  if (command === "config") return void process.stdout.write(`${renderMcpConfig()}
+`);
+  if (command === "doctor") return void process.stdout.write(`${doctorText(await runDoctor())}
+`);
   const config2 = loadConfig();
-  serveStdio(() => createXrocketServer({ config: config2 }), {
+  const handle = serveStdio(() => createXrocketServer({ config: config2 }), {
     onerror: (error51) => process.stderr.write(`[xrocket-mcp] ${error51.message}
 `)
   });
+  const close = () => {
+    void handle.close().finally(() => {
+      process.exitCode = 0;
+    });
+  };
+  process.once("SIGINT", close);
+  process.once("SIGTERM", close);
 }
-try {
-  main();
-} catch (error51) {
+main().catch((error51) => {
   const message = error51 instanceof Error ? error51.message : "Unknown startup error";
   process.stderr.write(`[xrocket-mcp] Startup failed: ${message}
 `);
   process.exitCode = 1;
-}
+});
 /*! Bundled license information:
 
 @modelcontextprotocol/server/dist/src-CX2iR2pK.mjs:

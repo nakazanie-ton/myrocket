@@ -5,11 +5,11 @@ Read this before any order, cancellation, internal transfer, or withdrawal.
 ## Authority checklist
 
 - The user explicitly requested this exact operation in the current conversation.
-- The environment is named and matches the value returned by the server. If unspecified, require a server started in its default testnet configuration; never silently promote to mainnet.
+- The environment is named and matches the value returned by the server. Public reads default to mainnet, but a write requires an explicit environment decision; prefer testnet unless the user explicitly approves mainnet.
 - `full` is configured locally; the bearer token was not shared in chat.
 - The matching capability gate is enabled. Do not ask to enable unrelated gates.
 - Mainnet has a separate explicit user decision and gate.
-- The proposed request has a unique client identifier where applicable.
+- The proposed request has the caller's unique client identifier or the identifier generated and returned by prepare.
 
 If any item is false or unknown, stop before preparation or execution as appropriate.
 

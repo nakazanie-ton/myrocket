@@ -44,6 +44,7 @@ const expectedPublic = [
   "xrocket_asset_info",
   "xrocket_market_candles",
   "xrocket_market_orderbook",
+  "xrocket_market_snapshot",
   "xrocket_market_symbols",
   "xrocket_market_tickers",
   "xrocket_market_trades",
@@ -53,6 +54,7 @@ const expectedPublic = [
 ];
 const expectedPrivate = [
   "xrocket_account_balances",
+  "xrocket_account_overview",
   "xrocket_orders",
   "xrocket_transfers",
   "xrocket_withdrawal_quotas",
@@ -80,6 +82,8 @@ describe("MCP tool contract", () => {
       ...(profile === "public" ? {} : { XROCKET_API_TOKEN: "test-token" }),
     });
     const { client } = await connect(config, neverFetch);
+    expect(client.getInstructions()).toContain("xrocket_market_snapshot");
+    expect(client.getInstructions()).toContain("never ask them to paste the token into chat");
     const tools = await client.listTools();
     expect(tools.tools.map((tool) => tool.name).sort()).toEqual([...expected].sort());
     for (const tool of tools.tools) {
@@ -94,6 +98,13 @@ describe("MCP tool contract", () => {
       openWorldHint: true,
     });
     if (profile === "full") {
+      const prepare = tools.tools.find((tool) => tool.name === "xrocket_order_prepare")!;
+      expect(prepare.annotations).toMatchObject({
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      });
       const execute = tools.tools.find((tool) => tool.name === "xrocket_withdrawal_execute")!;
       expect(execute.annotations).toMatchObject({
         readOnlyHint: false,
@@ -105,6 +116,133 @@ describe("MCP tool contract", () => {
         "approvalReceipt",
       ]);
     }
+  });
+
+  it("resolves a base asset and returns a readable composite market snapshot", async () => {
+    const fetchMock = vi.fn<FetchLike>(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/api/v1/symbols" && !url.pathname.includes("GRAM-USDT")) {
+        return json({
+          symbols: [
+            { symbol: "GRAM-BTC", baseAsset: "GRAM", quoteAsset: "BTC" },
+            { symbol: "GRAM-USDT", baseAsset: "GRAM", quoteAsset: "USDT" },
+          ],
+        });
+      }
+      if (url.pathname === "/api/v1/symbols/GRAM-USDT") {
+        return json({ symbol: "GRAM-USDT", baseAsset: "GRAM", quoteAsset: "USDT" });
+      }
+      if (url.pathname === "/api/v1/ticker/24h") {
+        return json({ tickers: [{ symbol: "GRAM-USDT", last: "0.0032", high: "0.004", low: "0.003", changeRate: "2.5" }] });
+      }
+      if (url.pathname === "/api/v1/orderbook") {
+        return json({ bids: [["0.0030", "2"], ["0.0031", "1"]], asks: [["0.0034", "2"], ["0.0033", "1"]] });
+      }
+      if (url.pathname === "/api/v1/trades") return json({ trades: [] });
+      if (url.pathname === "/api/v1/trade-fees") {
+        return json({ fees: [{ symbol: "GRAM-USDT", standard: { maker: "0.001", taker: "0.002" } }] });
+      }
+      throw new Error(`unexpected ${url.pathname}`);
+    });
+    const { client } = await connect(loadConfig({}), fetchMock);
+    const result = await client.callTool({
+      name: "xrocket_market_snapshot",
+      arguments: { market: "gram" },
+    });
+    expect(result.isError).not.toBe(true);
+    const text = (result.content?.[0] as { type: string; text: string }).text;
+    expect(text).toContain("# GRAM-USDT on xRocket (mainnet)");
+    const fallback = JSON.parse(
+      (result.content?.[1] as { type: string; text: string }).text,
+    ) as { summary: { symbol: string } };
+    expect(fallback.summary.symbol).toBe("GRAM-USDT");
+    expect(result.structuredContent).toMatchObject({
+      result: {
+        summary: {
+          symbol: "GRAM-USDT",
+          bestBid: "0.0031",
+          bestAsk: "0.0033",
+          makerFee: "0.001",
+          takerFee: "0.002",
+        },
+      },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(6);
+  });
+
+  it("returns exact candidates instead of guessing an ambiguous base asset", async () => {
+    const fetchMock = vi.fn<FetchLike>().mockResolvedValue(
+      json({
+        symbols: [
+          { symbol: "ABC-BTC", baseAsset: "ABC", quoteAsset: "BTC" },
+          { symbol: "ABC-ETH", baseAsset: "ABC", quoteAsset: "ETH" },
+        ],
+      }),
+    );
+    const { client } = await connect(loadConfig({}), fetchMock);
+    const result = await client.callTool({
+      name: "xrocket_market_snapshot",
+      arguments: { market: "ABC" },
+    });
+    expect(result.isError).toBe(true);
+    expect(contentJson(result).message).toContain("ABC-BTC, ABC-ETH");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails closed when a composite response contains another market", async () => {
+    const fetchMock = vi.fn<FetchLike>(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/api/v1/symbols") {
+        return json({ symbols: [{ symbol: "GRAM-USDT", baseAsset: "GRAM", quoteAsset: "USDT" }] });
+      }
+      if (url.pathname === "/api/v1/symbols/GRAM-USDT") {
+        return json({ symbol: "GRAM-USDT", baseAsset: "GRAM", quoteAsset: "USDT" });
+      }
+      if (url.pathname === "/api/v1/ticker/24h") {
+        return json({ tickers: [{ symbol: "BTC-USDT", last: "100000" }] });
+      }
+      if (url.pathname === "/api/v1/orderbook") return json({ bids: [], asks: [] });
+      if (url.pathname === "/api/v1/trades") return json({ trades: [] });
+      if (url.pathname === "/api/v1/trade-fees") {
+        return json({ fees: [{ symbol: "GRAM-USDT", standard: {} }] });
+      }
+      throw new Error(`unexpected ${url.pathname}`);
+    });
+    const { client } = await connect(loadConfig({}), fetchMock);
+    const result = await client.callTool({
+      name: "xrocket_market_snapshot",
+      arguments: { market: "GRAM-USDT" },
+    });
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toBeUndefined();
+    expect(contentJson(result).message).toBe(
+      "Unexpected xRocket ticker response: GRAM-USDT row is missing",
+    );
+  });
+
+  it("returns a private whole-account overview without inventing valuation", async () => {
+    const fetchMock = vi.fn<FetchLike>(async (input) => {
+      const path = new URL(String(input)).pathname;
+      if (path.endsWith("/funding/balances")) return json({ balances: [{ asset: "USDT" }] });
+      if (path.endsWith("/trading/balances")) return json({ balances: [{ asset: "GRAM" }] });
+      if (path.endsWith("/orders/active")) return json({ orders: [{ orderId: "1" }] });
+      throw new Error(`unexpected ${path}`);
+    });
+    const { client } = await connect(
+      loadConfig({ XROCKET_API_TOKEN: "test-token" }),
+      fetchMock,
+    );
+    const result = await client.callTool({ name: "xrocket_account_overview", arguments: {} });
+    expect(result.isError).not.toBe(true);
+    expect(result.structuredContent).toMatchObject({
+      result: {
+        valuation: "not calculated",
+        fundingBalances: { balances: [{ asset: "USDT" }] },
+        tradingBalances: { balances: [{ asset: "GRAM" }] },
+        activeOrders: { orders: [{ orderId: "1" }] },
+      },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it("returns the configured onboarding links without making a request", async () => {
@@ -141,7 +279,11 @@ describe("MCP tool contract", () => {
   });
 
   it("rejects a market order containing both size and funds before any API request", async () => {
-    const config = loadConfig({ XROCKET_PROFILE: "full", XROCKET_API_TOKEN: "test-token" });
+    const config = loadConfig({
+      XROCKET_PROFILE: "full",
+      XROCKET_API_TOKEN: "test-token",
+      XROCKET_ENVIRONMENT: "testnet",
+    });
     const { client } = await connect(config, neverFetch);
     const rejected = await client.callTool({
       name: "xrocket_order_prepare",
@@ -172,7 +314,11 @@ describe("MCP tool contract", () => {
       throw new Error(`unexpected ${path}`);
     });
     const { client } = await connect(
-      loadConfig({ XROCKET_PROFILE: "full", XROCKET_API_TOKEN: "test-token" }),
+      loadConfig({
+        XROCKET_PROFILE: "full",
+        XROCKET_API_TOKEN: "test-token",
+        XROCKET_ENVIRONMENT: "testnet",
+      }),
       fetchMock,
     );
     const result = await client.callTool({
@@ -210,7 +356,11 @@ describe("MCP tool contract", () => {
       throw new Error(`unexpected ${path}`);
     });
     const { client } = await connect(
-      loadConfig({ XROCKET_PROFILE: "full", XROCKET_API_TOKEN: "test-token" }),
+      loadConfig({
+        XROCKET_PROFILE: "full",
+        XROCKET_API_TOKEN: "test-token",
+        XROCKET_ENVIRONMENT: "testnet",
+      }),
       fetchMock,
     );
     const result = await client.callTool({
@@ -273,7 +423,11 @@ describe("MCP tool contract", () => {
       }
       throw new Error(`unexpected ${init?.method} ${url.pathname}`);
     });
-    const config = loadConfig({ XROCKET_PROFILE: "full", XROCKET_API_TOKEN: "test-token" });
+    const config = loadConfig({
+      XROCKET_PROFILE: "full",
+      XROCKET_API_TOKEN: "test-token",
+      XROCKET_ENVIRONMENT: "testnet",
+    });
     const { client } = await connect(config, fetchMock);
     const order = {
       clientOrderId: "agent-order-1",
@@ -289,6 +443,15 @@ describe("MCP tool contract", () => {
       arguments: { order },
     });
     const receipt = contentJson(prepared).approvalReceipt as string;
+    expect(contentJson(prepared).execution).toMatchObject({
+      ready: false,
+      blocker: "trading execution is disabled",
+      nextStep: expect.stringContaining("XROCKET_ENABLE_TRADING=true"),
+    });
+    expect(
+      (contentJson(prepared).execution as { nextStep: string }).nextStep,
+    ).toContain("re-run prepare");
+    expect(contentJson(prepared).instruction).toContain("do not attempt xrocket_order_execute");
     expect(contentJson(prepared).tradingBalances).toEqual({
       requestedAssets: ["TONCOIN", "USDT"],
       balances: [{ asset: "USDT" }],
@@ -324,6 +487,44 @@ describe("MCP tool contract", () => {
     expect(fetchMock).toHaveBeenCalledTimes(5);
   });
 
+  it("generates bounded client identifiers when prepare callers omit them", async () => {
+    const bodies: unknown[] = [];
+    const fetchMock = vi.fn<FetchLike>(async (input, init) => {
+      const path = new URL(String(input)).pathname;
+      if (init?.body) bodies.push(JSON.parse(String(init.body)) as unknown);
+      if (path === "/api/v1/orders/estimate") return json({ estimate: "ok" });
+      if (path === "/api/v1/symbols/GRAM-USDT") return json({ baseAsset: "GRAM", quoteAsset: "USDT" });
+      if (path === "/api/v1/accounts/trading/balances") return json({ balances: [] });
+      if (path === "/api/v1/trade-fees") return json({ fees: [] });
+      throw new Error(`unexpected ${path}`);
+    });
+    const { client } = await connect(
+      loadConfig({
+        XROCKET_PROFILE: "full",
+        XROCKET_API_TOKEN: "test-token",
+        XROCKET_ENVIRONMENT: "testnet",
+      }),
+      fetchMock,
+    );
+    const result = await client.callTool({
+      name: "xrocket_order_prepare",
+      arguments: {
+        order: {
+          symbol: "GRAM-USDT",
+          side: "buy",
+          type: "market",
+          funds: "1",
+          timeInForce: "IOC",
+        },
+      },
+    });
+    expect(result.isError).not.toBe(true);
+    const prepared = contentJson(result).order as { clientOrderId: string };
+    expect(prepared.clientOrderId).toMatch(/^order-[0-9a-f-]{36}$/);
+    expect(prepared.clientOrderId.length).toBeLessThanOrEqual(64);
+    expect(bodies[0]).toMatchObject({ clientOrderId: prepared.clientOrderId });
+  });
+
   it("consumes a receipt before an ambiguous order write and tells the agent not to retry", async () => {
     const fetchMock = vi.fn<FetchLike>(async (input) => {
       const path = new URL(String(input)).pathname;
@@ -337,6 +538,7 @@ describe("MCP tool contract", () => {
     const config = loadConfig({
       XROCKET_PROFILE: "full",
       XROCKET_API_TOKEN: "test-token",
+      XROCKET_ENVIRONMENT: "testnet",
       XROCKET_ENABLE_TRADING: "true",
     });
     const { client } = await connect(config, fetchMock);
@@ -379,6 +581,7 @@ describe("MCP tool contract", () => {
     const config = loadConfig({
       XROCKET_PROFILE: "full",
       XROCKET_API_TOKEN: "test-token",
+      XROCKET_ENVIRONMENT: "testnet",
       XROCKET_ENABLE_TRADING: "true",
     });
     const { client } = await connect(config, fetchMock);
@@ -430,6 +633,7 @@ describe("MCP tool contract", () => {
     const config = loadConfig({
       XROCKET_PROFILE: "full",
       XROCKET_API_TOKEN: "test-token",
+      XROCKET_ENVIRONMENT: "testnet",
       XROCKET_ENABLE_TRANSFERS: "true",
       XROCKET_ENABLE_WITHDRAWALS: "true",
     });
@@ -507,7 +711,11 @@ describe("MCP tool contract", () => {
       throw new Error(`unexpected ${path}`);
     });
     const { client } = await connect(
-      loadConfig({ XROCKET_PROFILE: "full", XROCKET_API_TOKEN: "test-token" }),
+      loadConfig({
+        XROCKET_PROFILE: "full",
+        XROCKET_API_TOKEN: "test-token",
+        XROCKET_ENVIRONMENT: "testnet",
+      }),
       fetchMock,
     );
 
@@ -548,7 +756,11 @@ describe("MCP tool contract", () => {
       throw new Error(`unexpected ${path}`);
     });
     const { client } = await connect(
-      loadConfig({ XROCKET_PROFILE: "full", XROCKET_API_TOKEN: "test-token" }),
+      loadConfig({
+        XROCKET_PROFILE: "full",
+        XROCKET_API_TOKEN: "test-token",
+        XROCKET_ENVIRONMENT: "testnet",
+      }),
       fetchMock,
     );
 
@@ -598,6 +810,7 @@ describe("MCP tool contract", () => {
     const config = loadConfig({
       XROCKET_PROFILE: "full",
       XROCKET_API_TOKEN: "test-token",
+      XROCKET_ENVIRONMENT: "testnet",
       XROCKET_ENABLE_WITHDRAWALS: "true",
     });
     const { client } = await connect(config, fetchMock);

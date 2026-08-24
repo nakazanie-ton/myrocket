@@ -4,13 +4,13 @@ Unofficial, safety-first agent tooling for the xRocket Exchange API: one MCP ser
 
 The default installation is intentionally **public and read-only**. Private account access and financial writes are available only in explicit local profiles, with separate feature gates and a prepare/execute approval flow. This project is not affiliated with, endorsed by, or operated by xRocket.
 
-[Open xRocket](https://t.me/xRocket?start=kaban) · [Download v0.1.1](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.1.1) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Coverage](docs/API_COVERAGE.md) · [Safety model](docs/SAFETY.md) · [Legal review](docs/LEGAL.md) · [Distribution status](docs/DISTRIBUTION.md)
+[Open xRocket](https://t.me/xRocket?start=kaban) · [Download v0.2.0](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.2.0) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Coverage](docs/API_COVERAGE.md) · [Safety model](docs/SAFETY.md) · [Legal review](docs/LEGAL.md) · [Distribution status](docs/DISTRIBUTION.md)
 
 ## What is included
 
 | Layer | Purpose | Default |
 | --- | --- | --- |
-| MCP server | Semantic tools over the official REST API | `public`, testnet |
+| MCP server | Semantic tools over the official REST API | `public`, mainnet, read-only |
 | Agent skill | Teaches agents safe discovery, analysis, approval, and reconciliation workflows | Read first; never infer write approval |
 | Codex plugin | Installs the server and skill together from a repo-local marketplace | Public tools only |
 | Registry metadata | `server.json` for `io.github.nakazanie-ton/xrocket` | Published in the Official MCP Registry |
@@ -21,34 +21,35 @@ The API surface was re-audited on 2026-08-24 and still covers all **50 Exchange 
 
 | Profile | Tools | Token | Financial writes |
 | --- | ---: | --- | --- |
-| `public` | 9 public market-data and onboarding tools | Not used | Impossible |
-| `private-read` | Public tools plus 5 account/history tools | Required | Impossible |
+| `public` | 10 public market-data and onboarding tools | Not used | Impossible |
+| `private-read` | Public tools plus 6 account/history tools | Required | Impossible |
 | `full` | Public and private reads plus 8 prepare/execute write tools | Required | Still disabled until each feature gate is enabled |
 
-Public tools cover symbols, tickers, candles, orderbook snapshots, trades, assets, rates, trade fees, and onboarding links. Private reads cover balances, orders, internal transfers, withdrawals, and withdrawal quotas. Full mode adds guarded order, cancel, internal-transfer, and withdrawal workflows.
+For normal questions, `xrocket_market_snapshot` resolves a symbol or base asset and returns rules, ticker, best bid/ask, recent trades, and fees in one call. Private mode adds `xrocket_account_overview` for funding balances, trading balances, and active orders without inventing portfolio valuation. Narrow tools remain available for detailed queries. Full mode adds guarded order, cancel, internal-transfer, and withdrawal workflows.
 
 ## Quick start
 
-Requirements: Node.js 20 or newer.
+Requirements: Node.js 20 or newer. No clone or configuration is needed for public market data:
 
 ```bash
-git clone https://github.com/nakazanie-ton/myrocket.git
-cd myrocket/plugins/xrocket-exchange
-npm ci
-npm run build
+npx -y xrocket-mcp@0.2.0 doctor
+npx -y xrocket-mcp@0.2.0 config
 ```
 
-Then point an MCP client at the built stdio server:
+The second command prints this copy-paste MCP client configuration:
 
 ```json
 {
   "mcpServers": {
     "xrocket": {
-      "command": "node",
-      "args": ["/absolute/path/to/myrocket/plugins/xrocket-exchange/dist/cli.js"],
+      "command": "npx",
+      "args": ["-y", "xrocket-mcp@0.2.0"],
       "env": {
-        "XROCKET_PROFILE": "public",
-        "XROCKET_ENVIRONMENT": "testnet"
+        "XROCKET_ENVIRONMENT": "mainnet",
+        "XROCKET_ENABLE_TRADING": "false",
+        "XROCKET_ENABLE_TRANSFERS": "false",
+        "XROCKET_ENABLE_WITHDRAWALS": "false",
+        "XROCKET_ALLOW_MAINNET_WRITES": "false"
       }
     }
   }
@@ -64,31 +65,23 @@ codex plugin add xrocket-exchange@xrocket-agents
 
 For a local clone, replace the first command with `codex plugin marketplace add /absolute/path/to/myrocket`.
 
-Clients can also run the verified pinned npm package:
+For source development:
 
-```json
-{
-  "mcpServers": {
-    "xrocket": {
-      "command": "npx",
-      "args": ["-y", "xrocket-mcp@0.1.1"],
-      "env": {
-        "XROCKET_PROFILE": "public",
-        "XROCKET_ENVIRONMENT": "testnet"
-      }
-    }
-  }
-}
+```bash
+git clone https://github.com/nakazanie-ton/myrocket.git
+cd myrocket/plugins/xrocket-exchange
+npm ci
+npm test
+npm run build
 ```
 
-The published package is [`xrocket-mcp@0.1.1`](https://www.npmjs.com/package/xrocket-mcp/v/0.1.1). The local build remains available for source inspection and development.
+The published package is [`xrocket-mcp@0.2.0`](https://www.npmjs.com/package/xrocket-mcp/v/0.2.0).
 
 ## Enabling private reads
 
-Create a dedicated xRocket API bot token, start on testnet, and pass the token only through the process environment:
+Create a dedicated xRocket API bot token and pass it only through the process environment. With a token present, the profile defaults to `private-read`; an explicit profile is still respected:
 
 ```bash
-export XROCKET_PROFILE=private-read
 export XROCKET_ENVIRONMENT=testnet
 export XROCKET_API_TOKEN='replace-with-your-token'
 node dist/cli.js
@@ -126,7 +119,7 @@ Mainnet writes additionally require `XROCKET_ENVIRONMENT=mainnet` and `XROCKET_A
 - Exchange `POST /api/v1/accounts/transfers` moves funds only between the same user's `funding` and `trading` accounts. It is not a user-to-user payment tool.
 - xRocket Pay is a different product, uses different authentication, and is outside this server.
 - The official API currently uses asset identifier `TONCOIN` in places where the UI may say TON.
-- The 0.1.1 server uses REST snapshots. WebSocket channels are audited but not exposed until the upstream documentation defines reliable replay, gap recovery, and orderbook delta deletion semantics.
+- The 0.2.0 server uses REST snapshots. WebSocket channels are audited but not exposed until the upstream documentation defines reliable replay, gap recovery, and orderbook delta deletion semantics.
 - Decimal financial values remain strings. Do not coerce them through binary floating point.
 
 ## Development

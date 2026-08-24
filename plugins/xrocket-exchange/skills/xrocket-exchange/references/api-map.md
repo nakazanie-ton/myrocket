@@ -6,6 +6,7 @@ Use the narrowest semantic tool that answers the request. Tool schemas are autho
 
 | Tool | Use for | Official REST coverage |
 | --- | --- | --- |
+| `xrocket_market_snapshot` | Broad current-market answer with safe symbol resolution, rules, ticker, best bid/ask, trades, and fees | Composes symbols, ticker, orderbook, trades, and fee reads |
 | `xrocket_market_symbols` | List markets or inspect one symbol's status, base/quote increments, precision, and min/max price and size | `GET /api/v1/symbols`, `GET /api/v1/symbols/{symbol}` |
 | `xrocket_market_tickers` | One or more 24-hour ticker snapshots | `GET /api/v1/ticker/{tickerType}` |
 | `xrocket_market_candles` | Bounded historical candle interval | `GET /api/v1/candles` |
@@ -20,6 +21,7 @@ Use the narrowest semantic tool that answers the request. Tool schemas are autho
 
 | Tool | Use for | Official REST coverage |
 | --- | --- | --- |
+| `xrocket_account_overview` | Funding balances, trading balances, and active orders in one read; no valuation | Composes both balance endpoints and active orders |
 | `xrocket_account_balances` | Funding and/or trading balance snapshots | Both account balance endpoints |
 | `xrocket_orders` | Active orders, order history, or one order by server/client identifier | Three order read endpoints |
 | `xrocket_transfers` | Internal transfer history or one transfer | Two transfer read endpoints |
@@ -50,7 +52,7 @@ The audited API documents:
 - `stopLimit`: limit fields plus `stopPrice`;
 - `stopMarket`: market-size fields plus `stopPrice`, with `IOC` or `FOK`.
 
-Do not invent a missing `size`/`funds` combination for a market order. Preserve all financial fields as decimal strings. Use a unique `clientOrderId` matching the tool schema. The tool also restricts transfer and withdrawal client IDs to letters, numbers, underscore, and hyphen; this is a deliberate integration constraint because their upstream schemas publish length limits but no character regex.
+Do not invent a missing `size`/`funds` combination for a market order. Preserve all financial fields as decimal strings. A caller-supplied client identifier must match the tool schema; if omitted, prepare generates a bounded UUID-based identifier and returns it in the exact preview. Transfer and withdrawal client IDs allow letters, numbers, underscore, and hyphen.
 
 ## Identifiers and precedence
 
@@ -62,4 +64,4 @@ The withdrawal schema lists `TON`, `BSC`, `ETH`, `BTC`, `TRX`, and `SOL`. Treat 
 
 ## Non-tools
 
-`GET /health` is intentionally not exposed as an agent semantic tool. The audited seven WebSocket channels are not exposed in 0.1.1; use bounded REST snapshots. xRocket Pay endpoints are a separate product and are unavailable.
+`GET /health` is used by the `xrocket-mcp doctor` CLI rather than exposed as an agent semantic tool. The audited seven WebSocket channels are not exposed in 0.2.0; use bounded REST snapshots. xRocket Pay endpoints are a separate product and are unavailable.

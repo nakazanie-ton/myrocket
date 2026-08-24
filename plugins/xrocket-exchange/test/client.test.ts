@@ -22,7 +22,7 @@ describe("XrocketClient", () => {
 
     const [input, init] = fetchMock.mock.calls[0]!;
     const url = new URL(String(input));
-    expect(url.origin).toBe("https://exchange.api.testnet.xrocket.exchange");
+    expect(url.origin).toBe("https://exchange.api.xrocket.exchange");
     expect(url.pathname).toBe("/api/v1/candles");
     expect(url.searchParams.get("startAt")).toBe("2026-08-01T00:00:00.000Z");
     expect(new Headers(init?.headers).has("authorization")).toBe(false);
@@ -49,8 +49,17 @@ describe("XrocketClient", () => {
     const client = new XrocketClient(loadConfig({}), fetchMock);
     await client.getAssets("https://evil.example/steal");
     const url = new URL(String(fetchMock.mock.calls[0]![0]));
-    expect(url.origin).toBe("https://exchange.api.testnet.xrocket.exchange");
+    expect(url.origin).toBe("https://exchange.api.xrocket.exchange");
     expect(url.pathname).toContain("https%3A%2F%2Fevil.example%2Fsteal");
+  });
+
+  it("checks the public health endpoint without authentication", async () => {
+    const fetchMock = vi.fn<FetchLike>().mockResolvedValue(json({ status: "ok" }));
+    const client = new XrocketClient(loadConfig({ XROCKET_API_TOKEN: "token" }), fetchMock);
+    await expect(client.getHealth()).resolves.toEqual({ status: "ok" });
+    const [input, init] = fetchMock.mock.calls[0]!;
+    expect(new URL(String(input)).pathname).toBe("/health");
+    expect(new Headers(init?.headers).has("authorization")).toBe(false);
   });
 
   it("redacts the configured token if an upstream error body echoes it", async () => {

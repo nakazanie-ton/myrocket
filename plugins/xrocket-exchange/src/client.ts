@@ -228,6 +228,10 @@ export class XrocketClient {
     return data;
   }
 
+  getHealth(): Promise<unknown> {
+    return this.request("GET", "/health");
+  }
+
   getAssets(asset?: string): Promise<unknown> {
     return asset
       ? this.request("GET", `/api/v1/assets/${encodeURIComponent(asset)}`)

@@ -1,13 +1,13 @@
 # Safety and configuration
 
-This server is designed to make the safest useful state the easiest state: testnet, public data, no credentials, and no writes. Configuration can widen authority, but no single switch grants all financial capabilities.
+This server is designed to make the safest useful state the easiest state: current mainnet public data, no credentials, and no writes. Configuration can widen authority, but no single switch grants all financial capabilities. Testnet remains the recommended environment for learning or validating a write workflow.
 
 ## Environment variables
 
 | Variable | Values / default | Purpose |
 | --- | --- | --- |
-| `XROCKET_PROFILE` | `public` (default), `private-read`, `full` | Controls which tools are registered |
-| `XROCKET_ENVIRONMENT` | `testnet` (default), `mainnet` | Selects one of the two fixed official REST origins |
+| `XROCKET_PROFILE` | `public` (default without token), `private-read` (default with token), `full` | Controls which tools are registered |
+| `XROCKET_ENVIRONMENT` | `mainnet` (default), `testnet` | Selects one of the two fixed official REST origins |
 | `XROCKET_API_TOKEN` | unset | Bearer token required by private profiles; never accepted as a tool argument |
 | `XROCKET_ENABLE_TRADING` | `false` | Enables order/cancel execution in `full` |
 | `XROCKET_ENABLE_TRANSFERS` | `false` | Enables internal funding/trading transfer execution in `full` |
@@ -44,7 +44,7 @@ Tool annotations are discovery hints, not security boundaries. Profile registrat
 
 ## Idempotency and ambiguous outcomes
 
-Even when the upstream schema makes a client identifier optional, this server's guarded write workflows require one:
+Client identifiers remain mandatory on the exact prepared intent, but callers may omit them. The server generates a unique bounded identifier during prepare and shows it in the preview:
 
 - `clientOrderId` for a new order;
 - `clientTransferId` for an internal transfer;

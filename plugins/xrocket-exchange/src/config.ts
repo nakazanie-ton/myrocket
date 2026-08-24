@@ -56,14 +56,19 @@ function ttlValue(value: string | undefined): number {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): XrocketConfig {
-  const profile = enumValue(env.XROCKET_PROFILE, "public", PROFILE_VALUES, "XROCKET_PROFILE");
+  const apiToken = env.XROCKET_API_TOKEN?.trim();
+  const profile = enumValue(
+    env.XROCKET_PROFILE,
+    apiToken ? "private-read" : "public",
+    PROFILE_VALUES,
+    "XROCKET_PROFILE",
+  );
   const environment = enumValue(
     env.XROCKET_ENVIRONMENT,
-    "testnet",
+    "mainnet",
     ENVIRONMENT_VALUES,
     "XROCKET_ENVIRONMENT",
   );
-  const apiToken = env.XROCKET_API_TOKEN?.trim();
 
   if (profile !== "public" && !apiToken) {
     throw new Error(`XROCKET_API_TOKEN is required for profile ${profile}`);

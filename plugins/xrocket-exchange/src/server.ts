@@ -1,9 +1,16 @@
 import { McpServer, type CallToolResult, type ToolAnnotations } from "@modelcontextprotocol/server";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { assertWriteAllowed, loadConfig, type XrocketConfig } from "./config.js";
 import { XrocketClient, type FetchLike } from "./client.js";
 import { ApprovalReceiptError, UnknownWriteOutcomeError, XrocketHttpError } from "./errors.js";
 import { ApprovalReceiptStore } from "./receipts.js";
+import {
+  buildMarketSnapshot,
+  marketSnapshotText,
+  resolveMarket,
+} from "./usability.js";
+import { VERSION } from "./version.js";
 
 const resultSchema = z.object({ result: z.unknown() });
 const symbolSchema = z.string().min(1).max(64).describe("Exact current xRocket symbol, for example GRAM-USDT");
@@ -43,7 +50,7 @@ const intervalSchema = z.enum([
 const dateTimeSchema = z.string().datetime({ offset: true });
 
 const limitOrderSchema = z.object({
-  clientOrderId: orderClientIdSchema,
+  clientOrderId: orderClientIdSchema.optional(),
   symbol: symbolSchema,
   side: sideSchema,
   type: z.literal("limit"),
@@ -53,7 +60,7 @@ const limitOrderSchema = z.object({
 });
 const marketOrderSchema = z
   .object({
-    clientOrderId: orderClientIdSchema,
+    clientOrderId: orderClientIdSchema.optional(),
     symbol: symbolSchema,
     side: sideSchema,
     type: z.literal("market"),
@@ -65,7 +72,7 @@ const marketOrderSchema = z
     message: "market order requires exactly one of size or funds",
   });
 const stopLimitOrderSchema = z.object({
-  clientOrderId: orderClientIdSchema,
+  clientOrderId: orderClientIdSchema.optional(),
   symbol: symbolSchema,
   side: sideSchema,
   type: z.literal("stopLimit"),
@@ -75,7 +82,7 @@ const stopLimitOrderSchema = z.object({
   timeInForce: z.enum(["GTC", "IOC", "FOK"]),
 });
 const stopMarketOrderSchema = z.object({
-  clientOrderId: orderClientIdSchema,
+  clientOrderId: orderClientIdSchema.optional(),
   symbol: symbolSchema,
   side: sideSchema,
   type: z.literal("stopMarket"),
@@ -83,12 +90,12 @@ const stopMarketOrderSchema = z.object({
   stopPrice: decimalSchema,
   timeInForce: z.enum(["IOC", "FOK"]),
 });
-const orderSchema = z.union([
-  limitOrderSchema,
-  marketOrderSchema,
-  stopLimitOrderSchema,
-  stopMarketOrderSchema,
-]);
+const orderSchema = z
+  .union([limitOrderSchema, marketOrderSchema, stopLimitOrderSchema, stopMarketOrderSchema])
+  .transform((order) => ({
+    ...order,
+    clientOrderId: order.clientOrderId ?? `order-${randomUUID()}`,
+  }));
 
 const cancelIntentSchema = z
   .object({
@@ -101,22 +108,29 @@ const cancelIntentSchema = z
 
 const transferSchema = z
   .object({
-    clientTransferId: clientId64Schema,
+    clientTransferId: clientId64Schema.optional(),
     asset: assetSchema,
     amount: decimalSchema,
     from: z.enum(["funding", "trading"]),
     to: z.enum(["funding", "trading"]),
   })
-  .refine((value) => value.from !== value.to, { message: "from and to accounts must differ" });
+  .refine((value) => value.from !== value.to, { message: "from and to accounts must differ" })
+  .transform((transfer) => ({
+    ...transfer,
+    clientTransferId: transfer.clientTransferId ?? `transfer-${randomUUID()}`,
+  }));
 
 const withdrawalSchema = z.object({
-  clientWithdrawalId: clientId50Schema,
+  clientWithdrawalId: clientId50Schema.optional(),
   network: networkSchema,
   asset: assetSchema,
   address: z.string().min(1).max(256),
   amount: decimalSchema,
   comment: z.string().max(256).optional(),
-});
+}).transform((withdrawal) => ({
+  ...withdrawal,
+  clientWithdrawalId: withdrawal.clientWithdrawalId ?? `withdrawal-${randomUUID()}`,
+}));
 
 const READ: ToolAnnotations = {
   readOnlyHint: true,
@@ -125,7 +139,12 @@ const READ: ToolAnnotations = {
   openWorldHint: true,
 };
 const LOCAL_READ: ToolAnnotations = { ...READ, openWorldHint: false };
-const PREPARE: ToolAnnotations = { ...READ, idempotentHint: false };
+const PREPARE: ToolAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: true,
+};
 const WRITE: ToolAnnotations = {
   readOnlyHint: false,
   destructiveHint: true,
@@ -140,6 +159,16 @@ function jsonText(value: unknown): string {
 function ok(value: unknown): CallToolResult {
   const structuredContent = { result: value };
   return { content: [{ type: "text", text: jsonText(value) }], structuredContent };
+}
+
+function okWithText(value: unknown, text: string): CallToolResult {
+  return {
+    content: [
+      { type: "text", text },
+      { type: "text", text: jsonText(value) },
+    ],
+    structuredContent: { result: value },
+  };
 }
 
 function errorPayload(error: unknown): Record<string, unknown> {
@@ -266,6 +295,21 @@ async function run(action: () => Promise<unknown> | unknown): Promise<CallToolRe
   }
 }
 
+async function runWithText(
+  action: () => Promise<{ value: unknown; text: string }>,
+): Promise<CallToolResult> {
+  try {
+    const result = await action();
+    return okWithText(result.value, result.text);
+  } catch (error) {
+    const payload = errorPayload(error);
+    return {
+      content: [{ type: "text", text: jsonText(payload) }],
+      isError: true,
+    };
+  }
+}
+
 function intent(environment: string, payload: unknown): unknown {
   return { environment, payload };
 }
@@ -297,6 +341,49 @@ function gateStatus(config: XrocketConfig, capability: "trading" | "transfers" |
   };
 }
 
+function executionStatus(
+  config: XrocketConfig,
+  capability: "trading" | "transfers" | "withdrawals",
+) {
+  const gate = gateStatus(config, capability);
+  if (gate.executable) {
+    return {
+      ready: true,
+      blocker: null,
+      nextStep: "Obtain explicit user approval of this exact preview, then call execute once.",
+    };
+  }
+  const capabilityVariable = {
+    trading: "XROCKET_ENABLE_TRADING",
+    transfers: "XROCKET_ENABLE_TRANSFERS",
+    withdrawals: "XROCKET_ENABLE_WITHDRAWALS",
+  }[capability];
+  if (!gate.capabilityEnabled) {
+    return {
+      ready: false,
+      blocker: `${capability} execution is disabled`,
+      nextStep: `If the user requested this operation, restart the local server with ${capabilityVariable}=true, re-run prepare, review and approve the new preview, then execute once. The current receipt cannot survive a restart.`,
+    };
+  }
+  return {
+    ready: false,
+    blocker: "mainnet execution is disabled",
+    nextStep:
+      "Use testnet, or after an explicit mainnet decision restart with XROCKET_ALLOW_MAINNET_WRITES=true. Then re-run prepare, review and approve the new preview, and execute once; the current receipt cannot survive a restart.",
+  };
+}
+
+function prepareInstruction(
+  config: XrocketConfig,
+  capability: "trading" | "transfers" | "withdrawals",
+  executeTool: string,
+): string {
+  const execution = executionStatus(config, capability);
+  return execution.ready
+    ? `Review this exact intent, obtain explicit user approval, then pass only the receipt to ${executeTool}.`
+    : `Execution is currently blocked. Follow execution.nextStep; do not attempt ${executeTool} with this receipt after restarting.`;
+}
+
 export interface CreateServerOptions {
   config?: XrocketConfig;
   fetch?: FetchLike;
@@ -308,8 +395,71 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
   const client = new XrocketClient(config, options.fetch);
   const receipts = options.receipts ?? new ApprovalReceiptStore(config.approvalTtlMs);
   const server = new McpServer(
-    { name: "xrocket-mcp", version: "0.1.1" },
-    { capabilities: { tools: {} } },
+    { name: "xrocket-mcp", version: VERSION },
+    {
+      capabilities: { tools: {} },
+      instructions:
+        "Use xrocket_market_snapshot for broad market questions and xrocket_account_overview for a whole-account read. If account tools are unavailable, ask the user to sign in or configure XROCKET_API_TOKEN locally with XROCKET_PROFILE=private-read (or omit the profile); never ask them to paste the token into chat. Financial writes require prepare, explicit user approval of the returned exact intent, then execute with only the receipt. Never retry an unknown write outcome; reconcile it with private read tools.",
+    },
+  );
+
+  server.registerTool(
+    "xrocket_market_snapshot",
+    {
+      title: "xRocket market snapshot",
+      description:
+        "Resolve an exact symbol or base asset and return market rules, ticker, best bid/ask, recent trades, and fees in one read-only call. Exact symbols win; ambiguous assets are never guessed.",
+      inputSchema: z.object({
+        market: z
+          .string()
+          .trim()
+          .min(1)
+          .max(64)
+          .describe("Exact symbol such as GRAM-USDT, or a base asset such as GRAM"),
+        depth: z
+          .union([z.literal(5), z.literal(10), z.literal(20), z.literal(50), z.literal(100)])
+          .default(20),
+        precision: decimalSchema.optional(),
+      }),
+      outputSchema: z.object({
+        result: z.object({
+          environment: z.string(),
+          retrievedAt: z.string(),
+          summary: z.record(z.string(), z.unknown()),
+          constraints: z.object({ decimalValues: z.string(), consistency: z.string() }),
+          details: z.object({
+            symbolRules: z.unknown(),
+            ticker: z.unknown(),
+            orderbook: z.unknown(),
+            recentTrades: z.unknown(),
+            tradeFees: z.unknown(),
+          }),
+        }),
+      }),
+      annotations: READ,
+    },
+    ({ market, depth, precision }) =>
+      runWithText(async () => {
+        const symbols = await client.getSymbols();
+        const resolved = resolveMarket(symbols, market);
+        const [symbolRules, ticker, orderbook, trades, fees] = await Promise.all([
+          client.getSymbols(resolved.symbol),
+          client.getTickers("24h", [resolved.symbol]),
+          client.getOrderbook({ symbol: resolved.symbol, depth, precision }),
+          client.getTrades(resolved.symbol),
+          client.getTradeFees([resolved.symbol]),
+        ]);
+        const snapshot = buildMarketSnapshot({
+          environment: config.environment,
+          resolved,
+          symbolRules,
+          ticker,
+          orderbook,
+          trades,
+          fees,
+        });
+        return { value: snapshot, text: marketSnapshotText(snapshot) };
+      }),
   );
 
   server.registerTool(
@@ -458,6 +608,53 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
   );
 
   if (config.profile === "public") return server;
+
+  server.registerTool(
+    "xrocket_account_overview",
+    {
+      title: "xRocket account overview",
+      description:
+        "Read funding balances, trading balances, and active orders together. Values are not converted or valued in another asset.",
+      inputSchema: z.object({}),
+      outputSchema: z.object({
+        result: z.object({
+          environment: z.string(),
+          retrievedAt: z.string(),
+          fundingBalances: z.unknown(),
+          tradingBalances: z.unknown(),
+          activeOrders: z.unknown(),
+          valuation: z.literal("not calculated"),
+        }),
+      }),
+      annotations: READ,
+    },
+    () =>
+      runWithText(async () => {
+        const [fundingBalances, tradingBalances, activeOrders] = await Promise.all([
+          client.getBalances("funding"),
+          client.getBalances("trading"),
+          client.getOrders("active", {}),
+        ]);
+        const overview = {
+          environment: config.environment,
+          retrievedAt: new Date().toISOString(),
+          fundingBalances,
+          tradingBalances,
+          activeOrders,
+          valuation: "not calculated" as const,
+        };
+        return {
+          value: overview,
+          text: [
+            `# xRocket account overview (${config.environment})`,
+            "",
+            "Funding balances, trading balances, and active orders are included in structured content.",
+            "No currency conversion or portfolio valuation was calculated.",
+            `Retrieved ${overview.retrievedAt}.`,
+          ].join("\n"),
+        };
+      }),
+  );
 
   server.registerTool(
     "xrocket_account_balances",
@@ -670,7 +867,9 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
           tradeFees,
           ...receipts.issue("order", boundIntent),
           writeGate: gateStatus(config, "trading"),
-          instruction: "Review this exact intent, then pass only the receipt to xrocket_order_execute.",
+          execution: executionStatus(config, "trading"),
+          preview: { operation: "place order", exactIntent: order },
+          instruction: prepareInstruction(config, "trading", "xrocket_order_execute"),
         };
       }),
   );
@@ -716,7 +915,13 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
           currentOrder,
           ...receipts.issue("order-cancel", boundIntent),
           writeGate: gateStatus(config, "trading"),
-          instruction: "Review the target, then pass only the receipt to xrocket_order_cancel_execute.",
+          execution: executionStatus(config, "trading"),
+          preview: { operation: "cancel order", exactIntent: cancellation },
+          instruction: prepareInstruction(
+            config,
+            "trading",
+            "xrocket_order_cancel_execute",
+          ),
         };
       }),
   );
@@ -770,7 +975,9 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
           assetMetadata,
           ...receipts.issue("transfer", boundIntent),
           writeGate: gateStatus(config, "transfers"),
-          instruction: "Review the intent, then pass only the receipt to xrocket_transfer_execute.",
+          execution: executionStatus(config, "transfers"),
+          preview: { operation: "internal transfer", exactIntent: transfer },
+          instruction: prepareInstruction(config, "transfers", "xrocket_transfer_execute"),
         };
       }),
   );
@@ -824,8 +1031,13 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
           assetMetadata,
           ...receipts.issue("withdrawal", boundIntent),
           writeGate: gateStatus(config, "withdrawals"),
-          instruction:
-            "Verify network, destination, amount, fee and quota; then pass only the receipt to xrocket_withdrawal_execute.",
+          execution: executionStatus(config, "withdrawals"),
+          preview: { operation: "external withdrawal", exactIntent: withdrawal },
+          instruction: prepareInstruction(
+            config,
+            "withdrawals",
+            "xrocket_withdrawal_execute",
+          ),
         };
       }),
   );

@@ -13,7 +13,7 @@ FROM node:20-alpine AS runtime
 
 ENV NODE_ENV=production \
     XROCKET_PROFILE=public \
-    XROCKET_ENVIRONMENT=testnet \
+    XROCKET_ENVIRONMENT=mainnet \
     XROCKET_ENABLE_TRADING=false \
     XROCKET_ENABLE_TRANSFERS=false \
     XROCKET_ENABLE_WITHDRAWALS=false \

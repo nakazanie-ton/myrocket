@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { assertWriteAllowed, loadConfig } from "../src/config.js";
 
 describe("loadConfig", () => {
-  it("defaults to a public testnet profile with every write gate disabled", () => {
+  it("defaults to useful public mainnet reads with every write gate disabled", () => {
     const config = loadConfig({});
     expect(config).toMatchObject({
       profile: "public",
-      environment: "testnet",
-      apiBaseUrl: "https://exchange.api.testnet.xrocket.exchange",
+      environment: "mainnet",
+      apiBaseUrl: "https://exchange.api.xrocket.exchange",
       enableTrading: false,
       enableTransfers: false,
       enableWithdrawals: false,
@@ -15,6 +15,13 @@ describe("loadConfig", () => {
       approvalTtlMs: 300_000,
     });
     expect(config).not.toHaveProperty("apiToken");
+  });
+
+  it("infers private-read when a token is present but respects an explicit public profile", () => {
+    expect(loadConfig({ XROCKET_API_TOKEN: "secret" }).profile).toBe("private-read");
+    expect(loadConfig({ XROCKET_API_TOKEN: "secret", XROCKET_PROFILE: "public" }).profile).toBe(
+      "public",
+    );
   });
 
   it("requires a token for every non-public profile", () => {

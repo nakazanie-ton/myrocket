@@ -19,7 +19,7 @@ const transport = new StdioClientTransport(
         env: {
           ...inheritedEnvironment,
           XROCKET_PROFILE: "public",
-          XROCKET_ENVIRONMENT: "testnet",
+          XROCKET_ENVIRONMENT: "mainnet",
           XROCKET_ENABLE_TRADING: "false",
           XROCKET_ENABLE_TRANSFERS: "false",
           XROCKET_ENABLE_WITHDRAWALS: "false",
@@ -28,12 +28,12 @@ const transport = new StdioClientTransport(
         stderr: "pipe",
       },
 );
-const client = new Client({ name: "xrocket-stdio-smoke", version: "0.1.1" });
+const client = new Client({ name: "xrocket-stdio-smoke", version: "0.2.0" });
 
 try {
   await client.connect(transport);
   const tools = await client.listTools();
-  if (tools.tools.length !== 9 || tools.tools.some((tool) => tool.name.includes("execute"))) {
+  if (tools.tools.length !== 10 || tools.tools.some((tool) => tool.name.includes("execute"))) {
     throw new Error(`unexpected public tool catalog: ${tools.tools.map((tool) => tool.name).join(", ")}`);
   }
   const onboarding = await client.callTool({ name: "xrocket_onboarding_links", arguments: {} });

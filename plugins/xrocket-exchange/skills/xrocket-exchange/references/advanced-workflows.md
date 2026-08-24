@@ -4,16 +4,16 @@ These workflows compose semantic tools without widening their authority.
 
 ## Market-quality snapshot
 
-1. Resolve the symbol and trading rules with `xrocket_market_symbols`.
-2. Read `xrocket_market_tickers`, a bounded `xrocket_market_orderbook`, and `xrocket_market_trades` close together.
-3. Optionally read candles for context and trade fees for cost estimates.
-4. Report timestamps, selected orderbook depth/precision, spread, visible depth, recent trade direction, and limitations.
+1. Call `xrocket_market_snapshot` with an exact symbol or base asset.
+2. If resolution is ambiguous, present its exact candidates and ask for a symbol; never guess.
+3. Read candles or another narrow tool only when the question needs additional context.
+4. Report the retrieval timestamp and the warning that concurrent REST components are not an atomic synchronized snapshot.
 
 Do not call the result a synchronized live feed. REST responses can be from different instants.
 
 ## Testnet order with explicit approval
 
-1. Confirm testnet, symbol, side, order type, decimal fields, time-in-force, and a unique `clientOrderId`.
+1. Confirm testnet, symbol, side, order type, decimal fields, and time-in-force. Preserve a supplied `clientOrderId`; otherwise let prepare generate it.
 2. Read symbol rules, ticker/orderbook as appropriate, and balances.
 3. Call `xrocket_order_prepare`; the official estimate endpoint participates in preparation.
 4. Show the complete preview and ask the user to approve this exact testnet order.
@@ -35,7 +35,7 @@ A terminal order may make cancellation unnecessary. Do not claim cancellation su
 
 1. Explain that this is an internal xRocket ledger move, not a payment.
 2. Read funding and trading balances for the asset.
-3. Confirm `from=funding`, `to=trading`, amount, environment, unique `clientTransferId`, and that asset metadata includes `fundingToTrading` in `availableTransfers`.
+3. Confirm `from=funding`, `to=trading`, amount, environment, and that asset metadata includes `fundingToTrading` in `availableTransfers`. Preserve a supplied `clientTransferId`; otherwise use the one returned by prepare.
 4. Prepare, show the exact preview, obtain approval, execute once, then reconcile through `xrocket_transfers` and balances.
 
 Reverse `from` and `to` to move funds back to funding. Source and destination must differ.
@@ -51,7 +51,7 @@ Never surface an address from model memory, search results, or a previous user.
 
 ## Withdrawal with quota verification
 
-1. Confirm testnet/mainnet, asset, network, decimal amount, destination, optional comment/memo, and unique `clientWithdrawalId`.
+1. Confirm testnet/mainnet, asset, network, decimal amount, destination, and optional comment/memo. Preserve a supplied `clientWithdrawalId`; otherwise use the one returned by prepare.
 2. Read funding balance and `xrocket_withdrawal_quotas` immediately before preparation.
 3. Validate minimum, precision, available amount, fee, and fee asset without rounding or changing amount.
 4. Call `xrocket_withdrawal_prepare` and show the destination redacted but recognizable to the user, plus the full network/amount/fee preview.
