@@ -6,12 +6,12 @@ Snapshot: **2026-08-25**. Statuses distinguish verified publication from pending
 
 - Public source: [github.com/nakazanie-ton/myrocket](https://github.com/nakazanie-ton/myrocket)
 - Hosted Streamable HTTP: [`https://xrocket-mcp-production.up.railway.app/mcp`](https://xrocket-mcp-production.up.railway.app/mcp); the separate Railway service is public-mainnet-only, exposes exactly 10 read tools, has no token or write configuration, and passed live MCP, Origin, batch-rejection, and health checks.
-- Latest verified release: [v0.4.0](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.4.0).
-- Release assets: `xrocket-mcp-0.4.0.tgz` and `xrocket-exchange-codex-plugin.zip`; both were downloaded and inspected, and the tarball passed a clean CLI doctor run. Their verified SHA-256 values are `151a968ddd5dd52b1f857ef7171cbfb8177ba522e7fd67a7a8f7810e6f42ecb5` and `11004f67bb7ca3b68cca1733b2c36e0987551263fb190a253c04720878afca79`, respectively.
-- npm: [`xrocket-mcp@0.4.0`](https://www.npmjs.com/package/xrocket-mcp/v/0.4.0); a fresh-cache registry install, CLI doctor, and live public API check passed after publication.
-- Official MCP Registry: [`io.github.nakazanie-ton/xrocket@0.4.0`](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.nakazanie-ton%2Fxrocket); the public record matches the npm package, hosted landing page, and Streamable HTTP endpoint.
-- Glama: [`nakazanie-ton/myrocket`](https://glama.ai/mcp/servers/nakazanie-ton/myrocket); the public listing and score badge resolve. Its project path was corrected to `plugins/xrocket-exchange`, and a rescan is pending; do not treat the older cached version or empty tool inventory as current.
-- Curated-list submission: [`punkpeye/awesome-mcp-servers#11670`](https://github.com/punkpeye/awesome-mcp-servers/pull/11670); the description now leads with the hosted no-install workflow, the automated submission check passes, and maintainer review remains pending.
+- Latest verified release: [v0.5.0](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.5.0).
+- Release assets: `xrocket-mcp-0.5.0.tgz` and `xrocket-exchange-codex-plugin.zip`; both were downloaded and inspected, and the tarball passed clean `--version`, `trading-config`, and public doctor runs. Their verified SHA-256 values are `f242681338e3543af22bd7efaa4e3ea60da391509d595282ab3c50bc40f2ffcd` and `c765cecf079d3902ec80a525eefd8ef87e9df53cabeaa6c1fc2d1662c8f59bb2`, respectively.
+- npm: [`xrocket-mcp@0.5.0`](https://www.npmjs.com/package/xrocket-mcp/v/0.5.0); a fresh-cache registry install, testnet trading-config check, CLI doctor, and live public API check passed after publication.
+- Official MCP Registry: [`io.github.nakazanie-ton/xrocket@0.5.0`](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.nakazanie-ton%2Fxrocket); the public record matches the npm package, trading-first description, hosted landing page, and Streamable HTTP endpoint.
+- Glama: [`nakazanie-ton/myrocket`](https://glama.ai/mcp/servers/nakazanie-ton/myrocket); the public listing and score badge resolve. Its project path was corrected to `plugins/xrocket-exchange`, but the public API still returns the cached v0.4.0 copy and an empty tool inventory; the v0.5.0 rescan remains pending.
+- Curated-list submission: [`punkpeye/awesome-mcp-servers#11670`](https://github.com/punkpeye/awesome-mcp-servers/pull/11670); the description now leads with guarded CEX trading and the v0.5.0 testnet setup command. The automated submission check passes; maintainer review remains pending.
 
 ## Positioning
 
@@ -30,10 +30,10 @@ Discovery metadata should consistently use:
 | Priority | Destination | Artifact / route | Current status | Next action or blocker |
 | --- | --- | --- | --- | --- |
 | P0 | GitHub repository | `nakazanie-ton/myrocket` | **Published and verified public** | Maintain CI, security reporting, description, and discovery topics |
-| P0 | Hosted MCP | Railway Streamable HTTP `/mcp` | **v0.4.0 deployed and live-verified** | Keep the hard public-only build boundary, health checks, and abuse controls tested |
-| P0 | GitHub Releases | Codex plugin ZIP plus npm tarball | **v0.4.0 published and verified** | Keep release assets version-matched and smoke-test clean downloads |
-| P0 | npm | `xrocket-mcp@0.4.0` | **Published and verified** | Configure trusted publishing for future releases; keep the pinned package smoke-tested |
-| P0 | Official MCP Registry | `plugins/xrocket-exchange/server.json` | **v0.4.0 package and remote published and verified** | Publish each future version only after its npm artifact and hosted endpoint are verified |
+| P0 | Hosted MCP | Railway Streamable HTTP `/mcp` | **v0.5.0 deployed and live-verified** | Keep the hard public-only build boundary, health checks, and abuse controls tested |
+| P0 | GitHub Releases | Codex plugin ZIP plus npm tarball | **v0.5.0 published and verified** | Keep release assets version-matched and smoke-test clean downloads |
+| P0 | npm | `xrocket-mcp@0.5.0` | **Published and verified** | Configure trusted publishing for future releases; keep the pinned package smoke-tested |
+| P0 | Official MCP Registry | `plugins/xrocket-exchange/server.json` | **v0.5.0 package and remote published and verified** | Publish each future version only after its npm artifact and hosted endpoint are verified |
 | P0 | GHCR / OCI | Container image | Root non-root Docker build implemented; image not published | Publish and sign an OCI image only if a catalog requires a hosted image |
 | P1 | Codex repo marketplace | `.agents/plugins/marketplace.json` | **Published in the public repository** | Add `nakazanie-ton/myrocket --ref main`, then install `xrocket-exchange@xrocket-agents`; default remains `public` |
 | P1 | Smithery MCP directory | Hosted Streamable HTTP endpoint | Ready, not submitted | Authenticate a Smithery namespace and submit the verified public endpoint |
@@ -41,7 +41,7 @@ Discovery metadata should consistently use:
 | P1 | Claude community plugin marketplace | GitHub plugin repository | Not submitted | Follow current manual submission requirements and disclose financial capabilities |
 | P1 | Cursor marketplace | `.cursor-plugin/marketplace.json`, plugin manifest, and hosted `mcp.json` | **Repository metadata implemented and CI-verified; not submitted** | Sign in to the Cursor publisher application and submit the public repository for review |
 | P1 | Cline marketplace | Marketplace issue/listing | Not submitted | Prepare logo/README and expect additional crypto review |
-| P2 | Glama | Downstream MCP listing | **Public listing verified; v0.4.0 rescan pending** | Verify the public API only after the project-directory rescan completes |
+| P2 | Glama | Downstream MCP listing | **Public listing verified; stale v0.4.0 cache and empty tools remain** | Complete or request the v0.5.0 project-directory rescan, then verify the public API rather than the admin toast |
 | P2 | PulseMCP | Official Registry ingestion | **Pending downstream ingestion** | The live submission page ingests Official Registry entries daily; verify the listing after the next ingestion cycle |
 | P2 | `awesome-mcp-servers` | Curated-list pull request | **PR #11670 open; Glama badge added and checks passed** | Await maintainer review and merge |
 | P3 | mcp.so | Paid directory listing | Not submitted | Evaluate the current paid-listing terms after organic channels |
@@ -53,7 +53,7 @@ The full local Codex plugin and the OpenAI universal public directory are differ
 
 ## Recommended order
 
-1. Keep the verified GitHub source, license, security policy, documentation, topics, hosted endpoint, and `v0.4.0` release current.
+1. Keep the verified GitHub source, license, security policy, documentation, topics, hosted endpoint, and `v0.5.0` release current.
 2. Keep the repository marketplace and public Glama listing current; await maintainer review of the validated `awesome-mcp-servers` pull request.
 3. Keep the verified npm package and Official MCP Registry record aligned with each release.
 4. Let PulseMCP and other downstream registries ingest the verified record, then make direct submissions only where needed.
@@ -75,7 +75,7 @@ Before any catalog submission:
 
 ## npm publication checklist
 
-The repository does not contain npm credentials. Versions `0.1.1`, `0.2.0`, `0.3.0`, and `0.4.0` were published with the maintainer's authenticated account and security-key or web 2FA; future releases must preserve that separation.
+The repository does not contain npm credentials. Versions `0.1.1`, `0.2.0`, `0.3.0`, `0.4.0`, and `0.5.0` were published with the maintainer's authenticated account and security-key or web 2FA; future releases must preserve that separation.
 
 ```bash
 cd plugins/xrocket-exchange
