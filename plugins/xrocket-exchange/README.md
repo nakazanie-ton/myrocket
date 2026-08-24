@@ -1,8 +1,8 @@
 # xRocket Exchange MCP
 
-Unofficial MCP server and agent skill for the xRocket Exchange API. It exposes public market data by default and offers explicit local profiles for account reads and guarded trading, internal transfer, and withdrawal workflows.
+Give AI clients live xRocket prices, spreads, order books, recent trades, candles, fees, and market snapshots through a hosted MCP endpoint with no install, login, token, or trading permission.
 
-This package is not affiliated with or endorsed by xRocket. [Open xRocket](https://t.me/xRocket?start=kaban).
+The local package also offers explicit profiles for account reads and guarded trading, internal transfer, and withdrawal workflows. It is not affiliated with or endorsed by xRocket. [Open xRocket](https://t.me/xRocket?start=kaban).
 
 ## Hosted quick start
 

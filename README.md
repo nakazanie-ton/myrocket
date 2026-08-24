@@ -1,8 +1,8 @@
-# xRocket Exchange for agents
+# xRocket Exchange MCP
 
-Unofficial, safety-first agent tooling for the xRocket Exchange API: one MCP server, one agent skill, and one Codex plugin bundle.
+Give AI clients live xRocket prices, spreads, order books, recent trades, candles, fees, and complete market snapshots through MCP. The hosted endpoint needs no install, login, token, or trading permission.
 
-The default installation is intentionally **public and read-only**. Private account access and financial writes are available only in explicit local profiles, with separate feature gates and a prepare/execute approval flow. This project is not affiliated with, endorsed by, or operated by xRocket.
+This repository also packages an agent skill and local plugins. Hosted use is strictly **public and read-only**; private account access and financial writes are available only in explicit local profiles, with separate feature gates and a prepare/execute approval flow. This project is not affiliated with, endorsed by, or operated by xRocket.
 
 [Connect in under a minute](https://xrocket-mcp-production.up.railway.app/) · [Open xRocket](https://t.me/xRocket?start=kaban) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Coverage](docs/API_COVERAGE.md) · [Safety model](docs/SAFETY.md) · [Legal review](docs/LEGAL.md) · [Distribution status](docs/DISTRIBUTION.md)
 
