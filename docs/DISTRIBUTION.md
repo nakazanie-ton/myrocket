@@ -5,8 +5,8 @@ Snapshot: **2026-08-24**. Statuses distinguish verified publication from pending
 ## Published artifacts
 
 - Public source: [github.com/nakazanie-ton/myrocket](https://github.com/nakazanie-ton/myrocket)
-- Latest verified release: [v0.1.0](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.1.0); v0.1.1 is prepared for the current package and documentation update.
-- Release assets: `xrocket-mcp-0.1.0.tgz` and `xrocket-exchange-codex-plugin.zip`; both were downloaded, checksum-matched, and smoke-tested after publication.
+- Latest verified release: [v0.1.1](https://github.com/nakazanie-ton/myrocket/releases/tag/v0.1.1).
+- Release assets: `xrocket-mcp-0.1.1.tgz` and `xrocket-exchange-codex-plugin.zip`; both were downloaded and smoke-tested after publication. Their verified SHA-256 values are `20025ddb4d6f031647049a806bcb9a54647196feb64032a87b32a1a1829c3158` and `72fc48a1461cf71a7eb895f69f3763c35420d7b369c711772820d502dc8ab2e7`, respectively.
 - Curated-list submission: [`punkpeye/awesome-mcp-servers#11670`](https://github.com/punkpeye/awesome-mcp-servers/pull/11670); the PR is open and its automated checks pass, but the maintainer workflow requires a Glama listing and score badge before merge.
 
 ## Positioning
@@ -26,7 +26,7 @@ Discovery metadata should consistently use:
 | Priority | Destination | Artifact / route | Current status | Next action or blocker |
 | --- | --- | --- | --- | --- |
 | P0 | GitHub repository | `nakazanie-ton/myrocket` | **Published and verified public** | Maintain CI, security reporting, description, and discovery topics |
-| P0 | GitHub Releases | Codex plugin ZIP plus npm tarball | **v0.1.0 verified; v0.1.1 prepared** | Publish v0.1.1 after CI passes, then clean-download and smoke-test both assets |
+| P0 | GitHub Releases | Codex plugin ZIP plus npm tarball | **v0.1.1 published and verified** | Keep release assets version-matched and smoke-test clean downloads |
 | P0 | npm | `xrocket-mcp@0.1.1` | Package metadata ready, **blocked: publisher not authenticated (`npm whoami` E401)** | Authenticate the intended npm publisher, verify 2FA, inspect `npm pack`, then perform the first publish |
 | P0 | Official MCP Registry | `plugins/xrocket-exchange/server.json` | Metadata valid, **blocked on public npm package or real MCPB** | Publish npm first, or build a `.mcpb` release asset and record its URL/SHA-256; then verify the GitHub namespace and run `mcp-publisher` |
 | P0 | GHCR / OCI | Container image | Root non-root Docker build implemented; image not published | Publish and sign an OCI image only if a catalog requires a hosted image |
@@ -48,7 +48,7 @@ The full local Codex plugin and the OpenAI universal public directory are differ
 
 ## Recommended order
 
-1. Publish and verify the GitHub source, license, security policy, documentation, topics, and `v0.1.1` release.
+1. Keep the verified GitHub source, license, security policy, documentation, topics, and `v0.1.1` release current.
 2. Register the repository marketplace in Codex and open a focused `awesome-mcp-servers` pull request. Both routes are live; the list PR still requires the owner-authenticated Glama listing and score badge.
 3. Publish `xrocket-mcp@0.1.1` to npm, or produce a specification-compliant MCPB; verify either artifact from a clean machine.
 4. Submit `server.json` to the [Official MCP Registry](https://modelcontextprotocol.io/registry/quickstart) and verify the returned record.
