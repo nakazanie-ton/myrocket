@@ -1,7 +1,7 @@
 {
   "name": "xrocket-exchange",
-  "version": "0.4.0",
-  "description": "Live xRocket market data plus explicit local account and financial workflows",
+  "version": "0.5.0",
+  "description": "Guarded xRocket CEX trading with explicit order review and live market data",
   "author": {
     "name": "nakazanie-ton",
     "url": "https://github.com/nakazanie-ton"
@@ -20,13 +20,14 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "xRocket Exchange",
-    "shortDescription": "Inspect xRocket markets safely from Codex.",
-    "longDescription": "Unofficial xRocket agent integration with public market data by default, plus explicit local profiles for account reads and guarded prepare/execute financial workflows.",
+    "shortDescription": "Prepare, review, and execute xRocket orders.",
+    "longDescription": "Unofficial xRocket CEX integration with guarded local order preparation and execution, private account reads, and a public market-data demo.",
     "developerName": "nakazanie-ton",
     "category": "Developer Tools",
     "capabilities": [
+      "Guarded CEX trading",
+      "Prepare and approve orders",
       "Public market data",
-      "Read-only by default",
       "Local MCP",
       "Agent skill"
     ],
@@ -34,9 +35,9 @@
     "privacyPolicyURL": "https://github.com/nakazanie-ton/myrocket/blob/main/PRIVACY.md",
     "termsOfServiceURL": "https://github.com/nakazanie-ton/myrocket/blob/main/TERMS.md",
     "defaultPrompt": [
-      "Show a complete current GRAM market snapshot on xRocket.",
-      "Show my xRocket account overview without estimating portfolio value.",
-      "Explain how to prepare a safe xRocket testnet order."
+      "On testnet, prepare a market buy of GRAM-USDT using 10 USDT. Show the exact intent and do not execute until I approve.",
+      "Show my active xRocket orders and trading balances.",
+      "Show a complete current GRAM market snapshot on xRocket."
     ],
     "brandColor": "#5B5DF0",
     "composerIcon": "./assets/icon.svg",

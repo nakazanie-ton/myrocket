@@ -4,6 +4,7 @@ import { API_BASE_URLS, type XrocketConfig } from "./config.js";
 import { XrocketClient, type FetchLike } from "./client.js";
 import { XrocketHttpError } from "./errors.js";
 import {
+  HOSTED_TRADING_URL,
   XROCKET_API_DOCS_URL,
   XROCKET_MAINNET_URL,
   XROCKET_TESTNET_URL,
@@ -204,6 +205,10 @@ export function registerPublicXrocketTools(
           summary: z.record(z.string(), z.unknown()),
           constraints: z.object({ decimalValues: z.string(), consistency: z.string() }),
           actions: z.object({
+            tradeWithMcp: z.object({
+              label: z.literal("Trade with MCP"),
+              url: z.string().url(),
+            }),
             openXrocket: z.object({
               label: z.literal("Open xRocket"),
               url: z.string().url(),
@@ -241,6 +246,7 @@ export function registerPublicXrocketTools(
           fees,
           openXrocketUrl:
             environment === "mainnet" ? XROCKET_MAINNET_URL : XROCKET_TESTNET_URL,
+          tradingSetupUrl: HOSTED_TRADING_URL,
         });
         return { value: snapshot, text: marketSnapshotText(snapshot) };
       }, success("xrocket_market_snapshot")),
@@ -399,8 +405,9 @@ export function registerPublicXrocketTools(
   server.registerTool(
     "xrocket_onboarding_links",
     {
-      title: "Open xRocket",
-      description: "Return xRocket onboarding links and canonical API documentation.",
+      title: "Set up xRocket trading",
+      description:
+        "Return xRocket sign-in links, local MCP trading setup, the prepare/approve/execute flow, and canonical API documentation.",
       inputSchema: z.object({}),
       outputSchema: resultSchema,
       annotations: LOCAL_READ,
@@ -416,6 +423,22 @@ export function registerPublicXrocketTools(
           mainnet: XROCKET_MAINNET_URL,
           testnet: XROCKET_TESTNET_URL,
           documentation: XROCKET_API_DOCS_URL,
+          tradingSetup: {
+            hostedEndpointCanTrade: false,
+            localSetupUrl: HOSTED_TRADING_URL,
+            apiTokenMenu: "Menu > Settings > Exchange settings > API token",
+            tokenHandling:
+              "Sign in to xRocket and configure the broad account token only in the local MCP client's secret or environment settings. Never paste it into chat or send it to the hosted endpoint.",
+            testnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config`,
+            mainnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config --mainnet`,
+            recommendedFirstPrompt:
+              "On testnet, prepare a market buy of GRAM-USDT using 10 USDT. Show the estimate, fee, balances, rules, and exact intent. Do not execute until I explicitly approve.",
+            orderFlow: [
+              "prepare: estimate the order and return the exact intent plus a short-lived receipt",
+              "approve: show the preview and obtain explicit user approval",
+              "execute: submit only the prepared receipt once; never retry an unknown outcome",
+            ],
+          },
           depositNote:
             "The Exchange REST API has no documented deposit-address endpoint. Open the bot with the onboarding link and use the deposit UI. Account balance verification is available only through a separately configured local private-read profile; the hosted endpoint never accepts account tokens.",
         }),
@@ -434,7 +457,7 @@ export function createHostedPublicXrocketServer(
     {
       capabilities: { tools: {} },
       instructions:
-        "This hosted endpoint exposes only public xRocket mainnet market data. Use xrocket_market_snapshot for broad market questions and the narrow public tools for exact details. Market snapshots include an Open xRocket next action. It never accepts account tokens and cannot expose balances, orders, transfers, withdrawals, prepare, or execute tools. For private account access or financial workflows, install the local package and sign in locally; never paste a token into chat.",
+        "This hosted endpoint exposes only public xRocket mainnet market data. Use xrocket_market_snapshot for broad market questions and the narrow public tools for exact details. If the user wants to trade, call xrocket_onboarding_links and guide them to the local trading profile; do not imply this hosted endpoint can place an order. The local flow is prepare, show the exact estimate and intent, obtain explicit approval, then execute the receipt once. This endpoint never accepts account tokens and cannot expose balances, orders, transfers, withdrawals, prepare, or execute tools. Ask the user to sign in to xRocket when credentials are needed, and never ask them to paste a token into chat.",
     },
   );
   const client = new XrocketClient(config, fetchImpl);

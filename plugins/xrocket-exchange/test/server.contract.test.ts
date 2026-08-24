@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadConfig, type XrocketConfig } from "../src/config.js";
 import type { FetchLike } from "../src/client.js";
 import { createXrocketServer } from "../src/server.js";
+import { VERSION } from "../src/version.js";
 
 const connected: Array<{ client: Client; server: McpServer }> = [];
 
@@ -84,6 +85,7 @@ describe("MCP tool contract", () => {
     const { client } = await connect(config, neverFetch);
     expect(client.getInstructions()).toContain("xrocket_market_snapshot");
     expect(client.getInstructions()).toContain("never ask them to paste the token into chat");
+    expect(client.getInstructions()).toContain("xrocket-mcp trading-config");
     const tools = await client.listTools();
     expect(tools.tools.map((tool) => tool.name).sort()).toEqual([...expected].sort());
     for (const tool of tools.tools) {
@@ -167,6 +169,10 @@ describe("MCP tool contract", () => {
           takerFee: "0.002",
         },
         actions: {
+          tradeWithMcp: {
+            label: "Trade with MCP",
+            url: "https://xrocket-mcp-production.up.railway.app/#trade",
+          },
           openXrocket: {
             label: "Open xRocket",
             url: "https://t.me/xRocket?start=kaban",
@@ -259,6 +265,12 @@ describe("MCP tool contract", () => {
     expect(contentJson(result)).toMatchObject({
       mainnet: "https://t.me/xRocket?start=kaban",
       testnet: "https://t.me/xrocket_testnet_bot?start=kaban",
+      tradingSetup: {
+        hostedEndpointCanTrade: false,
+        apiTokenMenu: "Menu > Settings > Exchange settings > API token",
+        testnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config`,
+        mainnetCommand: `npx -y xrocket-mcp@${VERSION} trading-config --mainnet`,
+      },
     });
   });
 

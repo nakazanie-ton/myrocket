@@ -4,13 +4,13 @@
     "name": "nakazanie-ton"
   },
   "metadata": {
-    "description": "Public xRocket market data for AI clients"
+    "description": "Try xRocket market data, then set up guarded local CEX trading"
   },
   "plugins": [
     {
       "name": "xrocket-exchange",
       "source": "plugins/xrocket-exchange",
-      "description": "Live xRocket prices, spreads, order books, trades, candles, fees, and market snapshots"
+      "description": "Public xRocket market demo with a guided path to guarded local trading"
     }
   ]
 }

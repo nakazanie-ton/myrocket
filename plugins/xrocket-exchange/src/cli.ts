@@ -4,6 +4,7 @@ import {
   helpText,
   parseCliCommand,
   renderMcpConfig,
+  renderTradingMcpConfig,
   runDoctor,
 } from "./cli-commands.js";
 import { loadConfig } from "./config.js";
@@ -16,6 +17,12 @@ async function main(): Promise<void> {
   if (command === "help") return void process.stdout.write(`${helpText()}\n`);
   if (command === "version") return void process.stdout.write(`${VERSION}\n`);
   if (command === "config") return void process.stdout.write(`${renderMcpConfig()}\n`);
+  if (command === "trading-config-testnet") {
+    return void process.stdout.write(`${renderTradingMcpConfig("testnet")}\n`);
+  }
+  if (command === "trading-config-mainnet") {
+    return void process.stdout.write(`${renderTradingMcpConfig("mainnet")}\n`);
+  }
   if (command === "doctor") return void process.stdout.write(`${doctorText(await runDoctor())}\n`);
 
   if (command === "serve-http") {

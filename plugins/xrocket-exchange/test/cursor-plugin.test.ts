@@ -24,7 +24,7 @@ describe("Cursor plugin metadata", () => {
       plugins: Array<{ name: string; source: string }>;
     };
 
-    expect(plugin).toMatchObject({ name: "xrocket-exchange", version: "0.4.0" });
+    expect(plugin).toMatchObject({ name: "xrocket-exchange", version: "0.5.0" });
     expect(marketplace.plugins).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

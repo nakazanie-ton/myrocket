@@ -394,7 +394,7 @@ export function createXrocketServer(options: CreateServerOptions = {}): McpServe
     {
       capabilities: { tools: {} },
       instructions:
-        "Use xrocket_market_snapshot for broad market questions and xrocket_account_overview for a whole-account read. If account tools are unavailable, ask the user to sign in or configure XROCKET_API_TOKEN locally with XROCKET_PROFILE=private-read (or omit the profile); never ask them to paste the token into chat. Financial writes require prepare, explicit user approval of the returned exact intent, then execute with only the receipt. Never retry an unknown write outcome; reconcile it with private read tools.",
+        "Use xrocket_market_snapshot for broad market questions and xrocket_account_overview for a whole-account read. If the user wants to trade but order tools are unavailable, ask them to sign in to xRocket and run xrocket-mcp trading-config for a local testnet-first trading profile; never ask them to paste the token into chat. Trading requires xrocket_order_prepare, a visible review of the estimate, fees, balances, rules, and exact intent, explicit user approval, then one xrocket_order_execute call with only the receipt. Never retry an unknown write outcome; reconcile it with private read tools.",
     },
   );
 

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { assertWriteAllowed, loadConfig } from "../src/config.js";
+import {
+  assertWriteAllowed,
+  loadConfig,
+  XROCKET_API_TOKEN_PLACEHOLDER,
+} from "../src/config.js";
 
 describe("loadConfig", () => {
   it("defaults to useful public mainnet reads with every write gate disabled", () => {
@@ -31,6 +35,15 @@ describe("loadConfig", () => {
     expect(() => loadConfig({ XROCKET_PROFILE: "full" })).toThrow(
       "XROCKET_API_TOKEN is required",
     );
+  });
+
+  it("stops on the generated token placeholder with sign-in guidance", () => {
+    expect(() =>
+      loadConfig({
+        XROCKET_PROFILE: "full",
+        XROCKET_API_TOKEN: XROCKET_API_TOKEN_PLACEHOLDER,
+      }),
+    ).toThrow("Sign in to xRocket");
   });
 
   it("rejects permissive or misspelled boolean values", () => {

@@ -129,6 +129,8 @@ describe("hosted Streamable HTTP server", () => {
     await client.connect(
       new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${server.port}/mcp`)),
     );
+    expect(client.getInstructions()).toContain("xrocket_onboarding_links");
+    expect(client.getInstructions()).toContain("prepare");
     const tools = await client.listTools();
     expect(tools.tools.map((tool) => tool.name).sort()).toEqual(PUBLIC_TOOL_NAMES);
 
@@ -156,8 +158,14 @@ describe("hosted Streamable HTTP server", () => {
     expect(landing.headers["set-cookie"]).toBeUndefined();
     expect(landing.body).toContain(HOSTED_MCP_URL);
     expect(landing.body).toContain('href="/open"');
+    expect(landing.body).toContain("Trade xRocket from your AI");
+    expect(landing.body).toContain("trading-config --mainnet");
+    expect(landing.body).toContain("Menu → Settings → Exchange settings → API token");
+    expect(landing.body).toContain("Do not execute until I explicitly approve");
+    expect(landing.body).toContain("hosted website never receives your token");
     expect(landing.body).not.toMatch(/referral|affiliate|commission/i);
     expect(landing.body).not.toContain("start=kaban");
+    expect(landing.body).not.toMatch(/<input[^>]+token/i);
 
     const script = await rawRequest(server.port, { method: "GET", path: "/landing.js" });
     expect(script.status).toBe(200);

@@ -27,7 +27,12 @@ if (
 
 const landingUrl = new URL("/", endpoint);
 const landing = await fetch(landingUrl);
-if (!landing.ok || !(await landing.text()).includes("Connect MCP")) {
+const landingText = await landing.text();
+if (
+  !landing.ok ||
+  !landingText.includes("Trade xRocket from your AI") ||
+  !landingText.includes("trading-config --mainnet")
+) {
   throw new Error(`hosted landing-page smoke failed with HTTP ${landing.status}`);
 }
 if (!landing.headers.get("content-security-policy")?.includes("default-src 'none'")) {
@@ -38,7 +43,7 @@ if (open.status !== 302 || !open.headers.get("location")?.includes("t.me/xRocket
   throw new Error("hosted Open xRocket action does not redirect to the configured destination");
 }
 
-const client = new Client({ name: "xrocket-http-smoke", version: "0.4.0" });
+const client = new Client({ name: "xrocket-http-smoke", version: "0.5.0" });
 try {
   await client.connect(new StreamableHTTPClientTransport(endpoint));
   const tools = await client.listTools();

@@ -1,10 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   doctorText,
+  helpText,
   parseCliCommand,
   renderMcpConfig,
+  renderTradingMcpConfig,
   runDoctor,
 } from "../src/cli-commands.js";
+import {
+  assertWriteAllowed,
+  loadConfig,
+  XROCKET_API_TOKEN_PLACEHOLDER,
+} from "../src/config.js";
+import { VERSION } from "../src/version.js";
 import type { FetchLike } from "../src/client.js";
 
 const json = (value: unknown) =>
@@ -15,14 +23,21 @@ describe("CLI commands", () => {
     expect(parseCliCommand([])).toBe("serve");
     expect(parseCliCommand(["serve"])).toBe("serve");
     expect(parseCliCommand(["doctor"])).toBe("doctor");
+    expect(parseCliCommand(["trading-config"])).toBe("trading-config-testnet");
+    expect(parseCliCommand(["trading-config", "--mainnet"])).toBe(
+      "trading-config-mainnet",
+    );
     expect(() => parseCliCommand(["wat"])).toThrow("Unknown command");
+    expect(() => parseCliCommand(["trading-config", "--testnet"])).toThrow(
+      "Unknown command",
+    );
   });
 
   it("prints a pinned safe mainnet read-only MCP configuration", () => {
     const config = JSON.parse(renderMcpConfig()) as {
       mcpServers: { xrocket: { args: string[]; env: Record<string, string> } };
     };
-    expect(config.mcpServers.xrocket.args).toEqual(["-y", "xrocket-mcp@0.4.0"]);
+    expect(config.mcpServers.xrocket.args).toEqual(["-y", `xrocket-mcp@${VERSION}`]);
     expect(config.mcpServers.xrocket.env).not.toHaveProperty("XROCKET_PROFILE");
     expect(config.mcpServers.xrocket.env).toMatchObject({
       XROCKET_ENVIRONMENT: "mainnet",
@@ -31,6 +46,50 @@ describe("CLI commands", () => {
       XROCKET_ENABLE_WITHDRAWALS: "false",
       XROCKET_ALLOW_MAINNET_WRITES: "false",
     });
+  });
+
+  it("prints a testnet-first order-only trading configuration", () => {
+    const config = JSON.parse(renderTradingMcpConfig()) as {
+      mcpServers: { xrocket: { args: string[]; env: Record<string, string> } };
+    };
+    expect(config.mcpServers.xrocket.args).toEqual(["-y", `xrocket-mcp@${VERSION}`]);
+    expect(config.mcpServers.xrocket.env).toEqual({
+      XROCKET_PROFILE: "full",
+      XROCKET_ENVIRONMENT: "testnet",
+      XROCKET_API_TOKEN: XROCKET_API_TOKEN_PLACEHOLDER,
+      XROCKET_ENABLE_TRADING: "true",
+      XROCKET_ENABLE_TRANSFERS: "false",
+      XROCKET_ENABLE_WITHDRAWALS: "false",
+      XROCKET_ALLOW_MAINNET_WRITES: "false",
+    });
+    const loaded = loadConfig({
+      ...config.mcpServers.xrocket.env,
+      XROCKET_API_TOKEN: "test-token",
+    });
+    expect(loaded).toMatchObject({
+      profile: "full",
+      environment: "testnet",
+      enableTrading: true,
+      enableTransfers: false,
+      enableWithdrawals: false,
+      allowMainnetWrites: false,
+    });
+    expect(() => assertWriteAllowed(loaded, "trading")).not.toThrow();
+  });
+
+  it("requires a separate explicit mainnet trading configuration", () => {
+    const config = JSON.parse(renderTradingMcpConfig("mainnet")) as {
+      mcpServers: { xrocket: { env: Record<string, string> } };
+    };
+    expect(config.mcpServers.xrocket.env).toMatchObject({
+      XROCKET_ENVIRONMENT: "mainnet",
+      XROCKET_ENABLE_TRADING: "true",
+      XROCKET_ENABLE_TRANSFERS: "false",
+      XROCKET_ENABLE_WITHDRAWALS: "false",
+      XROCKET_ALLOW_MAINNET_WRITES: "true",
+    });
+    expect(helpText()).toContain("trading-config --mainnet");
+    expect(helpText()).toContain("Testnet is the default");
   });
 
   it("diagnoses connectivity without exposing the token", async () => {

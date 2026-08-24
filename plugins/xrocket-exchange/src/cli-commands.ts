@@ -1,15 +1,34 @@
-import { loadConfig, type XrocketConfig } from "./config.js";
+import {
+  loadConfig,
+  XROCKET_API_TOKEN_PLACEHOLDER,
+  type XrocketConfig,
+  type XrocketEnvironment,
+} from "./config.js";
 import { XrocketClient, type FetchLike } from "./client.js";
 import { XrocketHttpError } from "./errors.js";
 import { VERSION } from "./version.js";
 
-export type CliCommand = "serve" | "serve-http" | "doctor" | "config" | "help" | "version";
+export type CliCommand =
+  | "serve"
+  | "serve-http"
+  | "doctor"
+  | "config"
+  | "trading-config-testnet"
+  | "trading-config-mainnet"
+  | "help"
+  | "version";
 
 export function parseCliCommand(args: readonly string[]): CliCommand {
   if (args.length === 0 || (args.length === 1 && args[0] === "serve")) return "serve";
   if (args.length === 1 && args[0] === "serve-http") return "serve-http";
   if (args.length === 1 && args[0] === "doctor") return "doctor";
   if (args.length === 1 && args[0] === "config") return "config";
+  if (args.length === 1 && args[0] === "trading-config") {
+    return "trading-config-testnet";
+  }
+  if (args.length === 2 && args[0] === "trading-config" && args[1] === "--mainnet") {
+    return "trading-config-mainnet";
+  }
   if (args.length === 1 && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
     return "help";
   }
@@ -27,11 +46,14 @@ export function helpText(): string {
     "  xrocket-mcp serve-http   Start the hard public-only Streamable HTTP server",
     "  xrocket-mcp doctor       Check configuration and public API connectivity",
     "  xrocket-mcp config       Print a safe copy-paste MCP client configuration",
+    "  xrocket-mcp trading-config            Print a testnet trading configuration",
+    "  xrocket-mcp trading-config --mainnet  Print an explicit live-trading configuration",
     "  xrocket-mcp --version    Print the version",
     "",
     "Defaults: public mainnet reads; every financial write gate is disabled.",
     "serve-http always exposes only public mainnet tools and never reads account or write settings.",
     "With XROCKET_PROFILE omitted, setting XROCKET_API_TOKEN locally enables private reads. Never paste a token into a prompt.",
+    "Trading config enables orders only; transfers and withdrawals stay disabled. Testnet is the default.",
   ].join("\n");
 }
 
@@ -48,6 +70,32 @@ export function renderMcpConfig(): string {
             XROCKET_ENABLE_TRANSFERS: "false",
             XROCKET_ENABLE_WITHDRAWALS: "false",
             XROCKET_ALLOW_MAINNET_WRITES: "false",
+          },
+        },
+      },
+    },
+    null,
+    2,
+  );
+}
+
+export function renderTradingMcpConfig(
+  environment: XrocketEnvironment = "testnet",
+): string {
+  return JSON.stringify(
+    {
+      mcpServers: {
+        xrocket: {
+          command: "npx",
+          args: ["-y", `xrocket-mcp@${VERSION}`],
+          env: {
+            XROCKET_PROFILE: "full",
+            XROCKET_ENVIRONMENT: environment,
+            XROCKET_API_TOKEN: XROCKET_API_TOKEN_PLACEHOLDER,
+            XROCKET_ENABLE_TRADING: "true",
+            XROCKET_ENABLE_TRANSFERS: "false",
+            XROCKET_ENABLE_WITHDRAWALS: "false",
+            XROCKET_ALLOW_MAINNET_WRITES: environment === "mainnet" ? "true" : "false",
           },
         },
       },

@@ -1,6 +1,8 @@
 export type XrocketProfile = "public" | "private-read" | "full";
 export type XrocketEnvironment = "testnet" | "mainnet";
 
+export const XROCKET_API_TOKEN_PLACEHOLDER = "SET_YOUR_XROCKET_API_TOKEN_LOCALLY";
+
 export interface XrocketConfig {
   profile: XrocketProfile;
   environment: XrocketEnvironment;
@@ -57,6 +59,11 @@ function ttlValue(value: string | undefined): number {
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): XrocketConfig {
   const apiToken = env.XROCKET_API_TOKEN?.trim();
+  if (apiToken === XROCKET_API_TOKEN_PLACEHOLDER) {
+    throw new Error(
+      "Sign in to xRocket, open Menu > Settings > Exchange settings > API token, then replace XROCKET_API_TOKEN in your local MCP configuration. Never paste the token into chat or the hosted endpoint.",
+    );
+  }
   const profile = enumValue(
     env.XROCKET_PROFILE,
     apiToken ? "private-read" : "public",
@@ -71,7 +78,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): XrocketConfig 
   );
 
   if (profile !== "public" && !apiToken) {
-    throw new Error(`XROCKET_API_TOKEN is required for profile ${profile}`);
+    throw new Error(
+      `XROCKET_API_TOKEN is required for profile ${profile}. Sign in to xRocket, open Menu > Settings > Exchange settings > API token, and configure it locally.`,
+    );
   }
 
   return {

@@ -11,7 +11,7 @@ Use semantic xRocket MCP tools. Keep public analysis fast and keep every private
 
 1. Identify the requested environment and operation. The environment is fixed when the MCP server starts. Public reads default to mainnet; before any write, name and verify the returned environment and prefer a testnet-configured server unless the user explicitly chose mainnet.
 2. Use `public` for market data. Use `private-read` only when account state is needed. Use `full` only when the user explicitly requests a supported financial action.
-3. Never ask for the API token in chat or pass it as a tool argument. If a private tool is unavailable, ask the user to sign in or configure the token locally, without soliciting the secret.
+3. Never ask for the API token in chat or pass it as a tool argument. If account or order tools are unavailable, call `xrocket_onboarding_links` when present, ask the user to sign in, and direct them to `npx -y xrocket-mcp@0.5.0 trading-config` for testnet-first local setup. Do not solicit the secret.
 4. Read [references/api-map.md](references/api-map.md) for tool selection. Read [references/safety.md](references/safety.md) before any write, [references/errors.md](references/errors.md) for failures, and [references/advanced-workflows.md](references/advanced-workflows.md) for multi-step work.
 
 ## Public market workflow
@@ -32,6 +32,8 @@ Use semantic xRocket MCP tools. Keep public analysis fast and keep every private
 
 Never jump directly to an execute tool.
 
+If the user wants to trade but `xrocket_order_prepare` is unavailable, explain that the current hosted/public profile is a demo and guide them to the local trading configuration. Do not claim that adding a token to the hosted URL can enable trading.
+
 1. Read current symbol/asset rules, relevant balances, and—when applicable—withdrawal quota. For an internal transfer, require the requested direction in the asset's `availableTransfers`.
 2. Preserve a supplied unique client identifier. If it is omitted, let the prepare tool generate one and include the returned identifier in the preview. Cancellation may instead identify the existing order by `orderId`.
 3. Call the matching `*_prepare` tool and inspect its exact preview.
@@ -51,7 +53,7 @@ Never modify API, WebSocket, documentation, repository, support, or MCP URLs. Us
 
 - Do not treat Exchange internal transfers as user-to-user payments. xRocket Pay is a separate product and is not available through these tools.
 - Do not coerce financial decimal strings through binary floating point.
-- Do not claim orderbook delta reconstruction, replay, or private event completeness; 0.4.0 exposes REST snapshots.
+- Do not claim orderbook delta reconstruction, replay, or private event completeness; 0.5.0 exposes REST snapshots.
 - Do not copy unsupported offer/deal behavior from tutorials into API calls.
 - Do not use `TON` as an asset identifier where current Exchange metadata requires `TONCOIN`; network `TON` and asset `TONCOIN` are different fields.
 - Do not deploy private/write profiles behind a public unauthenticated MCP endpoint.

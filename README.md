@@ -1,10 +1,10 @@
 # xRocket Exchange MCP
 
-Give AI clients live xRocket prices, spreads, order books, recent trades, candles, fees, and complete market snapshots through MCP. The hosted endpoint needs no install, login, token, or trading permission.
+Prepare, review, and execute xRocket CEX orders from an MCP-capable AI client. Before an order is submitted, the local server fetches the exchange estimate, fee, market rules, relevant trading balances, and the exact intent; execution requires a separate explicit approval.
 
-This repository also packages an agent skill and local plugins. Hosted use is strictly **public and read-only**; private account access and financial writes are available only in explicit local profiles, with separate feature gates and a prepare/execute approval flow. This project is not affiliated with, endorsed by, or operated by xRocket.
+The hosted endpoint is a zero-account market-data demo and onboarding path. Actual account reads and trading run locally with the user's xRocket token. This project is not affiliated with, endorsed by, or operated by xRocket.
 
-[Connect in under a minute](https://xrocket-mcp-production.up.railway.app/) · [Open xRocket](https://t.me/xRocket?start=kaban) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Coverage](docs/API_COVERAGE.md) · [Safety model](docs/SAFETY.md) · [Legal review](docs/LEGAL.md) · [Distribution status](docs/DISTRIBUTION.md)
+[Set up trading](https://xrocket-mcp-production.up.railway.app/#trade) · [Open xRocket](https://t.me/xRocket?start=kaban) · [Try the market demo](https://xrocket-mcp-production.up.railway.app/#connect) · [Official API overview](https://docs.xrocket.exchange/api/exchange/exchange-api-overview) · [Safety model](docs/SAFETY.md) · [Coverage](docs/API_COVERAGE.md) · [Distribution](docs/DISTRIBUTION.md)
 
 ## What is included
 
@@ -28,7 +28,27 @@ The API surface was re-audited on 2026-08-24 and still covers all **50 Exchange 
 
 For normal questions, `xrocket_market_snapshot` resolves a symbol or base asset and returns rules, ticker, best bid/ask, recent trades, fees, and an Open xRocket next action in one call. Private mode adds `xrocket_account_overview` for funding balances, trading balances, and active orders without inventing portfolio valuation. Narrow tools remain available for detailed queries. Full mode adds guarded order, cancel, internal-transfer, and withdrawal workflows.
 
-## Quick start — no installation
+## Quick start — trade through MCP
+
+1. [Sign in to xRocket](https://t.me/xRocket?start=kaban). In the bot, open **Menu → Settings → Exchange settings → API token**.
+2. Start with the generated testnet trading configuration:
+
+   ```bash
+   npx -y xrocket-mcp@0.5.0 trading-config
+   ```
+
+3. Paste the printed JSON into your local MCP client and replace `SET_YOUR_XROCKET_API_TOKEN_LOCALLY` in that client's local secret or environment settings. Do not paste the token into chat, this website, an issue, or a committed file.
+4. Ask:
+
+   > On testnet, prepare a market buy of GRAM-USDT using 10 USDT. Show the estimate, fee, balances, rules, and exact intent. Do not execute until I explicitly approve.
+
+5. Review the prepared order. If it is correct, explicitly approve that exact preview; the client can then call `xrocket_order_execute` once with the short-lived receipt.
+
+After testing, generate an explicit live-trading configuration with `npx -y xrocket-mcp@0.5.0 trading-config --mainnet`. That template enables the separate mainnet order gate but leaves transfers and withdrawals disabled.
+
+The xRocket API token is a broad bearer credential without documented granular scopes. Local MCP feature gates reduce what this server exposes, but they do not narrow the upstream token itself. Use a trusted local client and protect its configuration like a password.
+
+## Market-data demo — no installation
 
 Open the [zero-install connection page](https://xrocket-mcp-production.up.railway.app/) or add this URL to any MCP client that supports Streamable HTTP:
 
@@ -50,15 +70,15 @@ Generic client configuration:
 
 The hosted service is structurally limited to the 10 public mainnet tools. It never reads tokens, account data, or financial-write settings. Its health endpoint is [`/health`](https://xrocket-mcp-production.up.railway.app/health).
 
-For balances, order history, or guarded financial actions, use the local package below and authenticate only through your local process environment. Never paste an xRocket token into chat or send it to the hosted endpoint.
+For balances, order history, or guarded order execution, use the local package above. The remote demo cannot be upgraded with a token.
 
 ## Local package
 
 Requirements: Node.js 20 or newer. No clone or configuration is needed for public market data:
 
 ```bash
-npx -y xrocket-mcp@0.4.0 doctor
-npx -y xrocket-mcp@0.4.0 config
+npx -y xrocket-mcp@0.5.0 doctor
+npx -y xrocket-mcp@0.5.0 config
 ```
 
 The second command prints this copy-paste MCP client configuration:
@@ -68,7 +88,7 @@ The second command prints this copy-paste MCP client configuration:
   "mcpServers": {
     "xrocket": {
       "command": "npx",
-      "args": ["-y", "xrocket-mcp@0.4.0"],
+      "args": ["-y", "xrocket-mcp@0.5.0"],
       "env": {
         "XROCKET_ENVIRONMENT": "mainnet",
         "XROCKET_ENABLE_TRADING": "false",
@@ -100,11 +120,11 @@ npm test
 npm run build
 ```
 
-The current package is [`xrocket-mcp@0.4.0`](https://www.npmjs.com/package/xrocket-mcp/v/0.4.0).
+The current package is [`xrocket-mcp@0.5.0`](https://www.npmjs.com/package/xrocket-mcp/v/0.5.0).
 
 ## Enabling private reads
 
-Create a dedicated xRocket API bot token and pass it only through the process environment. With a token present, the profile defaults to `private-read`; an explicit profile is still respected:
+Create an xRocket API token in the signed-in bot and pass it only through the local process environment. With a token present, the profile defaults to `private-read`; an explicit profile is still respected:
 
 ```bash
 export XROCKET_ENVIRONMENT=testnet
@@ -144,7 +164,7 @@ Mainnet writes additionally require `XROCKET_ENVIRONMENT=mainnet` and `XROCKET_A
 - Exchange `POST /api/v1/accounts/transfers` moves funds only between the same user's `funding` and `trading` accounts. It is not a user-to-user payment tool.
 - xRocket Pay is a different product, uses different authentication, and is outside this server.
 - The official API currently uses asset identifier `TONCOIN` in places where the UI may say TON.
-- The 0.4.0 server uses REST snapshots. WebSocket channels are audited but not exposed until the upstream documentation defines reliable replay, gap recovery, and orderbook delta deletion semantics.
+- The 0.5.0 server uses REST snapshots. WebSocket channels are audited but not exposed until the upstream documentation defines reliable replay, gap recovery, and orderbook delta deletion semantics.
 - Decimal financial values remain strings. Do not coerce them through binary floating point.
 
 ## Development

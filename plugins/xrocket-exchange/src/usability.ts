@@ -114,6 +114,10 @@ export interface MarketSnapshot {
     consistency: string;
   };
   actions: {
+    tradeWithMcp: {
+      label: "Trade with MCP";
+      url: string;
+    };
     openXrocket: {
       label: "Open xRocket";
       url: string;
@@ -131,6 +135,7 @@ export function buildMarketSnapshot(input: {
   trades: unknown;
   fees: unknown;
   openXrocketUrl: string;
+  tradingSetupUrl: string;
 }): MarketSnapshot {
   const ticker = exactSymbolRecord(
     input.ticker,
@@ -185,6 +190,10 @@ export function buildMarketSnapshot(input: {
       consistency: "REST components are retrieved concurrently and are not an atomic synchronized snapshot.",
     },
     actions: {
+      tradeWithMcp: {
+        label: "Trade with MCP",
+        url: input.tradingSetupUrl,
+      },
       openXrocket: {
         label: "Open xRocket",
         url: input.openXrocketUrl,
@@ -213,6 +222,7 @@ export function marketSnapshotText(snapshot: MarketSnapshot): string {
     "",
     `Retrieved ${snapshot.retrievedAt}. ${snapshot.constraints.consistency}`,
     "",
+    `[${snapshot.actions.tradeWithMcp.label}](${snapshot.actions.tradeWithMcp.url})`,
     `[${snapshot.actions.openXrocket.label}](${snapshot.actions.openXrocket.url})`,
   ];
   return rows.join("\n");
