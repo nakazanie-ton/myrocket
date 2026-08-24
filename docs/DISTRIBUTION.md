@@ -38,7 +38,7 @@ Discovery metadata should consistently use:
 | P1 | Claude community plugin marketplace | GitHub plugin repository | Not submitted | Follow current manual submission requirements and disclose financial capabilities |
 | P1 | Cursor marketplace | MCP/plugin listing | Not submitted | Submit the public read-only configuration |
 | P1 | Cline marketplace | Marketplace issue/listing | Not submitted | Prepare logo/README and expect additional crypto review |
-| P2 | Glama | Downstream MCP listing | **Owner signed in; submission form prepared** | Submit v0.2.0 for review, claim the server, deploy the public/mainnet read-only Docker build, verify introspection, and make a release |
+| P2 | Glama | Downstream MCP listing | **v0.2.0 submitted; pending review and public visibility** | After approval, claim the server, verify public/mainnet read-only introspection, and make a Glama release |
 | P2 | PulseMCP | Official Registry ingestion | **Pending downstream ingestion** | The live submission page ingests Official Registry entries daily; verify the listing after the next ingestion cycle |
 | P2 | `awesome-mcp-servers` | Curated-list pull request | **PR #11670 open; automated checks passed** | Complete the Glama listing, add its score badge to the PR entry, rerun checks, then await maintainer review |
 | P3 | mcp.so | Paid directory listing | Not submitted | Evaluate the current paid-listing terms after organic channels |
