@@ -13,7 +13,7 @@ The default installation is intentionally **public and read-only**. Private acco
 | MCP server | Semantic tools over the official REST API | `public`, testnet |
 | Agent skill | Teaches agents safe discovery, analysis, approval, and reconciliation workflows | Read first; never infer write approval |
 | Codex plugin | Installs the server and skill together from a repo-local marketplace | Public tools only |
-| Registry metadata | `server.json` for `io.github.nakazanie-ton/xrocket` | Prepared; publication pending npm |
+| Registry metadata | `server.json` for `io.github.nakazanie-ton/xrocket` | Published in the Official MCP Registry |
 
 The API surface was re-audited on 2026-08-24 and still covers all **50 Exchange documentation pages**, all **26 OpenAPI operations**, and all **7 WebSocket channels**. The four linked legal PDFs were reviewed separately on 2026-08-07. The current OpenAPI document has canonical SHA-256 `5de074def6ee9f59c7c1d1a2f8a06e1f5e2fafb446ebef58af7168e32813e2a3`. See [the source inventory](docs/API_AUDIT.md).
 
@@ -64,7 +64,7 @@ codex plugin add xrocket-exchange@xrocket-agents
 
 For a local clone, replace the first command with `codex plugin marketplace add /absolute/path/to/myrocket`.
 
-After the npm package is published, clients will also be able to run the pinned package form:
+Clients can also run the verified pinned npm package:
 
 ```json
 {
@@ -81,7 +81,7 @@ After the npm package is published, clients will also be able to run the pinned 
 }
 ```
 
-That package command is **pending publication**; use the local build until npm shows `xrocket-mcp@0.1.1`.
+The published package is [`xrocket-mcp@0.1.1`](https://www.npmjs.com/package/xrocket-mcp/v/0.1.1). The local build remains available for source inspection and development.
 
 ## Enabling private reads
 

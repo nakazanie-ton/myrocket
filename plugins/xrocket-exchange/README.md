@@ -43,7 +43,7 @@ MCP client example:
 }
 ```
 
-After npm publication, the equivalent command will be `npx -y xrocket-mcp@0.1.1`. Until the package is visible on npm, use the local build.
+The verified npm equivalent is `npx -y xrocket-mcp@0.1.1`.
 
 ## Profiles and write gates
 
