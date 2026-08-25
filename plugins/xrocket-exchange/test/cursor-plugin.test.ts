@@ -10,21 +10,34 @@ const readJson = (relativePath: string) =>
 describe("Cursor plugin metadata", () => {
   it("points the plugin at the public hosted MCP endpoint", () => {
     const config = readJson("../mcp.json") as {
-      mcpServers: { xrocket: { url: string } };
+      $schema: string;
+      mcpServers: { xrocket: { type: string; url: string } };
     };
 
+    expect(config.$schema).toBe("https://agent-plugins.org/schemas/1.0.0/mcp.schema.json");
+    expect(config.mcpServers.xrocket.type).toBe("streamable-http");
     expect(config.mcpServers.xrocket.url).toBe(
       "https://xrocket-mcp-production.up.railway.app/mcp",
     );
   });
 
   it("keeps the plugin and marketplace entries aligned", () => {
-    const plugin = readJson("../.cursor-plugin/plugin.json") as { name: string; version: string };
+    const plugin = readJson("../.cursor-plugin/plugin.json") as {
+      name: string;
+      version: string;
+      author: { name: string };
+    };
     const marketplace = readJson("../../../.cursor-plugin/marketplace.json") as {
+      owner: { name: string };
       plugins: Array<{ name: string; source: string }>;
     };
 
-    expect(plugin).toMatchObject({ name: "xrocket-exchange", version: "0.6.0" });
+    expect(plugin).toMatchObject({
+      name: "xrocket-exchange",
+      version: "0.6.0",
+      author: { name: "corefather" },
+    });
+    expect(marketplace.owner.name).toBe("corefather");
     expect(marketplace.plugins).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

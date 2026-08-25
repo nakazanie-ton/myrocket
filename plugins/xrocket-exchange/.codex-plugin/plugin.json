@@ -3,7 +3,7 @@
   "version": "0.6.0",
   "description": "Autonomous xRocket CEX trading inside operator-set limits, plus live market data",
   "author": {
-    "name": "nakazanie-ton",
+    "name": "corefather",
     "url": "https://github.com/nakazanie-ton"
   },
   "homepage": "https://github.com/nakazanie-ton/myrocket#readme",
@@ -22,7 +22,7 @@
     "displayName": "xRocket Exchange",
     "shortDescription": "Set a limit. Let your agent trade xRocket.",
     "longDescription": "Unofficial xRocket CEX integration with autonomous local spot trading inside a daily value limit, private account reads, explicit transfer and withdrawal approval, and a public market-data demo.",
-    "developerName": "nakazanie-ton",
+    "developerName": "corefather",
     "category": "Developer Tools",
     "capabilities": [
       "Autonomous CEX trading",

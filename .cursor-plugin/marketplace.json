@@ -1,7 +1,7 @@
 {
   "name": "xrocket-agents",
   "owner": {
-    "name": "nakazanie-ton"
+    "name": "corefather"
   },
   "metadata": {
     "description": "Autonomous xRocket CEX trading inside operator-set limits"

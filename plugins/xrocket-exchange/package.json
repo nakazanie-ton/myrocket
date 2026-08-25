@@ -4,7 +4,7 @@
   "description": "Autonomous xRocket CEX trading inside operator-set limits, plus live market data over MCP",
   "type": "module",
   "license": "MIT",
-  "author": "nakazanie-ton",
+  "author": "corefather",
   "homepage": "https://xrocket-mcp-production.up.railway.app/",
   "repository": {
     "type": "git",

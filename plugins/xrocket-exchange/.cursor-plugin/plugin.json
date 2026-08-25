@@ -3,7 +3,7 @@
   "description": "Set one limit and let your agent trade xRocket locally",
   "version": "0.6.0",
   "author": {
-    "name": "nakazanie-ton"
+    "name": "corefather"
   },
   "homepage": "https://xrocket-mcp-production.up.railway.app/",
   "repository": "https://github.com/nakazanie-ton/myrocket",
