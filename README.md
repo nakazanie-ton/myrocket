@@ -1,5 +1,7 @@
 # xRocket Exchange MCP
 
+[![Smithery](https://smithery.ai/badge/leproknight/xrocket-exchange)](https://smithery.ai/servers/leproknight/xrocket-exchange)
+
 Set one daily value limit, connect an xRocket API token locally, and let an MCP-capable AI agent place and cancel spot orders autonomously inside that limit. Internal transfers and external withdrawals remain separate prepare/approve/execute operations.
 
 The hosted endpoint is a zero-account market-data demo and onboarding path. Actual account reads and trading run locally with the user's xRocket token. This project is not affiliated with, endorsed by, or operated by xRocket.
