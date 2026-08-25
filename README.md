@@ -1,6 +1,6 @@
 # xRocket Exchange MCP
 
-[![Smithery](https://smithery.ai/badge/leproknight/xrocket-exchange)](https://smithery.ai/servers/leproknight/xrocket-exchange)
+[![Smithery](https://img.shields.io/badge/Smithery-listed-FF6B00)](https://smithery.ai/servers/corefather/xrocket-exchange)
 
 Set one daily value limit, connect an xRocket API token locally, and let an MCP-capable AI agent place and cancel spot orders autonomously inside that limit. Internal transfers and external withdrawals remain separate prepare/approve/execute operations.
 
