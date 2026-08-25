@@ -51,6 +51,14 @@ codex plugin marketplace add nakazanie-ton/myrocket --ref main
 codex plugin add xrocket-exchange@xrocket-agents
 ```
 
+GitHub Copilot CLI can install the portable plugin directly:
+
+```bash
+copilot plugin install nakazanie-ton/myrocket:plugins/xrocket-exchange
+```
+
+The portable install connects only to the hosted public market tools. Use the trading quick start above when local account access is needed.
+
 Claude Code:
 
 ```bash

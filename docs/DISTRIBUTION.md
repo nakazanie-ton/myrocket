@@ -15,6 +15,7 @@ Snapshot: **2026-08-25**. Statuses distinguish verified publication from pending
 - Smithery Skills: [`corefather/xrocket-exchange`](https://smithery.ai/skills/corefather/xrocket-exchange); the public skill imports the repository bundle and provides install paths for Codex, Cursor, Claude Code, and other supported agents.
 - Docker MCP Catalog submission: [`docker/mcp-registry#4776`](https://github.com/docker/mcp-registry/pull/4776); the pinned `stdio` image build passed registry validation and exposed all 23 local tools with API token, environment, and one daily-limit configuration.
 - Kilo Marketplace submission: [`Kilo-Org/kilo-marketplace#242`](https://github.com/Kilo-Org/kilo-marketplace/pull/242); the built-in marketplace entry offers a zero-credential hosted market-data demo and a global-scope local trading setup with one daily limit, all spot pairs enabled, and transfers and withdrawals disabled.
+- GitHub Awesome Copilot submission: [`github/awesome-copilot#2796`](https://github.com/github/awesome-copilot/issues/2796); the external Agent Plugin intake passed spec compliance, skill lint, Copilot CLI installation, and version matching and is ready for maintainer review. The same plugin can already be installed directly with `copilot plugin install nakazanie-ton/myrocket:plugins/xrocket-exchange`.
 - Cursor Marketplace: the publisher application for `corefather` and the public `nakazanie-ton/myrocket` plugin repository was submitted successfully and is pending review.
 - Curated-list submission: [`punkpeye/awesome-mcp-servers#11670`](https://github.com/punkpeye/awesome-mcp-servers/pull/11670); the description now explains autonomous trading inside one daily value limit and pins the v0.6.0 testnet setup command. The automated submission check passes; maintainer review remains pending.
 - Client-marketplace submission: [`cline/marketplace#63`](https://github.com/cline/marketplace/pull/63); validation passed for all 203 marketplace entries and maintainer review remains required.
@@ -50,6 +51,7 @@ Discovery metadata should consistently use:
 | P1 | Claude Code plugin marketplace | `.claude-plugin/marketplace.json` plus the public repository bundle | **Self-hosted marketplace published and verified from GitHub** | Keep independent repository installation working; no official Anthropic submission is planned |
 | P1 | Docker MCP Catalog | [`docker/mcp-registry#4776`](https://github.com/docker/mcp-registry/pull/4776) | **Submitted; schema, build, 23-tool discovery, and Go tests passed** | Await Docker review and catalog image publication |
 | P1 | Kilo Marketplace | [`Kilo-Org/kilo-marketplace#242`](https://github.com/Kilo-Org/kilo-marketplace/pull/242) | **Submitted; Node 20 marketplace generation and configuration checks passed locally** | Maintainer authorization is required before the fork-origin GitHub Actions workflow can run; then await review |
+| P1 | GitHub Awesome Copilot | [`github/awesome-copilot#2796`](https://github.com/github/awesome-copilot/issues/2796) | **Submitted; official intake and all required quality gates passed; ready for review** | Direct Copilot CLI install already works; await maintainer approval for default marketplace discovery |
 | P1 | Cursor marketplace | `.cursor-plugin/marketplace.json`, plugin manifest, and hosted `mcp.json` | **Publisher application submitted as `corefather`; pending review** | Await the Cursor marketplace review and verify the public listing after approval |
 | P1 | Cline marketplace | [`cline/marketplace#63`](https://github.com/cline/marketplace/pull/63) | **Submitted; validation passed** | Maintainer review is required |
 | P1 | OpenModels MCP registry | [`openmodelsrun/mcp#15`](https://github.com/openmodelsrun/mcp/pull/15) | **Submitted; validator passed all 208 entries** | Await maintainer review |
@@ -70,7 +72,7 @@ The full local Codex plugin and the OpenAI universal public directory are differ
 ## Recommended order
 
 1. Keep the verified GitHub source, license, security policy, documentation, topics, hosted endpoint, and `v0.6.0` release current.
-2. Keep Glama, Smithery MCP, and Smithery Skills current and follow the submitted Docker MCP Catalog, Kilo Marketplace, Cline, OpenModels, `awesome-mcp-servers`, mcp.so, MCP Market, mcpservers.org, FutureTools, and MCP.Directory reviews through to public listings.
+2. Keep Glama, Smithery MCP, and Smithery Skills current and follow the submitted Docker MCP Catalog, Kilo Marketplace, GitHub Awesome Copilot, Cline, OpenModels, `awesome-mcp-servers`, mcp.so, MCP Market, mcpservers.org, FutureTools, and MCP.Directory reviews through to public listings.
 3. Keep the verified npm package and Official MCP Registry record aligned with each release.
 4. Let PulseMCP and other downstream registries ingest the verified record, then make direct submissions only where needed.
 5. Submit the skill/plugin bundle to compatible client marketplaces with the public/default profile highlighted.
@@ -141,6 +143,7 @@ Do not submit to the retired community list in `modelcontextprotocol/servers`; i
 - [awesome-mcp-servers](https://github.com/punkpeye/awesome-mcp-servers)
 - [Cursor Marketplace publisher](https://cursor.com/marketplace/publish)
 - [Kilo Marketplace](https://github.com/Kilo-Org/kilo-marketplace)
+- [GitHub Awesome Copilot](https://github.com/github/awesome-copilot)
 - [OpenAI plugin build guide](https://developers.openai.com/plugins/build/plugins)
 - [OpenAI plugin submission guide](https://developers.openai.com/plugins/deploy/submission)
 - [OpenAI plugin guidelines](https://developers.openai.com/plugins/app-guidelines)

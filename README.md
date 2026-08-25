@@ -14,6 +14,7 @@ The hosted endpoint is a zero-account market-data demo and onboarding path. Actu
 | --- | --- | --- |
 | MCP server | Semantic tools over the official REST API | `public`, mainnet, read-only |
 | Agent skill | Teaches agents market analysis, bounded autonomous trading, explicit transfer/withdrawal approval, and reconciliation | Read first; stay inside the configured policy |
+| Portable Agent Plugin | Installs the public MCP endpoint and skill in GitHub Copilot CLI and other Agent Plugins-compatible hosts | Public tools only |
 | Codex / Claude Code plugin | Installs the server and skill together from a repo marketplace | Public tools only |
 | Registry metadata | `server.json` for `io.github.nakazanie-ton/xrocket` | Published in the Official MCP Registry |
 | Hosted endpoint | Public mainnet tools over Streamable HTTP | No install, token, or account access |
@@ -109,6 +110,14 @@ The Codex bundle is described by [`plugins/xrocket-exchange/.codex-plugin/plugin
 codex plugin marketplace add nakazanie-ton/myrocket --ref main
 codex plugin add xrocket-exchange@xrocket-agents
 ```
+
+GitHub Copilot CLI can install the portable Agent Plugin directly from its repository subdirectory:
+
+```bash
+copilot plugin install nakazanie-ton/myrocket:plugins/xrocket-exchange
+```
+
+This direct install uses the hosted public-only MCP endpoint. Local account access and trading still use the one-limit configuration generated in the quick start above.
 
 For a local clone, replace the first command with `codex plugin marketplace add /absolute/path/to/myrocket`.
 
