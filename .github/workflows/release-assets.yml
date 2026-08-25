@@ -42,7 +42,23 @@ jobs:
             -x 'xrocket-exchange/coverage/*' \
             -x 'xrocket-exchange/*.tgz'
 
+      - name: Pack Gemini CLI extension artifacts
+        run: |
+          tar -czf darwin.xrocket-exchange.tar.gz gemini-extension.json README.md LICENSE
+          cp darwin.xrocket-exchange.tar.gz linux.xrocket-exchange.tar.gz
+          zip -j win32.xrocket-exchange.zip gemini-extension.json README.md LICENSE
+          tar -tzf darwin.xrocket-exchange.tar.gz | grep -Fx gemini-extension.json
+          tar -tzf linux.xrocket-exchange.tar.gz | grep -Fx gemini-extension.json
+          unzip -p win32.xrocket-exchange.zip gemini-extension.json | python3 -m json.tool >/dev/null
+
       - name: Upload artifacts to release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" xrocket-mcp-*.tgz xrocket-exchange-codex-plugin.zip --clobber
+        run: |
+          gh release upload "$GITHUB_REF_NAME" \
+            xrocket-mcp-*.tgz \
+            xrocket-exchange-codex-plugin.zip \
+            darwin.xrocket-exchange.tar.gz \
+            linux.xrocket-exchange.tar.gz \
+            win32.xrocket-exchange.zip \
+            --clobber
