@@ -14,7 +14,7 @@ The hosted endpoint is a zero-account market-data demo and onboarding path. Actu
 | --- | --- | --- |
 | MCP server | Semantic tools over the official REST API | `public`, mainnet, read-only |
 | Agent skill | Teaches agents market analysis, bounded autonomous trading, explicit transfer/withdrawal approval, and reconciliation | Read first; stay inside the configured policy |
-| Codex plugin | Installs the server and skill together from a repo-local marketplace | Public tools only |
+| Codex / Claude Code plugin | Installs the server and skill together from a repo marketplace | Public tools only |
 | Registry metadata | `server.json` for `io.github.nakazanie-ton/xrocket` | Published in the Official MCP Registry |
 | Hosted endpoint | Public mainnet tools over Streamable HTTP | No install, token, or account access |
 
@@ -111,6 +111,15 @@ codex plugin add xrocket-exchange@xrocket-agents
 ```
 
 For a local clone, replace the first command with `codex plugin marketplace add /absolute/path/to/myrocket`.
+
+Claude Code uses the same public-first bundle through its native marketplace:
+
+```bash
+claude plugin marketplace add nakazanie-ton/myrocket
+claude plugin install xrocket-exchange@xrocket-agents
+```
+
+The installed plugin can inspect live markets immediately. When account access or trading is requested, its skill directs the user to sign in and generate the local configuration with one daily limit; no API token is requested in chat.
 
 For source development:
 

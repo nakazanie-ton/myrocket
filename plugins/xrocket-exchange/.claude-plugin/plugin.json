@@ -1,0 +1,19 @@
+{
+  "name": "xrocket-exchange",
+  "version": "0.6.0",
+  "description": "Inspect xRocket markets and trade locally inside one operator-set daily limit",
+  "author": {
+    "name": "corefather"
+  },
+  "homepage": "https://xrocket-mcp-production.up.railway.app/",
+  "repository": "https://github.com/nakazanie-ton/myrocket",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "xrocket",
+    "spot-trading",
+    "autonomous-agents",
+    "market-data"
+  ],
+  "mcpServers": "./.claude-mcp.json"
+}

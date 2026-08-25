@@ -51,6 +51,15 @@ codex plugin marketplace add nakazanie-ton/myrocket --ref main
 codex plugin add xrocket-exchange@xrocket-agents
 ```
 
+Claude Code:
+
+```bash
+claude plugin marketplace add nakazanie-ton/myrocket
+claude plugin install xrocket-exchange@xrocket-agents
+```
+
+Both marketplace plugins start with public market tools. The bundled skill handles the sign-in and one-limit local trading setup when private access is needed.
+
 MCP client example:
 
 ```json
