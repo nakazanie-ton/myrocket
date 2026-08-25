@@ -12,6 +12,7 @@ Snapshot: **2026-08-25**. Statuses distinguish verified publication from pending
 - Official MCP Registry: [`io.github.nakazanie-ton/xrocket@0.6.0`](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.nakazanie-ton%2Fxrocket); the record is marked latest and matches the npm package, autonomous-trading limit, hosted landing page, and Streamable HTTP endpoint.
 - Glama: [`nakazanie-ton/myrocket`](https://glama.ai/mcp/servers/nakazanie-ton/myrocket); the public listing tracks the v0.6.0 repository state, exposes all 10 hosted tools, and has an A quality grade.
 - Smithery: [`corefather/xrocket-exchange`](https://smithery.ai/servers/corefather/xrocket-exchange); the public release passed endpoint discovery, connected to v0.6.0, found all 10 hosted tools, and reached an 85/100 quality score after metadata completion.
+- Smithery Skills: [`corefather/xrocket-exchange`](https://smithery.ai/skills/corefather/xrocket-exchange); the public skill imports the repository bundle and provides install paths for Codex, Cursor, Claude Code, and other supported agents.
 - Cursor Marketplace: the publisher application for `corefather` and the public `nakazanie-ton/myrocket` plugin repository was submitted successfully and is pending review.
 - Curated-list submission: [`punkpeye/awesome-mcp-servers#11670`](https://github.com/punkpeye/awesome-mcp-servers/pull/11670); the description now explains autonomous trading inside one daily value limit and pins the v0.6.0 testnet setup command. The automated submission check passes; maintainer review remains pending.
 - Client-marketplace submission: [`cline/marketplace#63`](https://github.com/cline/marketplace/pull/63); validation passed for all 203 marketplace entries and maintainer review remains required.
@@ -43,7 +44,7 @@ Discovery metadata should consistently use:
 | P0 | GHCR / OCI | Container image | Root non-root Docker build implemented; image not published | Publish and sign an OCI image only if a catalog requires a hosted image |
 | P1 | Codex repo marketplace | `.agents/plugins/marketplace.json` | **Published in the public repository** | Add `nakazanie-ton/myrocket --ref main`, then install `xrocket-exchange@xrocket-agents`; default remains `public` |
 | P1 | Smithery MCP directory | [`corefather/xrocket-exchange`](https://smithery.ai/servers/corefather/xrocket-exchange) | **Published; endpoint scan passed and all 10 tools found** | Keep the release and backlink current; domain verification requires a host where DNS TXT records can be controlled |
-| P1 | Smithery Skills | skill metadata | Not submitted | Publish skill after repository is public and forward tests pass |
+| P1 | Smithery Skills | [`corefather/xrocket-exchange`](https://smithery.ai/skills/corefather/xrocket-exchange) | **Published from the public repository bundle** | Keep the skill instructions and install metadata aligned with each release |
 | P1 | Claude community plugin marketplace | GitHub plugin repository | Not submitted | Follow current manual submission requirements and disclose financial capabilities |
 | P1 | Cursor marketplace | `.cursor-plugin/marketplace.json`, plugin manifest, and hosted `mcp.json` | **Publisher application submitted as `corefather`; pending review** | Await the Cursor marketplace review and verify the public listing after approval |
 | P1 | Cline marketplace | [`cline/marketplace#63`](https://github.com/cline/marketplace/pull/63) | **Submitted; validation passed** | Maintainer review is required |
@@ -65,7 +66,7 @@ The full local Codex plugin and the OpenAI universal public directory are differ
 ## Recommended order
 
 1. Keep the verified GitHub source, license, security policy, documentation, topics, hosted endpoint, and `v0.6.0` release current.
-2. Keep Glama and Smithery current and follow the submitted Cline, OpenModels, `awesome-mcp-servers`, mcp.so, MCP Market, mcpservers.org, FutureTools, and MCP.Directory reviews through to public listings.
+2. Keep Glama, Smithery MCP, and Smithery Skills current and follow the submitted Cline, OpenModels, `awesome-mcp-servers`, mcp.so, MCP Market, mcpservers.org, FutureTools, and MCP.Directory reviews through to public listings.
 3. Keep the verified npm package and Official MCP Registry record aligned with each release.
 4. Let PulseMCP and other downstream registries ingest the verified record, then make direct submissions only where needed.
 5. Submit the skill/plugin bundle to compatible client marketplaces with the public/default profile highlighted.
