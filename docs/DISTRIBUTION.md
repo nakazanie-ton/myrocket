@@ -13,6 +13,7 @@ Snapshot: **2026-08-25**. Statuses distinguish verified publication from pending
 - Glama: [`nakazanie-ton/myrocket`](https://glama.ai/mcp/servers/nakazanie-ton/myrocket); the public listing tracks the v0.6.0 repository state, exposes all 10 hosted tools, and has an A quality grade.
 - Smithery: [`corefather/xrocket-exchange`](https://smithery.ai/servers/corefather/xrocket-exchange); the public release passed endpoint discovery, connected to v0.6.0, found all 10 hosted tools, and reached an 85/100 quality score after metadata completion.
 - Smithery Skills: [`corefather/xrocket-exchange`](https://smithery.ai/skills/corefather/xrocket-exchange); the public skill imports the repository bundle and provides install paths for Codex, Cursor, Claude Code, and other supported agents.
+- Docker MCP Catalog submission: [`docker/mcp-registry#4776`](https://github.com/docker/mcp-registry/pull/4776); the pinned `stdio` image build passed registry validation and exposed all 23 local tools with API token, environment, and one daily-limit configuration.
 - Cursor Marketplace: the publisher application for `corefather` and the public `nakazanie-ton/myrocket` plugin repository was submitted successfully and is pending review.
 - Curated-list submission: [`punkpeye/awesome-mcp-servers#11670`](https://github.com/punkpeye/awesome-mcp-servers/pull/11670); the description now explains autonomous trading inside one daily value limit and pins the v0.6.0 testnet setup command. The automated submission check passes; maintainer review remains pending.
 - Client-marketplace submission: [`cline/marketplace#63`](https://github.com/cline/marketplace/pull/63); validation passed for all 203 marketplace entries and maintainer review remains required.
@@ -41,11 +42,12 @@ Discovery metadata should consistently use:
 | P0 | GitHub Releases | Codex plugin ZIP plus npm tarball | **v0.6.0 published and verified** | Keep release assets version-matched and smoke-test clean downloads |
 | P0 | npm | `xrocket-mcp@0.6.0` | **Published and verified** | Configure trusted publishing for future releases; keep the pinned package smoke-tested |
 | P0 | Official MCP Registry | `plugins/xrocket-exchange/server.json` | **v0.6.0 package and remote published and verified** | Publish each future version only after its npm artifact and hosted endpoint are verified |
-| P0 | GHCR / OCI | Container image | Root non-root Docker build implemented; image not published | Publish and sign an OCI image only if a catalog requires a hosted image |
+| P0 | OCI image | Root non-root Docker build | **Docker Catalog source build verified** | Docker can build, sign, and maintain the pinned `stdio` target in its `mcp` namespace after catalog approval |
 | P1 | Codex repo marketplace | `.agents/plugins/marketplace.json` | **Published in the public repository** | Add `nakazanie-ton/myrocket --ref main`, then install `xrocket-exchange@xrocket-agents`; default remains `public` |
 | P1 | Smithery MCP directory | [`corefather/xrocket-exchange`](https://smithery.ai/servers/corefather/xrocket-exchange) | **Published; endpoint scan passed and all 10 tools found** | Keep the release and backlink current; domain verification requires a host where DNS TXT records can be controlled |
 | P1 | Smithery Skills | [`corefather/xrocket-exchange`](https://smithery.ai/skills/corefather/xrocket-exchange) | **Published from the public repository bundle** | Keep the skill instructions and install metadata aligned with each release |
-| P1 | Claude Code plugin marketplace | `.claude-plugin/marketplace.json` plus the public repository bundle | **Self-hosted marketplace prepared; official submission pending** | Validate and install from GitHub, then submit through Anthropic's in-app plugin form |
+| P1 | Claude Code plugin marketplace | `.claude-plugin/marketplace.json` plus the public repository bundle | **Self-hosted marketplace published and verified from GitHub** | Keep independent repository installation working; no official Anthropic submission is planned |
+| P1 | Docker MCP Catalog | [`docker/mcp-registry#4776`](https://github.com/docker/mcp-registry/pull/4776) | **Submitted; schema, build, 23-tool discovery, and Go tests passed** | Await Docker review and catalog image publication |
 | P1 | Cursor marketplace | `.cursor-plugin/marketplace.json`, plugin manifest, and hosted `mcp.json` | **Publisher application submitted as `corefather`; pending review** | Await the Cursor marketplace review and verify the public listing after approval |
 | P1 | Cline marketplace | [`cline/marketplace#63`](https://github.com/cline/marketplace/pull/63) | **Submitted; validation passed** | Maintainer review is required |
 | P1 | OpenModels MCP registry | [`openmodelsrun/mcp#15`](https://github.com/openmodelsrun/mcp/pull/15) | **Submitted; validator passed all 208 entries** | Await maintainer review |
@@ -66,7 +68,7 @@ The full local Codex plugin and the OpenAI universal public directory are differ
 ## Recommended order
 
 1. Keep the verified GitHub source, license, security policy, documentation, topics, hosted endpoint, and `v0.6.0` release current.
-2. Keep Glama, Smithery MCP, and Smithery Skills current and follow the submitted Cline, OpenModels, `awesome-mcp-servers`, mcp.so, MCP Market, mcpservers.org, FutureTools, and MCP.Directory reviews through to public listings.
+2. Keep Glama, Smithery MCP, and Smithery Skills current and follow the submitted Docker MCP Catalog, Cline, OpenModels, `awesome-mcp-servers`, mcp.so, MCP Market, mcpservers.org, FutureTools, and MCP.Directory reviews through to public listings.
 3. Keep the verified npm package and Official MCP Registry record aligned with each release.
 4. Let PulseMCP and other downstream registries ingest the verified record, then make direct submissions only where needed.
 5. Submit the skill/plugin bundle to compatible client marketplaces with the public/default profile highlighted.
