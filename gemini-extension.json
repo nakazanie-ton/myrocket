@@ -1,0 +1,10 @@
+{
+  "name": "xrocket-exchange",
+  "version": "0.6.0",
+  "description": "Inspect live xRocket spot markets and open the bounded local trading setup",
+  "mcpServers": {
+    "xrocket": {
+      "url": "https://xrocket-mcp-production.up.railway.app/mcp"
+    }
+  }
+}

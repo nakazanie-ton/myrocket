@@ -59,6 +59,14 @@ copilot plugin install nakazanie-ton/myrocket:plugins/xrocket-exchange
 
 The portable install connects only to the hosted public market tools. Use the trading quick start above when local account access is needed.
 
+Gemini CLI:
+
+```bash
+gemini extensions install https://github.com/nakazanie-ton/myrocket
+```
+
+The root Gemini extension uses the same hosted public-only endpoint and local trading handoff.
+
 Claude Code:
 
 ```bash

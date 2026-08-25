@@ -74,6 +74,7 @@ jobs:
           python3 -m json.tool plugins/xrocket-exchange/plugin.json >/dev/null
           python3 -m json.tool plugins/xrocket-exchange/mcp.json >/dev/null
           python3 -m json.tool plugins/xrocket-exchange/server.json >/dev/null
+          python3 -m json.tool gemini-extension.json >/dev/null
 
       - name: Assert safe plugin defaults
         working-directory: .

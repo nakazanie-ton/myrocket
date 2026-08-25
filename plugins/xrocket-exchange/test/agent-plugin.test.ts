@@ -59,4 +59,24 @@ describe("portable Agent Plugin metadata", () => {
       },
     });
   });
+
+  it("keeps the Gemini CLI extension public-only and version-aligned", () => {
+    const extension = readJson("../../../gemini-extension.json") as {
+      name: string;
+      version: string;
+      mcpServers: {
+        xrocket: { url: string };
+      };
+    };
+
+    expect(extension).toMatchObject({
+      name: "xrocket-exchange",
+      version: "0.6.0",
+      mcpServers: {
+        xrocket: {
+          url: "https://xrocket-mcp-production.up.railway.app/mcp",
+        },
+      },
+    });
+  });
 });
